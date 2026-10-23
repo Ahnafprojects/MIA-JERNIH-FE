@@ -270,7 +270,8 @@ export default function HalamanStatistik() {
                 ) : (
                   <AngkaUtama
                     eyebrow="Kehilangan air (NRW)"
-                    nilai={nrwSah === null ? null : angka(nrwSah, 1)}
+                    nilai={nrwSah}
+                    desimal={1}
                     satuan="%"
                     nada={
                       nrwSah === null

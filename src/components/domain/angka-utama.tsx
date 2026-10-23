@@ -1,4 +1,5 @@
 import { cn } from "@/lib/cn";
+import { AngkaBergerak } from "./angka-bergerak";
 
 /**
  * Angka utama sebuah halaman.
@@ -8,20 +9,23 @@ import { cn } from "@/lib/cn";
  * boleh tampil sebagai satu kartu kecil di antara empat kartu seragam —
  * susunan seperti itu menyamaratakan yang penting dengan yang sekadar ada.
  *
- * `nilai` bertipe `string | null`. `null` berarti server TIDAK mengirim
- * angkanya dan yang tampil adalah "—". Menukarnya dengan 0 membuat nilai yang
- * belum ada terbaca sebagai hasil pengukuran.
+ * `nilai` bertipe `number | null` — ANGKA, bukan teks, supaya pergantian
+ * rentang waktu bisa dijalankan dari nilai lama ke nilai baru. `null` berarti
+ * server tidak mengirimnya dan yang tampil "—"; menukarnya dengan 0 membuat
+ * nilai yang belum ada terbaca sebagai hasil pengukuran.
  */
 export function AngkaUtama({
   eyebrow,
   nilai,
+  desimal = 0,
   satuan,
   nada = "netral",
   keterangan,
   children,
 }: {
   eyebrow: string;
-  nilai: string | null;
+  nilai: number | null;
+  desimal?: number;
   satuan?: string;
   nada?: "netral" | "brand" | "sukses" | "peringatan" | "bahaya";
   keterangan?: React.ReactNode;
@@ -39,14 +43,14 @@ export function AngkaUtama({
     <div>
       <p className="eyebrow text-muted">{eyebrow}</p>
       <p className="mt-4 flex items-baseline gap-1.5">
-        <span
+        <AngkaBergerak
+          nilai={nilai}
+          desimal={desimal}
           className={cn(
             "tabular font-mono text-[clamp(3rem,11vw,4.5rem)] leading-[0.82] font-bold",
             nilai === null ? "text-muted" : warna,
           )}
-        >
-          {nilai ?? "—"}
-        </span>
+        />
         {satuan && nilai !== null ? (
           <span className="font-mono text-[1.2rem] font-semibold text-muted">
             {satuan}

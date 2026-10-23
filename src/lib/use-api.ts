@@ -5,7 +5,10 @@ import { api, ApiError } from "./api";
 
 export interface HasilApi<T> {
   data: T | null;
+  /** Benar hanya pada pengambilan PERTAMA, saat belum ada apa pun untuk ditampilkan. */
   memuat: boolean;
+  /** Benar saat isi lama masih tampil sementara isi baru sedang diambil. */
+  menyegarkan: boolean;
   galat: string | null;
   muatUlang: () => void;
 }
@@ -79,12 +82,29 @@ export default function useApi<T>(
    * tersimpan, keadaan memuat terbaca langsung tanpa render tambahan — dan
    * tetap benar saat `muatUlang()` dipanggil.
    */
-  const memuat = jalur !== null && keadaan.kunci !== kunci;
+  const sedangAmbil = jalur !== null && keadaan.kunci !== kunci;
+  const adaIsiLama = keadaan.data !== null;
+
+  /*
+   * MEMUAT hanya berlaku saat belum ada apa pun untuk ditampilkan.
+   *
+   * Saat pengguna mengganti rentang waktu, isi lama DIPERTAHANKAN sampai yang
+   * baru tiba. Dua alasan, dan keduanya terasa:
+   *
+   * - Tanpa ini halaman berkedip ke rangka pemuatan tiap kali tombol ditekan,
+   *   padahal datanya tiba dalam puluhan milidetik.
+   * - Komponen angkanya ikut dibongkar dan dipasang ulang, sehingga nilai
+   *   lamanya hilang dan tidak ada yang bisa dijalankan menuju nilai baru.
+   *   Angkanya melompat, dan mata tidak sempat menyadari ada yang berubah.
+   */
+  const memuat = sedangAmbil && !adaIsiLama;
 
   return {
     data: memuat ? null : keadaan.data,
     memuat,
-    galat: memuat ? null : keadaan.galat,
+    /** Isi lama masih tampil sementara yang baru diambil. */
+    menyegarkan: sedangAmbil && adaIsiLama,
+    galat: sedangAmbil ? null : keadaan.galat,
     muatUlang,
   };
 }
