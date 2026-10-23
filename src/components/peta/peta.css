@@ -1,0 +1,48 @@
+/*
+ * Gaya milik peta zona — TERPISAH dari `src/app/globals.css` dengan sengaja.
+ *
+ * `globals.css` adalah satu-satunya sumber token warna produk ini dan dipakai
+ * seluruh halaman; pemasang pihak ketiga (shadcn/mapcn) tidak boleh menulis ke
+ * sana. Apa pun yang dibutuhkan MapLibre ditaruh di berkas ini, dan hanya ikut
+ * termuat di halaman yang benar-benar memasang peta.
+ *
+ * Ditulis sebagai CSS biasa, BUKAN `@apply`. Berkas ini tidak meng-import
+ * Tailwind, jadi `@apply` di sini tidak punya konteks utilitas dan akan gagal
+ * saat dibangun. Variabel `--color-*` sendiri dipancarkan ke `:root` oleh
+ * `@theme` di `globals.css` dan ditimpa di `.dark`, jadi `var()` di bawah ini
+ * ikut berganti saat tema gelap dinyalakan — tanpa satu pun hex di sini.
+ */
+
+/* Pengaitan atribusi: wajib tetap terbaca (lisensi OpenStreetMap/CARTO),
+   tapi tidak boleh tampil sebagai kotak putih asing di atas peta. */
+.maplibregl-ctrl-attrib.maplibregl-compact,
+.maplibregl-ctrl-attrib {
+  background: var(--color-surface);
+  color: var(--color-muted);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-input);
+  font-size: 11px;
+}
+
+.maplibregl-ctrl-attrib a {
+  color: var(--color-muted);
+}
+
+.maplibregl-ctrl-attrib a:hover {
+  color: var(--color-ink);
+}
+
+.maplibregl-ctrl-attrib-button {
+  background-color: transparent;
+}
+
+/* Ikon tombol atribusi bawaan berwarna gelap; di tema gelap ia hilang. */
+.dark .maplibregl-ctrl-attrib-button {
+  filter: invert(1);
+}
+
+/* Cincin fokus mengikuti aturan global: peta tetap bisa dijelajahi keyboard. */
+.maplibregl-canvas:focus-visible {
+  outline: 2px solid var(--color-brand-500);
+  outline-offset: -2px;
+}
