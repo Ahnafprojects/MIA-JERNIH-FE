@@ -33,20 +33,39 @@ export function VideoHero() {
 
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
-      <video
-        // `playsInline` wajib: tanpa ini iOS merebut layar penuh saat putar.
-        playsInline
-        muted
-        loop
-        autoPlay={!hemat}
-        preload={hemat ? "none" : "auto"}
-        poster="/hero-poster.jpg"
-        // Titik fokus digeser ke kanan: subjek klip (tabung) harus duduk di
-        // zona yang tabirnya tipis, bukan tertutup kolom teks.
-        className="size-full object-cover object-[72%_center]"
-      >
-        <source src="/hero.mp4" type="video/mp4" />
-      </video>
+      {hemat ? (
+        /*
+          Saat gerakan dikurangi, elemen <video> TIDAK dirender sama sekali —
+          diganti gambar diam.
+
+          Sebelumnya videonya tetap dipasang dengan autoPlay dimatikan, dan
+          hasilnya Chrome menempelkan overlay tombol putar raksasa di
+          tengahnya. Elemen video yang terjeda selalu menawarkan dirinya untuk
+          diputar; satu-satunya cara menghilangkan tawaran itu adalah tidak
+          memasang elemennya.
+        */
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src="/hero-poster.jpg"
+          alt=""
+          className="size-full object-cover object-[72%_center]"
+        />
+      ) : (
+        <video
+          // `playsInline` wajib: tanpa ini iOS merebut layar penuh saat putar.
+          playsInline
+          muted
+          loop
+          autoPlay
+          preload="auto"
+          poster="/hero-poster.jpg"
+          // Titik fokus digeser ke kanan: subjek klip (tabung) harus duduk di
+          // zona yang tabirnya tipis, bukan tertutup kolom teks.
+          className="size-full object-cover object-[72%_center]"
+        >
+          <source src="/hero.mp4" type="video/mp4" />
+        </video>
+      )}
 
       {/*
         Tabir ASIMETRIS.
