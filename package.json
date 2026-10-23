@@ -1,0 +1,38 @@
+{
+  "name": "jernih-fe",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Jernih — platform transparansi layanan air PDAM. Frontend.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\""
+  },
+  "dependencies": {
+    "next": "16.4.2",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "maplibre-gl": "^6.15.0",
+    "react-map-gl": "^8.1.0",
+    "recharts": "^3.3.1",
+    "zod": "^4.6.7",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^3.4.1",
+    "lucide-react": "^0.552.0",
+    "date-fns": "^4.1.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/turbopack": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.4.2",
+    "prettier": "^3.6.2",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
