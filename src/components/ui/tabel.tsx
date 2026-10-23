@@ -18,6 +18,7 @@ export function Tabel<T>({
   onKlikBaris,
   terpilih,
   kosong,
+  lebarMin = "34rem",
 }: {
   kolom: Kolom<T>[];
   data: T[];
@@ -25,6 +26,14 @@ export function Tabel<T>({
   onKlikBaris?: (b: T) => void;
   terpilih?: string;
   kosong?: React.ReactNode;
+  /**
+   * Lebar minimum tabel sebelum ia mulai bergulir.
+   *
+   * Turunkan untuk tabel berkolom sedikit yang dipasang di panel sempit —
+   * nilai bawaan membuat kolom terakhir tergeser ke luar pandangan, dan
+   * kolom terakhir biasanya justru yang paling penting.
+   */
+  lebarMin?: string;
 }) {
   if (data.length === 0 && kosong) return <>{kosong}</>;
 
@@ -33,7 +42,10 @@ export function Tabel<T>({
     // seluruh halaman ikut bergeser mendatar di ponsel, dan itu langsung
     // terlihat sebagai cacat saat juri membuka di HP.
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[34rem] border-collapse text-sm">
+      <table
+        className="w-full border-collapse text-sm"
+        style={{ minWidth: lebarMin }}
+      >
         <thead>
           <tr className="border-b border-line">
             {kolom.map((k) => (
