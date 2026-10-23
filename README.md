@@ -91,6 +91,14 @@ bukan tiga website terpisah.
 
 Rincian tiap halaman ada di **Issues** repo ini.
 
+## Desain
+
+Arah visualnya ada di **[`docs/ARAH-VISUAL.md`](docs/ARAH-VISUAL.md)** —
+palet, pasangan huruf, perangkat struktural, dan daftar tampilan yang
+dilarang. **Baca itu sebelum menulis komponen apa pun.** Bobot Desain (20%)
+dan Orisinalitas (20%) adalah 40% nilai lomba; spesifikasi fungsional saja
+menghasilkan tampilan yang bisa dipakai produk mana pun.
+
 ## Konvensi
 
 - **Seluruh teks UI Bahasa Indonesia.** Sapa pengguna dengan "Anda".
