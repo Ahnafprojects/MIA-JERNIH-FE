@@ -66,15 +66,17 @@ const LANGKAH = [
 export default function Landing() {
   return (
     <>
-      {/* ── Hero: klip pembuka sebagai thesis ────────────────────────── */}
-      <section className="relative overflow-hidden">
-        <div className="mx-auto grid max-w-6xl items-center gap-14 px-5 pt-14 pb-20 lg:grid-cols-[1fr_1.05fr] lg:gap-16 lg:pt-20">
+      {/* ── Hero: klip pembuka sebagai LATAR ─────────────────────────── */}
+      <section className="relative isolate overflow-hidden">
+        <VideoHero />
+
+        <div className="mx-auto max-w-6xl px-5 pt-20 pb-24 sm:pt-28 sm:pb-32 lg:pt-36 lg:pb-40">
           {/*
             Urutan masuk hero. Jenjangnya ~60ms dan arahnya satu — naik 12px
             sambil memudar masuk — supaya gerakannya MENGARAHKAN urutan baca,
             bukan merayakan pemuatan halaman. Sekali jalan, tanpa ulangan.
           */}
-          <div className="max-w-xl">
+          <div className="max-w-2xl">
             <p className="masuk eyebrow text-brand-600">Air prabayar · PDAM</p>
 
             <h1 className="masuk mt-5 font-display text-[clamp(2.6rem,6.4vw,4.4rem)] leading-[0.98] font-semibold tracking-[-0.025em] [--tunda:60ms]">
@@ -110,9 +112,6 @@ export default function Landing() {
             </div>
           </div>
 
-          <div className="masuk [--tunda:240ms]">
-            <VideoHero />
-          </div>
         </div>
 
         {/* Garis takar menutup hero — pembatas yang mengulang bahasa alat ukur. */}
