@@ -181,7 +181,8 @@ export default function HalamanKinerja() {
                 ) : (
                   <AngkaUtama
                     eyebrow="Tepat waktu sesuai batas SLA"
-                    nilai={ketepatan === null ? null : angka(ketepatan, 1)}
+                    nilai={ketepatan}
+                    desimal={1}
                     satuan="%"
                     nada={nadaKetepatan(ketepatan)}
                     keterangan={

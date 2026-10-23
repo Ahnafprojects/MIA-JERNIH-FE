@@ -175,8 +175,38 @@ const goyang = (n: number, dasar: number, amplitudo: number) =>
     Math.round(dasar + Math.sin(i / 2.1) * amplitudo + ((i * 37) % 11) - 5),
   );
 
+/**
+ * Angka KPI DITURUNKAN dari deret trennya, bukan ditulis sebagai konstanta.
+ *
+ * Versi pertama memakai nilai tetap, sehingga mengganti 7 → 30 → 90 hari
+ * menampilkan 92,9% yang sama persis setiap kali. Di mata pembaca itu
+ * terbaca sebagai tombol yang rusak — dan memang tidak ada rentang waktu
+ * yang menghasilkan rata-rata yang sama sampai satu angka di belakang koma.
+ *
+ * Dengan menurunkannya dari deret, angka ringkasan dan grafiknya SELALU
+ * konsisten satu sama lain: itu yang akan dicocokkan orang.
+ */
 export function kinerja(hari: number) {
   const labels = hariLabel(hari);
+  const tren = goyang(hari, 92, 4);
+  const rata = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+
+  const ketepatan = Math.round(rata(tren) * 10) / 10;
+  // Beban pengaduan tumbuh dengan periode, tapi tidak linear sempurna —
+  // periode panjang mencakup hari sepi dan hari ramai.
+  const masuk = Math.round(hari * 6.1 + (hari % 7) * 3);
+  const selesai = Math.round(masuk * (ketepatan / 100) * 1.004);
+  const tanggap = Math.round(74 + (92 - ketepatan) * 6);
+
+  /** Porsi tiap kategori tetap; jumlahnya ikut beban periode. */
+  const KATEGORI: [string, number, number][] = [
+    ["Kebocoran pipa", 0.33, 95.1],
+    ["Air tidak mengalir", 0.24, 90.9],
+    ["Air keruh / berbau", 0.18, 93.9],
+    ["Tekanan lemah", 0.15, 85.7],
+    ["Meter / keypad rusak", 0.1, 88.9],
+  ];
+
   return {
     periode: {
       mulai: new Date(SEKARANG().getTime() - hari * 86400_000).toISOString(),
@@ -184,54 +214,34 @@ export function kinerja(hari: number) {
       hari,
     },
     kpi: [
-      { key: "tiketMasuk", label: "Pengaduan masuk", value: 184 },
-      { key: "tiketSelesai", label: "Selesai ditangani", value: 171 },
+      { key: "tiketMasuk", label: "Pengaduan masuk", value: masuk },
+      { key: "tiketSelesai", label: "Selesai ditangani", value: selesai },
       {
         key: "ketepatanSlaPct",
         label: "Tepat waktu",
-        value: 92.9,
+        value: ketepatan,
         unit: "%",
-        tone: "success" as const,
+        tone: ketepatan >= 90 ? ("success" as const) : ("warn" as const),
       },
       {
         key: "rataTanggapMenit",
         label: "Rata-rata waktu tanggap",
-        value: 74,
+        value: tanggap,
         unit: "menit",
       },
     ],
-    perKategori: [
-      {
-        kategori: "Kebocoran pipa",
-        masuk: 61,
-        selesai: 58,
-        ketepatanPct: 95.1,
-      },
-      {
-        kategori: "Air tidak mengalir",
-        masuk: 44,
-        selesai: 41,
-        ketepatanPct: 90.9,
-      },
-      {
-        kategori: "Air keruh / berbau",
-        masuk: 33,
-        selesai: 31,
-        ketepatanPct: 93.9,
-      },
-      { kategori: "Tekanan lemah", masuk: 28, selesai: 25, ketepatanPct: 85.7 },
-      {
-        kategori: "Meter / keypad rusak",
-        masuk: 18,
-        selesai: 16,
-        ketepatanPct: 88.9,
-      },
-    ],
+    perKategori: KATEGORI.map(([kategori, porsi, ketepatanPct]) => {
+      const m = Math.round(masuk * porsi);
+      return {
+        kategori,
+        masuk: m,
+        selesai: Math.round(m * (ketepatanPct / 100)),
+        ketepatanPct,
+      };
+    }),
     tren: {
       labels,
-      series: [
-        { name: "Ketepatan SLA", unit: "%", points: goyang(hari, 92, 4) },
-      ],
+      series: [{ name: "Ketepatan SLA", unit: "%", points: tren }],
     },
   };
 }
@@ -239,7 +249,18 @@ export function kinerja(hari: number) {
 export function statistik(hari: number) {
   const labels = hariLabel(hari);
   const disalurkan = goyang(hari, 1180, 90);
-  const tercatat = disalurkan.map((v) => Math.round(v * 0.805));
+
+  /*
+   * Rasio tercatat BERUBAH dari hari ke hari, tidak dipatok satu angka.
+   *
+   * Dengan rasio tetap, NRW keluar 19,5% untuk 7, 30, maupun 90 hari — dan
+   * kehilangan air yang sama persis di tiga periode berbeda adalah hal yang
+   * tidak terjadi di jaringan mana pun. Pembaca yang mengganti rentang lalu
+   * melihat angka yang sama akan menyimpulkan datanya tidak sungguhan.
+   */
+  const tercatat = disalurkan.map((v, i) =>
+    Math.round(v * (0.805 + Math.sin(i / 3.7) * 0.035)),
+  );
   const totalDisalurkan = disalurkan.reduce((a, b) => a + b, 0);
   const totalTercatat = tercatat.reduce((a, b) => a + b, 0);
 

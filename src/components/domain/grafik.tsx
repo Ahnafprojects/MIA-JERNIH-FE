@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from "react";
+import { useId, useSyncExternalStore } from "react";
 import {
   Area,
   Bar,
@@ -41,12 +41,15 @@ import { cn } from "@/lib/cn";
  * - Nilai yang tidak dikirim server menjadi `null`, BUKAN 0 — garisnya
  *   putus di situ. Nol adalah hasil pengukuran, dan tidak boleh dikarang.
  *
- * Animasi DIMATIKAN, dan itu bukan soal selera: animasi Recharts menggambar
- * garis lewat `stroke-dasharray`, sehingga pada detik-detik awal grafiknya
- * tampak KOSONG — di tangkapan layar, di mesin lambat, dan tepat setelah
- * halaman dimuat. Persis tiga situasi yang akan dialami juri. Grafik juga
- * tidak butuh gerak untuk bisa dibaca, dan pedoman kita menghormati
- * `prefers-reduced-motion`.
+ * Animasi gambar-ulang AKTIF, tetapi pendek (650 ms) dan hanya berguna pada
+ * satu momen: saat rentang waktu diganti. Tanpa itu, 7 hari berganti menjadi
+ * 30 hari dalam satu bingkai dan mata tidak sempat menyadari grafiknya sudah
+ * jadi grafik yang lain.
+ *
+ * Durasinya sengaja pendek. Animasi Recharts menggambar garis lewat
+ * `stroke-dasharray`, jadi selama animasi berjalan grafiknya belum utuh —
+ * makin lama durasinya, makin besar peluang seseorang melihat grafik yang
+ * masih kosong. `prefers-reduced-motion` mematikannya sepenuhnya.
  */
 
 const WARNA = [
@@ -57,7 +60,8 @@ const WARNA = [
 ];
 
 /** Warna deret mengikuti URUTANNYA, tetap, tidak pernah diputar ulang. */
-const warnaDeret = (i: number) => WARNA[((i % WARNA.length) + WARNA.length) % WARNA.length];
+const warnaDeret = (i: number) =>
+  WARNA[((i % WARNA.length) + WARNA.length) % WARNA.length];
 
 const WARNA_CELAH = "var(--color-warn)";
 
@@ -90,7 +94,32 @@ export interface Deret {
 
 type NilaiBaris = string | number | null;
 
-const sah = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
+const sah = (v: unknown): v is number =>
+  typeof v === "number" && Number.isFinite(v);
+
+/** Berapa lama grafik menggambar ulang dirinya saat datanya berganti. */
+const DURASI_GAMBAR = 650;
+
+/**
+ * `true` bila pengguna meminta gerakan dikurangi.
+ *
+ * Dibaca lewat `useSyncExternalStore`, bukan `useState` + effect: nilainya
+ * sudah benar pada render pertama sehingga grafik tidak sempat memulai
+ * animasi lalu dibatalkan sepersekian detik kemudian.
+ */
+function useHematGerak(): boolean {
+  return useSyncExternalStore(
+    (ubah) => {
+      const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+      mq.addEventListener("change", ubah);
+      return () => mq.removeEventListener("change", ubah);
+    },
+    () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    // Di server tidak ada preferensi yang bisa dibaca; anggap gerakan boleh,
+    // lalu klien mengoreksinya sendiri bila perlu.
+    () => false,
+  );
+}
 
 function keRecharts(labels: string[], deret: Deret[]) {
   return labels.map((l, i) => {
@@ -98,7 +127,8 @@ function keRecharts(labels: string[], deret: Deret[]) {
     // Titik yang tidak dikirim server menjadi `null` supaya garisnya PUTUS.
     // Versi sebelumnya menukarnya dengan 0, dan itu menggambar lembah palsu
     // yang terbaca sebagai "hari itu layanannya nol".
-    for (const d of deret) baris[d.name] = sah(d.points[i]) ? d.points[i] : null;
+    for (const d of deret)
+      baris[d.name] = sah(d.points[i]) ? d.points[i] : null;
     return baris;
   });
 }
@@ -139,7 +169,13 @@ function indeksAkhir(points: number[], panjang: number) {
  */
 function DefsGradien({ children }: { children: React.ReactNode }) {
   return (
-    <svg aria-hidden focusable="false" width={0} height={0} className="absolute">
+    <svg
+      aria-hidden
+      focusable="false"
+      width={0}
+      height={0}
+      className="absolute"
+    >
       <defs>{children}</defs>
     </svg>
   );
@@ -195,7 +231,10 @@ function KotakTooltip({
       <p className="eyebrow text-muted">{label}</p>
       <ul className="mt-2 space-y-1.5">
         {baris.map((b) => (
-          <li key={b.nama} className="flex items-baseline gap-2.5 text-[12.5px]">
+          <li
+            key={b.nama}
+            className="flex items-baseline gap-2.5 text-[12.5px]"
+          >
             <span
               aria-hidden
               className="size-2 shrink-0 translate-y-[-1px] rounded-full"
@@ -224,14 +263,18 @@ function buatTooltip(spek: SpekDeret[], format?: (n: number) => string) {
     const baris: BarisTooltip[] = [];
     for (const s of spek) {
       const item = p.payload.find(
-        (x) => String(x.name ?? "") === s.nama || String(x.dataKey ?? "") === s.kunci,
+        (x) =>
+          String(x.name ?? "") === s.nama ||
+          String(x.dataKey ?? "") === s.kunci,
       );
       const v = item?.value;
       if (!sah(v)) continue;
       baris.push({
         nama: s.nama,
         warna: s.warna,
-        teks: format ? format(v) : `${angka(v)}${s.satuan ? ` ${s.satuan}` : ""}`,
+        teks: format
+          ? format(v)
+          : `${angka(v)}${s.satuan ? ` ${s.satuan}` : ""}`,
       });
     }
     if (baris.length === 0) return null;
@@ -260,10 +303,16 @@ function BarisLegenda({
   return (
     <ul className="mb-3 flex flex-wrap items-center gap-x-5 gap-y-1.5">
       {item.map((d) => (
-        <li key={d.nama} className="flex items-center gap-2 text-[12px] text-muted">
+        <li
+          key={d.nama}
+          className="flex items-center gap-2 text-[12px] text-muted"
+        >
           <span
             aria-hidden
-            className={cn("shrink-0 rounded-full", d.blok ? "h-2.5 w-2.5" : "h-[3px] w-4")}
+            className={cn(
+              "shrink-0 rounded-full",
+              d.blok ? "h-2.5 w-2.5" : "h-[3px] w-4",
+            )}
             style={{ background: d.warna }}
           />
           {d.nama}
@@ -302,6 +351,7 @@ export function GrafikBatang({
   formatSumbu?: (n: number) => string;
 }) {
   const sid = useId().replace(/[^a-zA-Z0-9]/g, "");
+  const hematGerak = useHematGerak();
   if (kosong(labels, deret)) return <Kosong />;
 
   const data = keRecharts(labels, deret);
@@ -339,12 +389,26 @@ export function GrafikBatang({
     <div className="relative">
       <DefsGradien>
         {deret.flatMap((d, i) => [
-          <Gradien key={`b${i}`} id={`${sid}-b${i}`} warna={warnaDeret(i)} atas={0.3} bawah={0.8} />,
-          <Gradien key={`k${i}`} id={`${sid}-k${i}`} warna={warnaDeret(i)} atas={0.7} bawah={1} />,
+          <Gradien
+            key={`b${i}`}
+            id={`${sid}-b${i}`}
+            warna={warnaDeret(i)}
+            atas={0.3}
+            bawah={0.8}
+          />,
+          <Gradien
+            key={`k${i}`}
+            id={`${sid}-k${i}`}
+            warna={warnaDeret(i)}
+            atas={0.7}
+            bawah={1}
+          />,
         ])}
       </DefsGradien>
 
-      <BarisLegenda item={spek.map((s) => ({ nama: s.nama, warna: s.warna, blok: true }))} />
+      <BarisLegenda
+        item={spek.map((s) => ({ nama: s.nama, warna: s.warna, blok: true }))}
+      />
 
       <ResponsiveContainer width="100%" height={tinggi}>
         <BarChart
@@ -355,7 +419,11 @@ export function GrafikBatang({
         >
           <CartesianGrid stroke="var(--color-chart-grid)" vertical={false} />
           <XAxis dataKey="label" {...sumbu} interval="preserveStartEnd" />
-          <YAxis {...sumbu} tickFormatter={formatSumbu ?? format} width="auto" />
+          <YAxis
+            {...sumbu}
+            tickFormatter={formatSumbu ?? format}
+            width="auto"
+          />
           <Tooltip
             cursor={{ fill: "var(--color-soft)", opacity: 0.55 }}
             content={buatTooltip(spek, format)}
@@ -367,10 +435,14 @@ export function GrafikBatang({
               name={d.name}
               maxBarSize={22}
               radius={[3, 3, 0, 0]}
-              isAnimationActive={false}
+              isAnimationActive={!hematGerak}
+              animationDuration={DURASI_GAMBAR}
             >
               {data.map((_, j) => (
-                <Cell key={j} fill={`url(#${sid}-${tegas.has(j) ? "k" : "b"}${i})`} />
+                <Cell
+                  key={j}
+                  fill={`url(#${sid}-${tegas.has(j) ? "k" : "b"}${i})`}
+                />
               ))}
             </Bar>
           ))}
@@ -413,6 +485,7 @@ export function GrafikGaris({
   labelAmbang?: string;
 }) {
   const sid = useId().replace(/[^a-zA-Z0-9]/g, "");
+  const hematGerak = useHematGerak();
   if (kosong(labels, deret)) return <Kosong />;
 
   const data = keRecharts(labels, deret);
@@ -427,7 +500,13 @@ export function GrafikGaris({
     <div className="relative">
       <DefsGradien>
         {deret.map((d, i) => (
-          <Gradien key={i} id={`${sid}-a${i}`} warna={warnaDeret(i)} atas={0.26} bawah={0} />
+          <Gradien
+            key={i}
+            id={`${sid}-a${i}`}
+            warna={warnaDeret(i)}
+            atas={0.26}
+            bawah={0}
+          />
         ))}
       </DefsGradien>
 
@@ -472,7 +551,8 @@ export function GrafikGaris({
               stroke="none"
               fill={`url(#${sid}-a${i})`}
               connectNulls={false}
-              isAnimationActive={false}
+              isAnimationActive={!hematGerak}
+              animationDuration={DURASI_GAMBAR}
               activeDot={false}
             />
           ))}
@@ -488,7 +568,8 @@ export function GrafikGaris({
               strokeLinejoin="round"
               dot={false}
               connectNulls={false}
-              isAnimationActive={false}
+              isAnimationActive={!hematGerak}
+              animationDuration={DURASI_GAMBAR}
               activeDot={{
                 r: 4,
                 fill: warnaDeret(i),
@@ -561,6 +642,7 @@ export function GrafikCelah({
   formatSumbu?: (n: number) => string;
 }) {
   const sid = useId().replace(/[^a-zA-Z0-9]/g, "");
+  const hematGerak = useHematGerak();
   if (!atas || !bawah || kosong(labels, [atas, bawah])) return <Kosong />;
 
   const data = labels.map((l, i) => {
@@ -578,9 +660,19 @@ export function GrafikCelah({
   });
 
   const spek: SpekDeret[] = [
-    { kunci: "atasNilai", nama: atas.name, warna: WARNA_LANGIT, satuan: atas.unit },
+    {
+      kunci: "atasNilai",
+      nama: atas.name,
+      warna: WARNA_LANGIT,
+      satuan: atas.unit,
+    },
     { kunci: "celah", nama: namaCelah, warna: WARNA_CELAH, satuan: atas.unit },
-    { kunci: "dasar", nama: bawah.name, warna: warnaDeret(0), satuan: bawah.unit },
+    {
+      kunci: "dasar",
+      nama: bawah.name,
+      warna: warnaDeret(0),
+      satuan: bawah.unit,
+    },
   ];
 
   return (
@@ -588,8 +680,18 @@ export function GrafikCelah({
       <DefsGradien>
         {/* Dasar sengaja tenang dan celahnya pekat: yang jadi cerita adalah
             JARAKNYA, bukan tumpukan di bawahnya. */}
-        <Gradien id={`${sid}-dasar`} warna={warnaDeret(0)} atas={0.16} bawah={0.4} />
-        <Gradien id={`${sid}-celah`} warna={WARNA_CELAH} atas={0.8} bawah={0.42} />
+        <Gradien
+          id={`${sid}-dasar`}
+          warna={warnaDeret(0)}
+          atas={0.16}
+          bawah={0.4}
+        />
+        <Gradien
+          id={`${sid}-celah`}
+          warna={WARNA_CELAH}
+          atas={0.8}
+          bawah={0.42}
+        />
       </DefsGradien>
 
       <BarisLegenda
@@ -604,7 +706,11 @@ export function GrafikCelah({
         <ComposedChart data={data} margin={{ left: 0, right: 10, top: 10 }}>
           <CartesianGrid stroke="var(--color-chart-grid)" vertical={false} />
           <XAxis dataKey="label" {...sumbu} interval="preserveStartEnd" />
-          <YAxis {...sumbu} tickFormatter={formatSumbu ?? format} width="auto" />
+          <YAxis
+            {...sumbu}
+            tickFormatter={formatSumbu ?? format}
+            width="auto"
+          />
           <Tooltip
             cursor={{ stroke: "var(--color-line-strong)", strokeWidth: 1 }}
             content={buatTooltip(spek, format)}
@@ -618,7 +724,8 @@ export function GrafikCelah({
             stroke="none"
             fill={`url(#${sid}-dasar)`}
             connectNulls={false}
-            isAnimationActive={false}
+            isAnimationActive={!hematGerak}
+            animationDuration={DURASI_GAMBAR}
             activeDot={false}
           />
           <Area
@@ -629,7 +736,8 @@ export function GrafikCelah({
             stroke="none"
             fill={`url(#${sid}-celah)`}
             connectNulls={false}
-            isAnimationActive={false}
+            isAnimationActive={!hematGerak}
+            animationDuration={DURASI_GAMBAR}
             activeDot={false}
           />
           {/* Kedua tepi pita digambar sebagai GARIS. Tanpa ini batas atas dan
@@ -645,7 +753,8 @@ export function GrafikCelah({
             strokeLinejoin="round"
             dot={false}
             connectNulls={false}
-            isAnimationActive={false}
+            isAnimationActive={!hematGerak}
+            animationDuration={DURASI_GAMBAR}
             activeDot={{
               r: 4,
               fill: warnaDeret(0),
@@ -663,7 +772,8 @@ export function GrafikCelah({
             strokeLinejoin="round"
             dot={false}
             connectNulls={false}
-            isAnimationActive={false}
+            isAnimationActive={!hematGerak}
+            animationDuration={DURASI_GAMBAR}
             activeDot={{
               r: 4,
               fill: WARNA_LANGIT,
@@ -710,18 +820,30 @@ export function BarMini({
   tanda?: number;
   className?: string;
 }) {
-  const persen = sah(nilai) && maks > 0 ? Math.min(100, Math.max(0, (nilai / maks) * 100)) : null;
+  const persen =
+    sah(nilai) && maks > 0
+      ? Math.min(100, Math.max(0, (nilai / maks) * 100))
+      : null;
   const persenTanda =
-    sah(tanda) && maks > 0 ? Math.min(100, Math.max(0, (tanda / maks) * 100)) : null;
+    sah(tanda) && maks > 0
+      ? Math.min(100, Math.max(0, (tanda / maks) * 100))
+      : null;
 
   return (
     <span
       aria-hidden
-      className={cn("relative block h-1.5 w-full overflow-hidden rounded-full bg-soft", className)}
+      className={cn(
+        "relative block h-1.5 w-full overflow-hidden rounded-full bg-soft",
+        className,
+      )}
     >
       {persen === null ? null : (
         <span
-          className={cn("absolute inset-y-0 left-0 rounded-full", NADA_BAR[nada])}
+          className={cn(
+            "motion-aware absolute inset-y-0 left-0 rounded-full",
+            "transition-[width] duration-700 ease-out",
+            NADA_BAR[nada],
+          )}
           style={{ width: `${persen}%` }}
         />
       )}
