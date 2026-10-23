@@ -46,3 +46,5 @@ next-env.d.ts
 
 # Contoh konfigurasi WAJIB ikut ter-commit — README menyuruh menyalinnya.
 !.env.example
+
+# Panduan lokal untuk perkakas, tidak ikut dipublikasikan.
