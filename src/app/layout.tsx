@@ -1,15 +1,36 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, Inter, JetBrains_Mono } from "next/font/google";
+import { Fraunces, Public_Sans, JetBrains_Mono } from "next/font/google";
 import { skripTema } from "@/components/ui/tema";
 import "./globals.css";
 
-const display = Plus_Jakarta_Sans({
+/*
+ * Tiga peran huruf, dipilih untuk subjek ini.
+ *
+ * Fraunces — serif dengan sumbu `wonk` dan ukuran optis. Serif di produk
+ * utilitas itu tak terduga, dan justru membuat halaman terbaca seperti
+ * catatan publik yang manusiawi, bukan dasbor SaaS.
+ *
+ * Public Sans — dirancang untuk teks layanan pemerintah. Kejujuran
+ * kelembagaan tanpa terdengar dingin.
+ *
+ * JetBrains Mono — angka bertabular, dan bentuknya berdekatan dengan layar
+ * LCD meter yang muncul di seluruh produk.
+ */
+const display = Fraunces({
   subsets: ["latin"],
   variable: "--font-display-src",
-  weight: ["600", "700", "800"],
+  // Sumbu kustom hanya boleh dipakai saat weight dibiarkan variabel.
+  weight: "variable",
+  axes: ["SOFT", "WONK", "opsz"],
 });
-const sans = Inter({ subsets: ["latin"], variable: "--font-sans-src" });
-const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono-src" });
+const sans = Public_Sans({
+  subsets: ["latin"],
+  variable: "--font-sans-src",
+});
+const mono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono-src",
+});
 
 export const metadata: Metadata = {
   title: {

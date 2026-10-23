@@ -1,110 +1,128 @@
 @import "tailwindcss";
 
 /*
- * Sistem desain Jernih.
+ * Sistem desain Jernih — "membaca air".
  *
- * Satu sumber warna. JANGAN menulis hex di dalam komponen — pakai token di
- * sini lewat kelas Tailwind (`bg-canvas`, `text-ink`, `border-line`).
- * Alasannya bukan kerapian: tema gelap dikerjakan dengan menukar nilai token
- * di satu tempat, dan hex yang berserak di komponen tidak ikut berubah.
+ * Arahnya diambil dari arti namanya: jernih berarti tembus pandang. Halaman
+ * ini harus terasa seperti melihat MENEMBUS sesuatu yang bening ke arah
+ * angka, bukan layar gelap berisi kartu. Karena itu temanya terang lebih
+ * dulu — air adalah benda yang meneruskan cahaya.
  *
- * Warna ditulis dalam oklch supaya kecerahan antarwarna bisa dibandingkan
- * langsung — dua warna dengan L yang sama akan terasa sama terangnya, yang
- * tidak dijamin oleh hex.
+ * Satu sumber warna. JANGAN menulis hex di komponen: tema kedua dikerjakan
+ * dengan menukar nilai token di satu tempat, dan hex yang berserak tidak
+ * ikut berubah.
  */
 @theme {
-  /* ── Merek: biru-teal air jernih ────────────────────────────────── */
-  --color-brand-50: oklch(0.971 0.016 220);
-  --color-brand-100: oklch(0.941 0.036 220);
-  --color-brand-200: oklch(0.885 0.068 221);
-  --color-brand-300: oklch(0.806 0.104 222);
-  --color-brand-400: oklch(0.714 0.129 223);
-  --color-brand-500: oklch(0.628 0.142 224);
-  --color-brand-600: oklch(0.542 0.132 226);
-  --color-brand-700: oklch(0.453 0.112 228);
-  --color-brand-800: oklch(0.372 0.088 230);
-  --color-brand-900: oklch(0.296 0.062 232);
+  /* ── Merek: air di bawah cahaya ─────────────────────────────────── */
+  --color-brand-50: #eaf7fb;
+  --color-brand-100: #cdedf5;
+  --color-brand-200: #9fdcec;
+  --color-brand-300: #63c5de;
+  --color-brand-400: #26aecd;
+  --color-brand-500: #00a6c8;
+  --color-brand-600: #0b7fa0;
+  --color-brand-700: #0b4a5e;
+  --color-brand-800: #0a3647;
+  --color-brand-900: #08222c;
 
-  /* Aksen — HANYA penanda hidup (titik live, tutup logo). Jangan untuk
-     teks di latar terang: kontrasnya tidak cukup. */
-  --color-accent: oklch(0.78 0.145 205);
+  /* Aksen hidup. Hanya untuk data yang bergerak dan momen interaksi —
+     kalau dipakai di mana-mana ia berhenti berarti apa-apa. */
+  --color-accent: #00d1d1;
 
-  /* ── Permukaan & teks (nilai terang) ───────────────────────────── */
-  --color-canvas: oklch(0.985 0.004 240);
-  --color-surface: oklch(1 0 0);
-  --color-surface-2: oklch(0.972 0.006 240);
-  --color-soft: oklch(0.955 0.008 240);
-  --color-line: oklch(0.9 0.01 240);
-  --color-line-strong: oklch(0.82 0.014 240);
-  --color-ink: oklch(0.22 0.021 250);
-  --color-muted: oklch(0.52 0.019 250);
+  /* ── Permukaan: air jernih (terang) ─────────────────────────────── */
+  --color-canvas: #f4f8f9;
+  --color-surface: #ffffff;
+  --color-surface-2: #eaf1f3;
+  --color-soft: #e3edf0;
+  --color-line: #d3e2e6;
+  --color-line-strong: #b2cbd2;
+  --color-ink: #08222c;
+  --color-muted: #4e6a74;
 
-  /* Panel gelap untuk konsol petugas dan panel merek halaman masuk. */
-  --color-console: oklch(0.24 0.035 248);
-  --color-console-2: oklch(0.29 0.035 248);
-  --color-on-console: oklch(0.97 0.006 240);
-  --color-on-console-muted: oklch(0.72 0.02 240);
+  /*
+   * `silt` — pasir dasar sungai. Netral HANGAT di tengah palet dingin.
+   *
+   * Ini pilihan, bukan abu bawaan: tanpa pembanding hangat, biru-air tidak
+   * pernah terbaca benar-benar dingin. Dipakai untuk pita seksi berselang.
+   */
+  --color-silt: #e8e3d8;
+  --color-silt-2: #ded8ca;
 
-  /* ── Status — warna TIDAK PERNAH berdiri sendiri, selalu + kata ── */
-  --color-success: oklch(0.6 0.135 152);
-  --color-success-soft: oklch(0.95 0.04 152);
-  --color-warn: oklch(0.7 0.145 72);
-  --color-warn-soft: oklch(0.96 0.05 72);
-  --color-danger: oklch(0.56 0.19 25);
-  --color-danger-soft: oklch(0.95 0.045 25);
-  --color-info: oklch(0.6 0.12 240);
-  --color-info-soft: oklch(0.95 0.035 240);
+  /* Panel dalam untuk konsol petugas dan panel merek halaman masuk. */
+  --color-console: #08222c;
+  --color-console-2: #0b3443;
+  --color-on-console: #eaf4f7;
+  --color-on-console-muted: #8aa9b3;
 
-  /* ── Grafik — urutan tetap: seri yang sama selalu warna yang sama ── */
-  --color-chart-1: oklch(0.628 0.142 224);
-  --color-chart-2: oklch(0.72 0.13 192);
-  --color-chart-3: oklch(0.68 0.14 148);
-  --color-chart-4: oklch(0.74 0.145 72);
-  --color-chart-grid: oklch(0.91 0.008 240);
+  /* ── Status — TERPISAH dari aksen, selalu didampingi kata ───────── */
+  --color-success: #17855c;
+  --color-success-soft: #dff2e9;
+  --color-warn: #b9741a;
+  --color-warn-soft: #fbeeda;
+  --color-danger: #b23a32;
+  --color-danger-soft: #fae4e2;
+  --color-info: #0b7fa0;
+  --color-info-soft: #e0f1f7;
 
-  --font-display: var(--font-display-src), ui-sans-serif, system-ui, sans-serif;
+  /* ── Grafik — urutan tetap agar deret sama selalu warna sama ────── */
+  --color-chart-1: #00a6c8;
+  --color-chart-2: #0b4a5e;
+  --color-chart-3: #17855c;
+  --color-chart-4: #b9741a;
+  --color-chart-grid: #dbe7ea;
+
+  --font-display: var(--font-display-src), Georgia, serif;
   --font-sans: var(--font-sans-src), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-mono-src), ui-monospace, monospace;
 
-  --radius-input: 0.75rem;
-  --radius-card: 1rem;
-  --radius-sheet: 1.5rem;
-
-  --shadow-sheet: 0 20px 48px -12px oklch(0.22 0.02 250 / 0.22);
-  --shadow-pop: 0 8px 24px -8px oklch(0.22 0.02 250 / 0.18);
+  --radius-input: 0.625rem;
+  --radius-card: 0.875rem;
+  --radius-sheet: 1.25rem;
 }
 
 /*
- * Tema gelap adalah tema KEDUA yang dirancang, bukan inversi otomatis.
- * Nilai di bawah dipilih satu per satu; membalik kecerahan begitu saja
- * membuat warna status kehilangan arti.
+ * Tema kedua: air pada malam hari.
+ *
+ * Bukan inversi — nilai dipilih satu per satu. Status dinaikkan
+ * kecerahannya agar tetap terbaca, dan `silt` berubah menjadi lumpur gelap
+ * supaya pita seksi tetap punya pembanding hangat.
  */
 .dark {
-  --color-canvas: oklch(0.168 0.014 250);
-  --color-surface: oklch(0.208 0.018 250);
-  --color-surface-2: oklch(0.246 0.02 250);
-  --color-soft: oklch(0.268 0.02 250);
-  --color-line: oklch(0.318 0.02 250);
-  --color-line-strong: oklch(0.4 0.022 250);
-  --color-ink: oklch(0.958 0.005 250);
-  --color-muted: oklch(0.7 0.02 250);
+  --color-canvas: #05161c;
+  --color-surface: #0a2029;
+  --color-surface-2: #0e2b36;
+  --color-soft: #123441;
+  --color-line: #194351;
+  --color-line-strong: #2a5a6b;
+  --color-ink: #e6f2f5;
+  --color-muted: #8fadb7;
 
-  --color-console: oklch(0.198 0.022 248);
-  --color-console-2: oklch(0.248 0.024 248);
+  --color-silt: #1c211b;
+  --color-silt-2: #242a21;
 
-  /* Status dinaikkan kecerahannya supaya tetap terbaca di latar gelap. */
-  --color-success: oklch(0.72 0.145 152);
-  --color-success-soft: oklch(0.3 0.055 152);
-  --color-warn: oklch(0.79 0.15 72);
-  --color-warn-soft: oklch(0.32 0.06 72);
-  --color-danger: oklch(0.68 0.175 25);
-  --color-danger-soft: oklch(0.32 0.07 25);
-  --color-info: oklch(0.72 0.12 240);
-  --color-info-soft: oklch(0.3 0.05 240);
+  --color-brand-50: #0a2731;
+  --color-brand-100: #0d3745;
+  --color-brand-200: #14566b;
+  --color-brand-300: #1c7793;
+  --color-brand-400: #2b9cba;
+  --color-brand-500: #35bcd9;
+  --color-brand-600: #5fcfe6;
+  --color-brand-700: #92e0ef;
 
-  --color-chart-grid: oklch(0.32 0.016 250);
-  --shadow-sheet: 0 20px 48px -12px oklch(0 0 0 / 0.55);
-  --shadow-pop: 0 8px 24px -8px oklch(0 0 0 / 0.45);
+  --color-success: #3dba87;
+  --color-success-soft: #0e3729;
+  --color-warn: #d99c45;
+  --color-warn-soft: #3a2c12;
+  --color-danger: #e0695f;
+  --color-danger-soft: #3c1c19;
+  --color-info: #4fb9d8;
+  --color-info-soft: #0c303c;
+
+  --color-chart-1: #35bcd9;
+  --color-chart-2: #7fd6c4;
+  --color-chart-3: #3dba87;
+  --color-chart-4: #d99c45;
+  --color-chart-grid: #17404e;
 }
 
 @layer base {
@@ -120,7 +138,13 @@
     color: var(--color-ink);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
-    text-rendering: optimizeLegibility;
+  }
+
+  /* Judul panjang tidak boleh menyisakan satu kata sendirian di baris akhir. */
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
   }
 
   /* Angka live tidak boleh bergoyang lebarnya saat berubah. */
@@ -128,10 +152,9 @@
     font-variant-numeric: tabular-nums;
   }
 
-  /* Cincin fokus seragam — syarat aksesibilitas, jangan dimatikan per komponen. */
   :focus-visible {
     outline: 2px solid var(--color-brand-500);
-    outline-offset: 2px;
+    outline-offset: 3px;
     border-radius: 0.25rem;
   }
 
@@ -142,22 +165,44 @@
 }
 
 @layer utilities {
-  /* Kicker di atas judul atau angka. SELALU huruf besar dan singkat. */
   .eyebrow {
     font-size: 0.6875rem;
     font-weight: 600;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.16em;
     text-transform: uppercase;
   }
 
-  /* Dipakai LcdDisplay agar meniru layar meter, bukan teks aplikasi. */
+  /* Layar LCD meter — meniru perangkat, bukan gaya aplikasi. */
   .lcd-screen {
-    background: oklch(0.82 0.1 140);
-    color: oklch(0.24 0.06 150);
-    text-shadow: 0 0 1px oklch(0.24 0.06 150 / 0.35);
+    background: #b8d94e;
+    color: #1d2c08;
+    box-shadow:
+      inset 0 2px 10px rgba(0, 0, 0, 0.22),
+      inset 0 0 0 1px rgba(0, 0, 0, 0.1);
   }
 
-  /* Hormati pengguna yang mematikan animasi di sistemnya. */
+  /*
+   * Garis takar seperti pada gelas ukur.
+   *
+   * Dipakai sebagai pembatas seksi dan di sisi kolom air. Perangkat
+   * struktural ini diambil dari dunia subjeknya — mengukur air — bukan
+   * hiasan yang bisa ditempel di halaman mana pun.
+   */
+  .takar {
+    background-image: repeating-linear-gradient(
+      to right,
+      var(--color-line) 0 1px,
+      transparent 1px 0.75rem
+    );
+  }
+  .takar-tegak {
+    background-image: repeating-linear-gradient(
+      to bottom,
+      var(--color-line) 0 1px,
+      transparent 1px 0.75rem
+    );
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .motion-aware,
     .motion-aware * {
@@ -174,8 +219,8 @@
     transform: scale(1);
   }
   50% {
-    opacity: 0.45;
-    transform: scale(0.82);
+    opacity: 0.4;
+    transform: scale(0.8);
   }
 }
 
@@ -185,5 +230,22 @@
   }
   to {
     background-position: 2rem 0;
+  }
+}
+
+/* Permukaan air bergoyang pelan di kolom hero. */
+@keyframes riak {
+  0%,
+  100% {
+    transform: translateX(-25%) scaleY(1);
+  }
+  50% {
+    transform: translateX(-20%) scaleY(1.35);
+  }
+}
+
+@keyframes naik {
+  from {
+    height: 0%;
   }
 }
