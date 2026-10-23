@@ -37,7 +37,7 @@ export function TombolTema({ className }: { className?: string }) {
 
   function ganti() {
     const baru = !gelap;
-    document.documentElement.classList.toggle("dark", baru);
+    pasangTema(baru);
     try {
       localStorage.setItem(KUNCI, baru ? "gelap" : "terang");
     } catch {
@@ -58,11 +58,33 @@ export function TombolTema({ className }: { className?: string }) {
   );
 }
 
+/**
+ * Memasang tema ke elemen akar.
+ *
+ * Menulis DUA penanda, dan keduanya diperlukan:
+ *
+ * - kelas `dark` — yang dibaca Tailwind untuk menukar token warna.
+ * - `data-theme` — penanda EKSPLISIT untuk tema terang maupun gelap.
+ *
+ * Tanpa `data-theme`, tema terang tidak meninggalkan jejak apa pun di DOM:
+ * ia hanya berarti "kelas dark tidak ada". Komponen pihak ketiga yang mencari
+ * tema lalu tidak menemukannya akan jatuh ke `prefers-color-scheme` —
+ * sehingga peta MapLibre tetap memakai basemap hitam padahal halamannya
+ * sudah terang, karena sistem operasi penggunanya gelap.
+ */
+function pasangTema(gelap: boolean): void {
+  const akar = document.documentElement;
+  akar.classList.toggle("dark", gelap);
+  akar.dataset.theme = gelap ? "dark" : "light";
+}
+
 /** Dijalankan sebelum render pertama; mencegah kedip tema saat muat halaman. */
 export const skripTema = `
 (function(){try{
   var t=localStorage.getItem("${KUNCI}");
   var g=t?t==="gelap":matchMedia("(prefers-color-scheme: dark)").matches;
-  if(g)document.documentElement.classList.add("dark");
+  var r=document.documentElement;
+  if(g)r.classList.add("dark");
+  r.dataset.theme=g?"dark":"light";
 }catch(e){}})();
 `;

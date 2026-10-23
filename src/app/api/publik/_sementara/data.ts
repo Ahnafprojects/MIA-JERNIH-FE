@@ -15,47 +15,110 @@
  * sebagai karangan.
  */
 
+import type { Titik, ZonaStatus } from "@/types/publik";
+
 const SEKARANG = () => new Date();
 
 const jamLalu = (j: number) =>
   new Date(SEKARANG().getTime() - j * 3600_000).toISOString();
 
-export const ZONA = [
+/**
+ * Batas wilayah layanan, URUTAN [bujur, lintang] — bukan sebaliknya.
+ *
+ * Sementara sampai BE#10 mengirim GeoJSON sungguhan dari basis data wilayah.
+ * Bentuknya disederhanakan tapi letaknya benar: keempatnya duduk di cekungan
+ * Bandung, dan zona yang bertetangga memang berbagi sisi (Bandung Timur
+ * menempel ke Cileunyi) supaya petanya terbaca sebagai pembagian wilayah,
+ * bukan empat kotak yang mengambang.
+ */
+const BATAS: Record<string, Titik[]> = {
+  // Bandung Timur — Arcamanik, Ujungberung, Gedebage, Cibiru.
+  z1: [
+    [107.638, -6.892],
+    [107.696, -6.883],
+    [107.734, -6.909],
+    [107.738, -6.953],
+    [107.694, -6.976],
+    [107.647, -6.964],
+    [107.626, -6.926],
+  ],
+  // Cileunyi — menempel di sisi timur Bandung Timur. Dua titik terakhirnya
+  // SAMA PERSIS dengan sisi timur z1; kalau salah satunya diubah, yang lain
+  // ikut diubah, atau akan muncul celah putih di antara dua zona.
+  z2: [
+    [107.734, -6.909],
+    [107.78, -6.891],
+    [107.826, -6.912],
+    [107.83, -6.956],
+    [107.786, -6.982],
+    [107.742, -6.97],
+    [107.738, -6.953],
+  ],
+  // Cimahi — terpisah di barat cekungan.
+  z3: [
+    [107.486, -6.838],
+    [107.546, -6.828],
+    [107.58, -6.858],
+    [107.576, -6.906],
+    [107.53, -6.93],
+    [107.488, -6.908],
+    [107.474, -6.872],
+  ],
+  // Sumedang — paling luas, di timur laut.
+  z4: [
+    [107.858, -6.772],
+    [107.948, -6.752],
+    [108.016, -6.808],
+    [108.006, -6.886],
+    [107.932, -6.922],
+    [107.862, -6.88],
+    [107.846, -6.822],
+  ],
+};
+
+/** Cincin GeoJSON wajib tertutup: titik terakhir harus sama dengan yang pertama. */
+const tutup = (cincin: Titik[]): Titik[] => [...cincin, cincin[0]];
+
+export const ZONA: ZonaStatus[] = [
   {
     id: "z1",
     nama: "Bandung Timur",
-    status: "gangguan" as const,
+    status: "gangguan",
     pelangganTerdampak: 312,
     sejak: jamLalu(5),
     perkiraanPulih: new Date(SEKARANG().getTime() + 3 * 3600_000).toISOString(),
     keterangan: "Perbaikan pipa induk di Jl. Soekarno-Hatta.",
+    batas: tutup(BATAS.z1),
   },
   {
     id: "z2",
     nama: "Cileunyi",
-    status: "normal" as const,
+    status: "normal",
     pelangganTerdampak: 0,
     sejak: null,
     perkiraanPulih: null,
     keterangan: null,
+    batas: tutup(BATAS.z2),
   },
   {
     id: "z3",
     nama: "Cimahi",
-    status: "perbaikan" as const,
+    status: "perbaikan",
     pelangganTerdampak: 74,
     sejak: jamLalu(22),
     perkiraanPulih: new Date(SEKARANG().getTime() + 9 * 3600_000).toISOString(),
     keterangan: "Penggantian meter induk, aliran bergilir.",
+    batas: tutup(BATAS.z3),
   },
   {
     id: "z4",
     nama: "Sumedang",
-    status: "normal" as const,
+    status: "normal",
     pelangganTerdampak: 0,
     sejak: null,
     perkiraanPulih: null,
     keterangan: null,
+    batas: tutup(BATAS.z4),
   },
 ];
 
@@ -66,7 +129,9 @@ export const TIKET = [
     status: "DIPROSES" as const,
     zona: "Cimahi",
     dibuatPada: jamLalu(6),
-    slaJatuhTempo: new Date(SEKARANG().getTime() + 1.6 * 3600_000).toISOString(),
+    slaJatuhTempo: new Date(
+      SEKARANG().getTime() + 1.6 * 3600_000,
+    ).toISOString(),
     slaTerlampaui: false,
     kronologi: [
       { waktu: jamLalu(6), judul: "Laporan diterima" },
@@ -136,11 +201,31 @@ export function kinerja(hari: number) {
       },
     ],
     perKategori: [
-      { kategori: "Kebocoran pipa", masuk: 61, selesai: 58, ketepatanPct: 95.1 },
-      { kategori: "Air tidak mengalir", masuk: 44, selesai: 41, ketepatanPct: 90.9 },
-      { kategori: "Air keruh / berbau", masuk: 33, selesai: 31, ketepatanPct: 93.9 },
+      {
+        kategori: "Kebocoran pipa",
+        masuk: 61,
+        selesai: 58,
+        ketepatanPct: 95.1,
+      },
+      {
+        kategori: "Air tidak mengalir",
+        masuk: 44,
+        selesai: 41,
+        ketepatanPct: 90.9,
+      },
+      {
+        kategori: "Air keruh / berbau",
+        masuk: 33,
+        selesai: 31,
+        ketepatanPct: 93.9,
+      },
       { kategori: "Tekanan lemah", masuk: 28, selesai: 25, ketepatanPct: 85.7 },
-      { kategori: "Meter / keypad rusak", masuk: 18, selesai: 16, ketepatanPct: 88.9 },
+      {
+        kategori: "Meter / keypad rusak",
+        masuk: 18,
+        selesai: 16,
+        ketepatanPct: 88.9,
+      },
     ],
     tren: {
       labels,

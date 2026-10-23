@@ -12,9 +12,11 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { KolomAir } from "./_bagian/kolom-air";
+import { VideoHero } from "./_bagian/video-hero";
 import { PitaStatistik } from "./_bagian/pita-statistik";
 import { MeterPeraga } from "./_bagian/meter-peraga";
 import { Faq } from "./_bagian/faq";
+import { Muncul } from "./_bagian/muncul";
 import { angka, rupiah } from "@/lib/format";
 import { TARIF_PER_LITER, PAKET } from "@/data/paket";
 
@@ -64,26 +66,31 @@ const LANGKAH = [
 export default function Landing() {
   return (
     <>
-      {/* ── Hero: kolom air sebagai thesis ───────────────────────────── */}
+      {/* ── Hero: klip pembuka sebagai thesis ────────────────────────── */}
       <section className="relative overflow-hidden">
-        <div className="mx-auto grid max-w-6xl items-center gap-14 px-5 pt-14 pb-20 lg:grid-cols-[1fr_auto] lg:gap-20 lg:pt-20">
+        <div className="mx-auto grid max-w-6xl items-center gap-14 px-5 pt-14 pb-20 lg:grid-cols-[1fr_1.05fr] lg:gap-16 lg:pt-20">
+          {/*
+            Urutan masuk hero. Jenjangnya ~60ms dan arahnya satu — naik 12px
+            sambil memudar masuk — supaya gerakannya MENGARAHKAN urutan baca,
+            bukan merayakan pemuatan halaman. Sekali jalan, tanpa ulangan.
+          */}
           <div className="max-w-xl">
-            <p className="eyebrow text-brand-600">Air prabayar · PDAM</p>
+            <p className="masuk eyebrow text-brand-600">Air prabayar · PDAM</p>
 
-            <h1 className="mt-5 font-display text-[clamp(2.6rem,6.4vw,4.4rem)] leading-[0.98] font-semibold tracking-[-0.025em]">
+            <h1 className="masuk mt-5 font-display text-[clamp(2.6rem,6.4vw,4.4rem)] leading-[0.98] font-semibold tracking-[-0.025em] [--tunda:60ms]">
               Airnya jernih.
               <span className="mt-1 block text-brand-600">
                 Layanannya juga.
               </span>
             </h1>
 
-            <p className="mt-7 max-w-md text-[17px] leading-[1.65] text-muted">
+            <p className="masuk mt-7 max-w-md text-[17px] leading-[1.65] text-muted [--tunda:120ms]">
               Warga PDAM biasanya baru tahu pemakaian airnya di akhir bulan,
               lewat angka yang tak bisa diperiksa. Di sini angkanya sama persis
               untuk warga dan petugas — dan bergerak sekarang juga.
             </p>
 
-            <div className="mt-9 flex flex-wrap items-center gap-x-3 gap-y-4">
+            <div className="masuk mt-9 flex flex-wrap items-center gap-x-3 gap-y-4 [--tunda:180ms]">
               <Link
                 href="/masuk"
                 className="group inline-flex h-12 items-center gap-2 rounded-full bg-brand-900 px-7 font-semibold text-white transition-colors hover:bg-brand-700 dark:bg-brand-500 dark:text-brand-900 dark:hover:bg-brand-400"
@@ -103,7 +110,9 @@ export default function Landing() {
             </div>
           </div>
 
-          <KolomAir />
+          <div className="masuk [--tunda:240ms]">
+            <VideoHero />
+          </div>
         </div>
 
         {/* Garis takar menutup hero — pembatas yang mengulang bahasa alat ukur. */}
@@ -111,10 +120,12 @@ export default function Landing() {
       </section>
 
       {/* ── Angka jaringan, bukan kartu ──────────────────────────────── */}
-      <PitaStatistik />
+      <Muncul>
+        <PitaStatistik />
+      </Muncul>
 
       {/* ── Empat pintu transparansi ─────────────────────────────────── */}
-      <section className="mx-auto max-w-6xl px-5 py-24">
+      <Muncul sebagai="section" className="mx-auto max-w-6xl px-5 py-24">
         <div className="max-w-2xl">
           <p className="eyebrow text-muted">Tanpa akun</p>
           <h2 className="mt-3 font-display text-[clamp(1.9rem,3.6vw,2.8rem)] leading-tight font-semibold tracking-[-0.02em]">
@@ -136,8 +147,15 @@ export default function Landing() {
             <li key={t.href}>
               <Link
                 href={t.href}
-                className="group grid grid-cols-[2.5rem_1fr_auto] items-baseline gap-x-4 gap-y-1 border-b border-line py-7 transition-colors hover:bg-surface sm:grid-cols-[3.5rem_16rem_1fr_auto] sm:gap-x-8"
+                className="group relative grid grid-cols-[2.5rem_1fr_auto] items-baseline gap-x-4 gap-y-1 border-b border-line py-7 transition-colors hover:bg-surface sm:grid-cols-[3.5rem_16rem_1fr_auto] sm:gap-x-8"
               >
+                {/* Garis bawah melebar dari kiri — arah yang sama dengan
+                    arah baca dan dengan panah di ujung kanan, jadi dua
+                    gerakan kecil ini menunjuk ke tempat yang sama. */}
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute -bottom-px left-0 h-px w-full origin-left scale-x-0 bg-brand-500 transition-transform duration-[380ms] ease-out group-hover:scale-x-100 group-focus-visible:scale-x-100"
+                />
                 <span className="tabular font-mono text-[13px] text-brand-400">
                   {String(i + 1).padStart(2, "0")}
                 </span>
@@ -156,10 +174,10 @@ export default function Landing() {
             </li>
           ))}
         </ul>
-      </section>
+      </Muncul>
 
       {/* ── Meter: benda nyata di balik angka ────────────────────────── */}
-      <section className="border-y border-line bg-silt dark:bg-silt">
+      <Muncul sebagai="section" className="border-y border-line bg-silt dark:bg-silt">
         <div className="mx-auto grid max-w-6xl items-center gap-14 px-5 py-24 lg:grid-cols-[1fr_auto]">
           <div className="max-w-lg">
             <p className="eyebrow text-brand-700 dark:text-brand-500">
@@ -191,12 +209,21 @@ export default function Landing() {
             </dl>
           </div>
 
-          <MeterPeraga />
+          {/*
+            Kolom air berdampingan dengan meter. Di hero ia mubazir — klip
+            videonya menampilkan tabung yang sama. Di sini ia bermakna: seksi
+            ini memang tentang benda fisik di balik angkanya, dan kolom ini
+            satu-satunya yang angkanya BENAR-BENAR bergerak, bukan rekaman.
+          */}
+          <div className="flex flex-wrap items-end justify-center gap-x-10 gap-y-12">
+            <KolomAir />
+            <MeterPeraga />
+          </div>
         </div>
-      </section>
+      </Muncul>
 
       {/* ── Cara kerja ───────────────────────────────────────────────── */}
-      <section className="mx-auto max-w-6xl px-5 py-24">
+      <Muncul sebagai="section" className="mx-auto max-w-6xl px-5 py-24">
         <h2 className="max-w-xl font-display text-[clamp(1.9rem,3.6vw,2.8rem)] leading-tight font-semibold tracking-[-0.02em]">
           Dari kode jadi air, empat langkah
         </h2>
@@ -216,10 +243,10 @@ export default function Landing() {
             </li>
           ))}
         </ol>
-      </section>
+      </Muncul>
 
       {/* ── Paket ────────────────────────────────────────────────────── */}
-      <section className="border-t border-line bg-surface">
+      <Muncul sebagai="section" className="border-t border-line bg-surface">
         <div className="mx-auto max-w-6xl px-5 py-24">
           <div className="flex flex-wrap items-end justify-between gap-6">
             <h2 className="max-w-md font-display text-[clamp(1.9rem,3.6vw,2.8rem)] leading-tight font-semibold tracking-[-0.02em]">
@@ -268,17 +295,17 @@ export default function Landing() {
             </table>
           </div>
         </div>
-      </section>
+      </Muncul>
 
       {/* ── FAQ ──────────────────────────────────────────────────────── */}
-      <section className="border-t border-line">
+      <Muncul sebagai="section" className="border-t border-line">
         <div className="mx-auto grid max-w-6xl gap-12 px-5 py-24 lg:grid-cols-[18rem_1fr]">
           <h2 className="font-display text-[clamp(1.9rem,3.6vw,2.6rem)] leading-tight font-semibold tracking-[-0.02em]">
             Yang sering ditanyakan
           </h2>
           <Faq />
         </div>
-      </section>
+      </Muncul>
     </>
   );
 }
