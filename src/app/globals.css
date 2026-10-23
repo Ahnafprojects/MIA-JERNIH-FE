@@ -40,13 +40,12 @@
   --color-muted: #4e6a74;
 
   /*
-   * `silt` — pasir dasar sungai. Netral HANGAT di tengah palet dingin.
-   *
-   * Ini pilihan, bukan abu bawaan: tanpa pembanding hangat, biru-air tidak
-   * pernah terbaca benar-benar dingin. Dipakai untuk pita seksi berselang.
+   * Pita seksi berselang. Tetap di keluarga biru-air, hanya lebih pekat —
+   * palet dijaga satu keluarga supaya halaman terbaca sebagai satu benda,
+   * bukan tempelan dua warna yang tak berhubungan.
    */
-  --color-silt: #e8e3d8;
-  --color-silt-2: #ded8ca;
+  --color-silt: #dfebee;
+  --color-silt-2: #cfe0e5;
 
   /* Panel dalam untuk konsol petugas dan panel merek halaman masuk. */
   --color-console: #08222c;
@@ -97,8 +96,8 @@
   --color-ink: #e6f2f5;
   --color-muted: #8fadb7;
 
-  --color-silt: #1c211b;
-  --color-silt-2: #242a21;
+  --color-silt: #081d25;
+  --color-silt-2: #0b2630;
 
   --color-brand-50: #0a2731;
   --color-brand-100: #0d3745;
