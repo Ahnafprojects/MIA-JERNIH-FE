@@ -24,6 +24,15 @@ export function nilaiKpi(kpi: Kpi[], key: string): number | null {
 
 export type StatusZona = "normal" | "gangguan" | "perbaikan";
 
+/**
+ * Satu titik batas zona dalam urutan GeoJSON: **[bujur, lintang]**.
+ *
+ * Urutannya memang terbalik dari kebiasaan menyebut "lintang, bujur". Kalau
+ * tertukar tidak ada galat apa pun yang muncul — petanya hanya menaruh Bandung
+ * di lepas pantai Somalia, dan itu baru ketahuan saat halamannya dibuka.
+ */
+export type Titik = [number, number];
+
 export interface ZonaStatus {
   id: string;
   nama: string;
@@ -32,6 +41,14 @@ export interface ZonaStatus {
   sejak: string | null;
   perkiraanPulih: string | null;
   keterangan: string | null;
+  /**
+   * Cincin batas wilayah zona, tertutup (titik pertama = titik terakhir).
+   *
+   * `null` bila backend belum mengirim petanya. Halaman WAJIB tetap utuh tanpa
+   * ini: daftar zona berbentuk teks adalah sumber utamanya, peta hanya lapisan
+   * tambahan di atasnya.
+   */
+  batas: Titik[] | null;
 }
 
 export interface StatusLayanan {
