@@ -24,7 +24,7 @@ export default function LayoutPublik({
 }) {
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="sticky top-0 z-40 border-b border-line bg-canvas/85 backdrop-blur">
+      <header className="sticky top-0 z-40 border-b border-line bg-canvas/90 backdrop-blur-sm">
         <div className="mx-auto flex h-16 max-w-6xl items-center gap-6 px-5">
           <Link href="/" aria-label="Jernih — beranda">
             <MerekJernih sub="Transparansi Layanan Air" />
@@ -35,7 +35,7 @@ export default function LayoutPublik({
               <Link
                 key={m.href}
                 href={m.href}
-                className="rounded-lg px-3 py-2 text-[13.5px] font-medium text-muted hover:bg-soft hover:text-ink"
+                className="border-b-2 border-transparent px-3 py-1.5 text-[14px] font-medium text-muted transition-colors hover:border-brand-400 hover:text-ink"
               >
                 {m.teks}
               </Link>
@@ -43,10 +43,10 @@ export default function LayoutPublik({
           </nav>
 
           <div className="ml-auto flex items-center gap-1 md:ml-0">
-            <TombolTema className="rounded-lg p-2.5 text-muted hover:bg-soft hover:text-ink" />
+            <TombolTema className="rounded-full p-2.5 text-muted transition-colors hover:bg-soft hover:text-ink" />
             <Link
               href="/masuk"
-              className="rounded-input bg-brand-600 px-4 py-2.5 text-[13.5px] font-semibold text-white hover:bg-brand-700"
+              className="rounded-full bg-brand-900 px-5 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-brand-700 dark:bg-brand-500 dark:text-brand-900 dark:hover:bg-brand-400"
             >
               Masuk
             </Link>
@@ -71,7 +71,7 @@ export default function LayoutPublik({
 
       <main className="flex-1">{children}</main>
 
-      <footer className="border-t border-line bg-surface">
+      <footer className="border-t border-line bg-silt dark:bg-silt">
         <div className="mx-auto grid max-w-6xl gap-8 px-5 py-10 sm:grid-cols-3">
           <div>
             <MerekJernih />

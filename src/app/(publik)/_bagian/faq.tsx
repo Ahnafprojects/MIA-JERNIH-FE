@@ -23,12 +23,12 @@ const ISI = [
 
 export function Faq() {
   return (
-    <div className="mt-8 divide-y divide-line border-y border-line">
+    <div className="divide-y divide-line border-t border-line">
       {ISI.map((f) => (
         // <details> dipakai agar accordion tetap berfungsi tanpa JavaScript
         // dan sudah bisa dinavigasi papan ketik tanpa kode tambahan.
-        <details key={f.t} className="group py-4">
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-display text-[15px] font-bold">
+        <details key={f.t} className="group py-5">
+          <summary className="flex cursor-pointer list-none items-baseline justify-between gap-5 font-display text-[1.05rem] font-semibold tracking-[-0.01em]">
             {f.t}
             <span
               aria-hidden
@@ -37,7 +37,9 @@ export function Faq() {
               +
             </span>
           </summary>
-          <p className="mt-2.5 text-[14px] leading-relaxed text-muted">{f.j}</p>
+          <p className="mt-3 max-w-2xl text-[14.5px] leading-[1.7] text-muted">
+            {f.j}
+          </p>
         </details>
       ))}
     </div>

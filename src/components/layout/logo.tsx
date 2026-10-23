@@ -51,7 +51,7 @@ export function MerekJernih({
     <span className={cn("flex items-center gap-2.5", className)}>
       <LogoJernih size={30} className="text-brand-500" />
       <span className="leading-tight">
-        <span className="block font-display text-[17px] font-extrabold tracking-tight">
+        <span className="block font-display text-[19px] font-semibold tracking-[-0.02em]">
           Jernih
         </span>
         {sub ? (
