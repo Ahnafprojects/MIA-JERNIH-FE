@@ -7,11 +7,21 @@ import { Button } from "./button";
  * halaman putih tanpa penjelasan terbaca sebagai fitur yang rusak.
  */
 
+/**
+ * Rangka pemuatan.
+ *
+ * Di-render sebagai `<span>` ber-`block`, BUKAN `<div>`. Alasannya bukan
+ * selera: skeleton sering dipakai di dalam `<p>` sebagai pengganti angka,
+ * dan `<div>` di dalam `<p>` adalah HTML tidak sah — React akan menutup
+ * paragrafnya lebih awal saat hidrasi, isinya tidak cocok dengan hasil
+ * server, dan seluruh pohon komponen itu di-render ulang di klien.
+ * `<span>` sah di mana pun.
+ */
 export function Skeleton({ className }: { className?: string }) {
   return (
-    <div
+    <span
       aria-hidden
-      className={cn("animate-pulse rounded-lg bg-soft", className)}
+      className={cn("block animate-pulse rounded-lg bg-soft", className)}
     />
   );
 }
