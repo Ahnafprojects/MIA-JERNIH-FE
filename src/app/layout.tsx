@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Inter, JetBrains_Mono } from "next/font/google";
+import { skripTema } from "@/components/ui/tema";
 import "./globals.css";
 
 const display = Plus_Jakarta_Sans({
@@ -25,6 +26,14 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="id" suppressHydrationWarning>
+      <head>
+        {/*
+          Tema dipasang SEBELUM render pertama. Tanpa ini halaman berkedip
+          putih sesaat sebelum React jalan — paling kentara di tema gelap, dan
+          persis itu yang akan dilihat juri saat membuka situsnya.
+        */}
+        <script dangerouslySetInnerHTML={{ __html: skripTema }} />
+      </head>
       <body
         className={`${display.variable} ${sans.variable} ${mono.variable} antialiased`}
       >
