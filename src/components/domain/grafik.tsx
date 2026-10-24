@@ -6,7 +6,6 @@ import {
   useLayoutEffect,
   useRef,
   useState,
-  useSyncExternalStore,
 } from "react";
 import {
   Area,
@@ -27,6 +26,7 @@ import {
 import { KeadaanKosong } from "@/components/ui/keadaan";
 import { angka } from "@/lib/format";
 import { cn } from "@/lib/cn";
+import { useHematGerak } from "@/lib/hemat-gerak";
 
 /*
  * Grafik Jernih.
@@ -108,26 +108,6 @@ const sah = (v: unknown): v is number =>
 /** Berapa lama grafik menggambar ulang dirinya saat datanya berganti. */
 const DURASI_GAMBAR = 650;
 
-/**
- * `true` bila pengguna meminta gerakan dikurangi.
- *
- * Dibaca lewat `useSyncExternalStore`, bukan `useState` + effect: nilainya
- * sudah benar pada render pertama sehingga grafik tidak sempat memulai
- * animasi lalu dibatalkan sepersekian detik kemudian.
- */
-function useHematGerak(): boolean {
-  return useSyncExternalStore(
-    (ubah) => {
-      const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-      mq.addEventListener("change", ubah);
-      return () => mq.removeEventListener("change", ubah);
-    },
-    () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
-    // Di server tidak ada preferensi yang bisa dibaca; anggap gerakan boleh,
-    // lalu klien mengoreksinya sendiri bila perlu.
-    () => false,
-  );
-}
 
 /**
  * `useLayoutEffect` di peramban, `useEffect` di server.
