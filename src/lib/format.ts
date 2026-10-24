@@ -21,9 +21,16 @@ export const liter = (n: number, desimal = 2): string => `${angka(n, desimal)} L
 /** `2,4 L/mnt` */
 export const debit = (n: number): string => `${angka(n, 1)} L/mnt`;
 
-/** `Rp 37.500` — rupiah tidak pernah pakai desimal di UI ini. */
-export const rupiah = (n: number): string =>
-  `Rp ${angka(Math.round(n))}`;
+/**
+ * `Rp 37.500`
+ *
+ * Nominal transaksi tidak pernah berdesimal, jadi bawaannya dibulatkan.
+ * TAPI tarif per liter bernilai pecahan (Rp 7,5/L) — membulatkannya
+ * menampilkan "Rp 8" dan membuat total di layar tidak cocok dengan
+ * perhitungan mana pun. Untuk nilai semacam itu isi `desimal`.
+ */
+export const rupiah = (n: number, desimal = 0): string =>
+  `Rp ${angka(desimal === 0 ? Math.round(n) : n, desimal)}`;
 
 /** `1.840 m³` — agregat jaringan di konsol boleh m³. 1 m³ = 1.000 L. */
 export const meterKubik = (literNilai: number, desimal = 0): string =>

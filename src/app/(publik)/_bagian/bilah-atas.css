@@ -1,0 +1,47 @@
+/*
+ * Dua hal yang tidak bisa diurus dari kelas utilitas pada komponennya.
+ * Berkas ini hanya diimpor oleh kerangka halaman publik.
+ */
+
+/*
+ * Bilah atas menempel setinggi 4rem. Tanpa ini, menekan tautan dalam
+ * halaman membawa judul tujuannya tepat KE BALIK bilah: peramban
+ * menggulirnya ke tepi atas viewport, bukan ke tepi atas ruang yang
+ * tersisa. Ditulis sebagai `scroll-padding` pada akar — satu-satunya
+ * tempat yang dibaca peramban untuk penggeseran fragmen, dan juga
+ * dipakai oleh `scrollIntoView({ block: "start" })`.
+ */
+html {
+  scroll-padding-top: 5rem;
+}
+
+/*
+ * Tanpa JavaScript lacinya tidak akan pernah bisa dibuka. Kalau dibiarkan
+ * apa adanya, seluruh navigasi situs lenyap begitu skripnya gagal dimuat.
+ *
+ * Penandanya dipasang oleh satu baris skrip sebaris di kerangka publik yang
+ * jalan SEBELUM bilahnya diurai, jadi tidak ada kedip bagi pengunjung yang
+ * JavaScript-nya hidup. Begitu penanda itu tidak ada, isi laci dialirkan
+ * kembali ke bawah bilah sebagai daftar biasa dan tombol pembukanya — yang
+ * tidak akan menanggapi apa pun — disembunyikan. Tidak ada tombol mati.
+ *
+ * Bilahnya sekalian dilepas dari `sticky`: sebagai daftar mengalir tingginya
+ * bisa melebihi separuh layar ponsel, dan bilah tempel setinggi itu menutupi
+ * halaman yang seharusnya dibacanya.
+ */
+html:not([data-js]) [data-bilah-atas] {
+  position: static;
+}
+
+html:not([data-js]) #laci-navigasi {
+  position: static;
+  max-height: none;
+  visibility: visible;
+  opacity: 1;
+  transform: none;
+  box-shadow: none;
+}
+
+html:not([data-js]) [data-pembuka-laci] {
+  display: none;
+}

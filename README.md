@@ -75,13 +75,29 @@ bukan tiga website terpisah.
 - [x] Fondasi proyek: Next.js 16 + TypeScript + Tailwind v4
 - [x] Token desain (terang & gelap), format angka Indonesia, pembungkus API
 - [x] Kerangka rute: 32 halaman dengan placeholder
-- [ ] Landing page
-- [ ] Halaman publik (status, lacak pengaduan, rapor kinerja, statistik)
+- [x] Sistem desain + komponen dasar dan komponen domain
+- [x] Layout publik dan navigasi
+- [x] Landing page dengan peraga meter interaktif
+- [x] Halaman publik: status layanan, lacak pengaduan, rapor kinerja, statistik
 - [ ] Autentikasi & onboarding
 - [ ] Portal warga
 - [ ] Konsol petugas
 
+> Backend (`MIA-JERNIH-BE`) masih dikerjakan. Sementara ini halaman publik
+> dilayani rute `src/app/api/publik/*` di dalam aplikasi ini, dengan bentuk
+> jawaban yang sama persis dengan kontrak BE#2. Begitu backend siap: arahkan
+> `NEXT_PUBLIC_API_URL` ke sana dan hapus folder tersebut — tidak ada
+> perubahan lain yang diperlukan.
+
 Rincian tiap halaman ada di **Issues** repo ini.
+
+## Desain
+
+Arah visualnya ada di **[`docs/ARAH-VISUAL.md`](docs/ARAH-VISUAL.md)** —
+palet, pasangan huruf, perangkat struktural, dan daftar tampilan yang
+dilarang. **Baca itu sebelum menulis komponen apa pun.** Bobot Desain (20%)
+dan Orisinalitas (20%) adalah 40% nilai lomba; spesifikasi fungsional saja
+menghasilkan tampilan yang bisa dipakai produk mana pun.
 
 ## Konvensi
 
