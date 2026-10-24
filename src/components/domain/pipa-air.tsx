@@ -79,10 +79,21 @@ export function PipaAir({
               }}
             >
               {/* Label hanya ditulis DI DALAM ruas kalau benar-benar muat.
-                  Teks yang terpotong lebih buruk daripada tanpa teks. */}
+                  Teks yang terpotong lebih buruk daripada tanpa teks.
+
+                  Alas gelapnya BUKAN hiasan. Teks putih di atas pita ini
+                  terukur 2,26:1 di tema gelap, karena di sana ujung kanan
+                  pitanya justru warna paling terang — `brand-600` di tema
+                  gelap adalah sian muda, bukan biru tua seperti di tema
+                  terang. Tidak ada satu warna teks pun yang lolos di kedua
+                  ujung gradasi sekaligus, jadi yang dikunci latarnya.
+                  `brand-900` dipakai karena nilainya TIDAK ditukar di tema
+                  gelap, sehingga alasnya tetap gelap di keduanya. */}
               {pctTercatat >= 26 ? (
-                <span className="tabular px-3 font-mono text-[13px] font-semibold text-white">
-                  <AngkaBergerak nilai={pctTercatat} desimal={1} />%
+                <span className="mr-1.5 rounded-md bg-brand-900/55 px-2 py-0.5">
+                  <span className="tabular font-mono text-[13px] font-semibold text-white">
+                    <AngkaBergerak nilai={pctTercatat} desimal={1} />%
+                  </span>
                 </span>
               ) : null}
             </div>

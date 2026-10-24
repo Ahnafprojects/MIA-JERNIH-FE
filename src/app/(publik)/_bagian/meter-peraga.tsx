@@ -105,7 +105,10 @@ export function MeterPeraga() {
         <button
           type="button"
           onClick={() => kirim({ jenis: "habis" })}
-          className="text-[12.5px] font-semibold text-brand-600 underline-offset-4 hover:underline"
+          // `min-h-11`: sasaran ketuknya tadinya setinggi barisnya saja
+          // (19px). Ini tombol yang justru paling ingin dicoba orang di
+          // ponsel — memperagakan apa yang terjadi saat saldo habis.
+          className="inline-flex min-h-11 items-center justify-center px-2 text-[12.5px] font-semibold text-brand-600 underline-offset-4 hover:underline"
         >
           {s.mode === "habis"
             ? "Kembalikan saldo"

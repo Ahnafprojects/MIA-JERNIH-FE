@@ -1,6 +1,13 @@
 "use client";
 
-import { useId, useSyncExternalStore } from "react";
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import {
   Area,
   Bar,
@@ -42,9 +49,10 @@ import { cn } from "@/lib/cn";
  *   putus di situ. Nol adalah hasil pengukuran, dan tidak boleh dikarang.
  *
  * Animasi gambar-ulang AKTIF, tetapi pendek (650 ms) dan hanya berguna pada
- * satu momen: saat rentang waktu diganti. Tanpa itu, 7 hari berganti menjadi
- * 30 hari dalam satu bingkai dan mata tidak sempat menyadari grafiknya sudah
- * jadi grafik yang lain.
+ * dua momen: saat grafiknya pertama kali MASUK LAYAR, dan saat rentang
+ * waktunya diganti. Tanpa itu, 7 hari berganti menjadi 30 hari dalam satu
+ * bingkai dan mata tidak sempat menyadari grafiknya sudah jadi grafik yang
+ * lain.
  *
  * Durasinya sengaja pendek. Animasi Recharts menggambar garis lewat
  * `stroke-dasharray`, jadi selama animasi berjalan grafiknya belum utuh —
@@ -119,6 +127,77 @@ function useHematGerak(): boolean {
     // lalu klien mengoreksinya sendiri bila perlu.
     () => false,
   );
+}
+
+/**
+ * `useLayoutEffect` di peramban, `useEffect` di server.
+ *
+ * Keputusan "grafik ini sudah di layar atau belum" harus diambil SEBELUM cat
+ * pertama. Diambil sesudahnya, grafik yang memang terlihat sempat tampil utuh
+ * satu bingkai lalu digambar ulang dari nol — kedipan yang justru lebih
+ * mengganggu daripada tidak beranimasi sama sekali. Di server tidak ada tata
+ * letak untuk diukur, dan `useLayoutEffect` di sana hanya menghasilkan
+ * peringatan.
+ */
+const useEfekTataLetak =
+  typeof window === "undefined" ? useEffect : useLayoutEffect;
+
+/**
+ * Kapan sebuah grafik boleh MULAI menggambar dirinya.
+ *
+ * Animasi Recharts berjalan begitu komponennya dipasang. Untuk grafik yang
+ * letaknya di bawah layar, animasinya sudah habis sebelum pembacanya sampai
+ * ke sana: yang terlihat saat digulir hanya grafik diam, dan animasinya tidak
+ * pernah mengerjakan tugasnya.
+ *
+ * Yang dikembalikan hook ini BUKAN "boleh tampil", melainkan "boleh
+ * bergerak". Bedanya menentukan: sebelum masuk layar grafiknya tetap digambar
+ * UTUH, hanya tanpa animasi. Jadi kalau `IntersectionObserver` tidak ada,
+ * observernya tidak pernah berbunyi, atau elemennya tidak pernah terpasang,
+ * yang tersisa adalah grafik yang lengkap — bukan kotak kosong yang menunggu
+ * peristiwa yang tidak akan datang. Keadaan amannya "tampil", bukan
+ * "tersembunyi".
+ *
+ * Sekali saja: setelah menggambar, observernya dilepas. Gambar-ulang saat
+ * rentang waktu diganti tidak lewat sini — itu urusan Recharts sendiri, dan
+ * tetap berjalan seperti biasa.
+ */
+function useGambarSaatTerlihat(aktif: boolean) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [gambar, setGambar] = useState(false);
+
+  useEfekTataLetak(() => {
+    // Gerakan diminta dikurangi: grafik tinggal di keadaan utuh-tanpa-animasi.
+    if (!aktif) return;
+
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === "undefined") {
+      setGambar(true);
+      return;
+    }
+
+    // Sudah di layar saat dipasang — mis. grafik di bagian atas halaman.
+    // Mulai sekarang juga, tanpa menunggu observer, supaya tidak ada bingkai
+    // yang sempat memperlihatkan grafik utuh sebelum animasinya mulai.
+    const kotak = el.getBoundingClientRect();
+    if (kotak.bottom > 0 && kotak.top < window.innerHeight) {
+      setGambar(true);
+      return;
+    }
+
+    const pengamat = new IntersectionObserver(
+      (entri) => {
+        if (!entri.some((e) => e.isIntersecting)) return;
+        setGambar(true);
+        pengamat.disconnect();
+      },
+      { threshold: 0 },
+    );
+    pengamat.observe(el);
+    return () => pengamat.disconnect();
+  }, [aktif]);
+
+  return { ref, gambar };
 }
 
 function keRecharts(labels: string[], deret: Deret[]) {
@@ -352,6 +431,8 @@ export function GrafikBatang({
 }) {
   const sid = useId().replace(/[^a-zA-Z0-9]/g, "");
   const hematGerak = useHematGerak();
+  const { ref: wadah, gambar } = useGambarSaatTerlihat(!hematGerak);
+  const animasi = !hematGerak && gambar;
   if (kosong(labels, deret)) return <Kosong />;
 
   const data = keRecharts(labels, deret);
@@ -386,7 +467,7 @@ export function GrafikBatang({
   }
 
   return (
-    <div className="relative">
+    <div ref={wadah} className="relative">
       <DefsGradien>
         {deret.flatMap((d, i) => [
           <Gradien
@@ -412,6 +493,9 @@ export function GrafikBatang({
 
       <ResponsiveContainer width="100%" height={tinggi}>
         <BarChart
+          // Grafik dipasang ulang saat izin menggambar datang, supaya
+          // animasinya benar-benar mulai dari nol di depan pembacanya.
+          key={animasi ? "gambar" : "diam"}
           data={data}
           margin={{ left: 0, right: 6, top: 6 }}
           barCategoryGap="24%"
@@ -435,7 +519,7 @@ export function GrafikBatang({
               name={d.name}
               maxBarSize={22}
               radius={[3, 3, 0, 0]}
-              isAnimationActive={!hematGerak}
+              isAnimationActive={animasi}
               animationDuration={DURASI_GAMBAR}
             >
               {data.map((_, j) => (
@@ -486,6 +570,8 @@ export function GrafikGaris({
 }) {
   const sid = useId().replace(/[^a-zA-Z0-9]/g, "");
   const hematGerak = useHematGerak();
+  const { ref: wadah, gambar } = useGambarSaatTerlihat(!hematGerak);
+  const animasi = !hematGerak && gambar;
   if (kosong(labels, deret)) return <Kosong />;
 
   const data = keRecharts(labels, deret);
@@ -497,7 +583,7 @@ export function GrafikGaris({
   }));
 
   return (
-    <div className="relative">
+    <div ref={wadah} className="relative">
       <DefsGradien>
         {deret.map((d, i) => (
           <Gradien
@@ -516,7 +602,20 @@ export function GrafikGaris({
       />
 
       <ResponsiveContainer width="100%" height={tinggi}>
-        <ComposedChart data={data} margin={{ left: 0, right: 10, top: 10 }}>
+        <ComposedChart
+          key={animasi ? "gambar" : "diam"}
+          data={data}
+          /*
+           * `right: 14`, bukan 10.
+           *
+           * Titik penekan di ujung deret (`ReferenceDot r=8`) digambar
+           * BERPUSAT pada nilai terakhir, jadi separuhnya — 8px — menjorok
+           * ke kanan melewati batas area plot. Dengan sisa 10px titiknya
+           * masih terpotong tepi kanan di semua lebar. Angka ini terikat
+           * pada jari-jari titik itu: kalau `r` diubah, sisa ini ikut.
+           */
+          margin={{ left: 0, right: 14, top: 10 }}
+        >
           <CartesianGrid stroke="var(--color-chart-grid)" vertical={false} />
           <XAxis dataKey="label" {...sumbu} interval="preserveStartEnd" />
           <YAxis
@@ -551,7 +650,7 @@ export function GrafikGaris({
               stroke="none"
               fill={`url(#${sid}-a${i})`}
               connectNulls={false}
-              isAnimationActive={!hematGerak}
+              isAnimationActive={animasi}
               animationDuration={DURASI_GAMBAR}
               activeDot={false}
             />
@@ -568,7 +667,7 @@ export function GrafikGaris({
               strokeLinejoin="round"
               dot={false}
               connectNulls={false}
-              isAnimationActive={!hematGerak}
+              isAnimationActive={animasi}
               animationDuration={DURASI_GAMBAR}
               activeDot={{
                 r: 4,
@@ -643,6 +742,8 @@ export function GrafikCelah({
 }) {
   const sid = useId().replace(/[^a-zA-Z0-9]/g, "");
   const hematGerak = useHematGerak();
+  const { ref: wadah, gambar } = useGambarSaatTerlihat(!hematGerak);
+  const animasi = !hematGerak && gambar;
   if (!atas || !bawah || kosong(labels, [atas, bawah])) return <Kosong />;
 
   const data = labels.map((l, i) => {
@@ -676,7 +777,7 @@ export function GrafikCelah({
   ];
 
   return (
-    <div className="relative">
+    <div ref={wadah} className="relative">
       <DefsGradien>
         {/* Dasar sengaja tenang dan celahnya pekat: yang jadi cerita adalah
             JARAKNYA, bukan tumpukan di bawahnya. */}
@@ -703,7 +804,20 @@ export function GrafikCelah({
       />
 
       <ResponsiveContainer width="100%" height={tinggi}>
-        <ComposedChart data={data} margin={{ left: 0, right: 10, top: 10 }}>
+        <ComposedChart
+          key={animasi ? "gambar" : "diam"}
+          data={data}
+          /*
+           * `right: 14`, bukan 10.
+           *
+           * Titik penekan di ujung deret (`ReferenceDot r=8`) digambar
+           * BERPUSAT pada nilai terakhir, jadi separuhnya — 8px — menjorok
+           * ke kanan melewati batas area plot. Dengan sisa 10px titiknya
+           * masih terpotong tepi kanan di semua lebar. Angka ini terikat
+           * pada jari-jari titik itu: kalau `r` diubah, sisa ini ikut.
+           */
+          margin={{ left: 0, right: 14, top: 10 }}
+        >
           <CartesianGrid stroke="var(--color-chart-grid)" vertical={false} />
           <XAxis dataKey="label" {...sumbu} interval="preserveStartEnd" />
           <YAxis
@@ -724,7 +838,7 @@ export function GrafikCelah({
             stroke="none"
             fill={`url(#${sid}-dasar)`}
             connectNulls={false}
-            isAnimationActive={!hematGerak}
+            isAnimationActive={animasi}
             animationDuration={DURASI_GAMBAR}
             activeDot={false}
           />
@@ -736,7 +850,7 @@ export function GrafikCelah({
             stroke="none"
             fill={`url(#${sid}-celah)`}
             connectNulls={false}
-            isAnimationActive={!hematGerak}
+            isAnimationActive={animasi}
             animationDuration={DURASI_GAMBAR}
             activeDot={false}
           />
@@ -753,7 +867,7 @@ export function GrafikCelah({
             strokeLinejoin="round"
             dot={false}
             connectNulls={false}
-            isAnimationActive={!hematGerak}
+            isAnimationActive={animasi}
             animationDuration={DURASI_GAMBAR}
             activeDot={{
               r: 4,
@@ -772,7 +886,7 @@ export function GrafikCelah({
             strokeLinejoin="round"
             dot={false}
             connectNulls={false}
-            isAnimationActive={!hematGerak}
+            isAnimationActive={animasi}
             animationDuration={DURASI_GAMBAR}
             activeDot={{
               r: 4,

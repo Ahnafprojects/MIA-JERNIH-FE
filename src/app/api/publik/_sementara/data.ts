@@ -246,9 +246,65 @@ export function kinerja(hari: number) {
   };
 }
 
+/**
+ * Membagi satu bilangan bulat menurut porsi, TANPA menghilangkan sisa.
+ *
+ * Membulatkan tiap bagian sendiri-sendiri hampir selalu meleset satu-dua dari
+ * totalnya, dan di halaman ini selisih itu langsung terlihat: jumlah kolom
+ * tabel per zona tidak sama dengan angka besar di atasnya, dan berkas CSV
+ * yang diunduh orang tidak berjumlah sama dengan yang di layar. Metode sisa
+ * terbesar memberikan satuan sisa kepada bagian dengan pecahan terbesar,
+ * sehingga jumlahnya PERSIS sama.
+ */
+function bagiBulat(total: number, porsi: number[]): number[] {
+  const mentah = porsi.map((p) => total * p);
+  const hasil = mentah.map(Math.floor);
+  const sisa = total - hasil.reduce((a, b) => a + b, 0);
+  const urut = mentah
+    .map((m, i) => ({ i, pecahan: m - Math.floor(m) }))
+    .sort((a, b) => b.pecahan - a.pecahan);
+  for (let k = 0; k < sisa; k++) hasil[urut[k % urut.length].i] += 1;
+  return hasil;
+}
+
+/**
+ * Zona: jumlah pelanggan tetap, porsi volume dan kehilangan RELATIF.
+ *
+ * Jumlah pelanggannya dijumlahkan persis 8.219 — angka yang sama dengan
+ * `pelangganTerlayani`. Porsi volumenya sengaja TIDAK sama persis dengan
+ * porsi pelanggannya: zona memang berbeda pola pakainya. Tapi selisihnya
+ * dijaga kecil, karena 1.179 pelanggan yang memakai air sebanyak 3.140
+ * pelanggan adalah angka yang tidak terjadi.
+ *
+ * `relatifNrw` adalah kehilangan zona itu dibanding rata-rata jaringan:
+ * di bawah 1 lebih baik daripada rata-rata, di atas 1 lebih buruk.
+ */
+const ZONA_BAGI = [
+  { nama: "Bandung Timur", pelanggan: 3140, porsiVolume: 0.371, relatifNrw: 0.74 },
+  { nama: "Cileunyi", pelanggan: 2016, porsiVolume: 0.249, relatifNrw: 1.14 },
+  { nama: "Cimahi", pelanggan: 1884, porsiVolume: 0.236, relatifNrw: 1.28 },
+  { nama: "Sumedang", pelanggan: 1179, porsiVolume: 0.144, relatifNrw: 0.95 },
+];
+
 export function statistik(hari: number) {
   const labels = hariLabel(hari);
-  const disalurkan = goyang(hari, 1180, 90);
+
+  /*
+   * Volume harian DIIKAT ke jumlah pelanggannya, bukan dipilih karena
+   * grafiknya terlihat bagus.
+   *
+   * Nilai sebelumnya 1.180 m³/hari untuk 8.219 sambungan — sekitar 144 liter
+   * per sambungan per hari, atau 30 liter per orang per hari. Itu DI BAWAH
+   * ambang kebutuhan dasar WHO (60 l/orang/hari), dan artinya PDAM yang
+   * sedang kita tampilkan sebenarnya gagal melayani warganya. Angka itu
+   * membantah sendiri cerita ketepatan layanan 92% di halaman Rapor Kinerja —
+   * dan penilai dari sektor air akan melihatnya lebih dulu daripada
+   * desainnya.
+   *
+   * 4.930 m³/hari ≈ 600 liter per sambungan per hari ≈ 18 m³ per bulan,
+   * yang memang kisaran rumah tangga PDAM di Indonesia.
+   */
+  const disalurkan = goyang(hari, 4930, 380);
 
   /*
    * Rasio tercatat BERUBAH dari hari ke hari, tidak dipatok satu angka.
@@ -264,6 +320,31 @@ export function statistik(hari: number) {
   const totalDisalurkan = disalurkan.reduce((a, b) => a + b, 0);
   const totalTercatat = tercatat.reduce((a, b) => a + b, 0);
 
+  /*
+   * Rincian per zona DITURUNKAN dari totalnya, bukan ditulis sebagai angka
+   * tetap.
+   *
+   * Versi sebelumnya memakai empat baris hafalan yang sama untuk 7, 30, dan
+   * 90 hari. Dua akibatnya, dan keduanya ketahuan oleh orang yang menjumlah:
+   * tabelnya diam saat seluruh halaman di sekitarnya berubah rentang, dan
+   * jumlah volumenya 32.550 m³ sementara angka besar di atasnya 35.562 m³ —
+   * selisih 3.012 m³ yang tidak bisa dijelaskan.
+   *
+   * Sekarang volume dan kehilangan dibagi dengan metode sisa terbesar,
+   * sehingga keduanya berjumlah PERSIS sama dengan totalnya di rentang mana
+   * pun, dan NRW tiap zona dihitung dari hasil bagi itu — bukan sebaliknya.
+   */
+  const volumeZona = bagiBulat(
+    totalDisalurkan,
+    ZONA_BAGI.map((z) => z.porsiVolume),
+  );
+  const bobotHilang = ZONA_BAGI.map((z) => z.porsiVolume * z.relatifNrw);
+  const jumlahBobot = bobotHilang.reduce((a, b) => a + b, 0);
+  const hilangZona = bagiBulat(
+    totalDisalurkan - totalTercatat,
+    bobotHilang.map((b) => b / jumlahBobot),
+  );
+
   return {
     pelangganTerlayani: 8219,
     volumeDisalurkanM3: totalDisalurkan,
@@ -277,11 +358,11 @@ export function statistik(hari: number) {
       { name: "Air disalurkan", unit: "m³", points: disalurkan },
       { name: "Air tercatat", unit: "m³", points: tercatat },
     ],
-    perZona: [
-      { nama: "Bandung Timur", pelanggan: 3140, volumeM3: 12480, nrwPct: 14.2 },
-      { nama: "Cileunyi", pelanggan: 2016, volumeM3: 8120, nrwPct: 21.8 },
-      { nama: "Cimahi", pelanggan: 1884, volumeM3: 7640, nrwPct: 24.5 },
-      { nama: "Sumedang", pelanggan: 1179, volumeM3: 4310, nrwPct: 18.1 },
-    ],
+    perZona: ZONA_BAGI.map((z, i) => ({
+      nama: z.nama,
+      pelanggan: z.pelanggan,
+      volumeM3: volumeZona[i],
+      nrwPct: Math.round((hilangZona[i] / volumeZona[i]) * 1000) / 10,
+    })),
   };
 }

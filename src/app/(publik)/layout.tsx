@@ -1,13 +1,25 @@
 import Link from "next/link";
 import { MerekJernih } from "@/components/layout/logo";
-import { TombolTema } from "@/components/ui/tema";
+import { BilahAtas, type ButirMenu } from "./_bagian/bilah-atas";
+import "./_bagian/bilah-atas.css";
 
-const MENU = [
+const MENU: readonly ButirMenu[] = [
   { href: "/status", teks: "Status Layanan" },
   { href: "/lacak", teks: "Lacak Pengaduan" },
   { href: "/kinerja", teks: "Rapor Kinerja" },
   { href: "/statistik", teks: "Statistik" },
 ];
+
+/*
+ * Penanda "JavaScript hidup" di elemen akar.
+ *
+ * Dibaca `bilah-atas.css` untuk memutuskan apakah laci navigasi boleh
+ * disembunyikan. Urutannya yang penting: skrip sebaris ini jalan saat HTML
+ * diurai, jadi penandanya sudah terpasang sebelum bilah atas pernah
+ * tergambar sekali pun. Tanpa itu, pengunjung ber-JavaScript melihat laci
+ * terbentang sekejap pada setiap muat halaman.
+ */
+const PENANDA_JS = `document.documentElement.dataset.js="1"`;
 
 /**
  * Kerangka halaman publik — TANPA login.
@@ -24,54 +36,13 @@ export default function LayoutPublik({
 }) {
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="sticky top-0 z-40 border-b border-line bg-canvas/90 backdrop-blur-sm">
-        <div className="mx-auto flex h-16 max-w-6xl items-center gap-6 px-5">
-          <Link href="/" aria-label="Jernih — beranda">
-            <MerekJernih sub="Transparansi Layanan Air" />
-          </Link>
+      <script dangerouslySetInnerHTML={{ __html: PENANDA_JS }} />
 
-          <nav className="ml-auto hidden items-center gap-1 md:flex">
-            {MENU.map((m) => (
-              <Link
-                key={m.href}
-                href={m.href}
-                className="border-b-2 border-transparent px-3 py-1.5 text-[14px] font-medium text-muted transition-colors hover:border-brand-400 hover:text-ink"
-              >
-                {m.teks}
-              </Link>
-            ))}
-          </nav>
-
-          <div className="ml-auto flex items-center gap-1 md:ml-0">
-            <TombolTema className="rounded-full p-2.5 text-muted transition-colors hover:bg-soft hover:text-ink" />
-            <Link
-              href="/masuk"
-              className="rounded-full bg-brand-900 px-5 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-brand-700 dark:bg-brand-500 dark:text-brand-900 dark:hover:bg-brand-400"
-            >
-              Masuk
-            </Link>
-          </div>
-        </div>
-
-        {/* Di layar sempit menu pindah ke baris sendiri yang bisa digeser,
-            bukan disembunyikan ke dalam menu hamburger: halaman publik adalah
-            inti produk, jadi tautannya harus selalu kelihatan. */}
-        <nav className="flex gap-1 overflow-x-auto border-t border-line px-5 py-2 md:hidden">
-          {MENU.map((m) => (
-            <Link
-              key={m.href}
-              href={m.href}
-              className="rounded-lg px-3 py-1.5 text-[13px] font-medium whitespace-nowrap text-muted hover:bg-soft"
-            >
-              {m.teks}
-            </Link>
-          ))}
-        </nav>
-      </header>
+      <BilahAtas menu={MENU} />
 
       <main className="flex-1">{children}</main>
 
-      <footer className="border-t border-line bg-silt dark:bg-silt">
+      <footer className="lapis-endap border-t border-line">
         <div className="mx-auto grid max-w-6xl gap-8 px-5 py-10 sm:grid-cols-3">
           <div>
             <MerekJernih />
@@ -80,11 +51,21 @@ export default function LayoutPublik({
             </p>
           </div>
           <div>
-            <p className="eyebrow mb-3 text-muted">Transparansi</p>
-            <ul className="space-y-2 text-[13.5px]">
+            <p className="eyebrow mb-1 text-muted">Transparansi</p>
+            {/*
+              Tautan kaki halaman setinggi 44px, bukan setinggi barisnya.
+              Diukur di ponsel, tinggi sasarannya cuma 16px — di bawah ambang
+              target sentuh, dan justru di tempat yang paling sering ditekan
+              dengan jempol sambil berdiri. Jarak antarbaris dihapus karena
+              tinggi minimumnya sudah menggantikan perannya.
+            */}
+            <ul className="text-[13.5px]">
               {MENU.map((m) => (
                 <li key={m.href}>
-                  <Link href={m.href} className="text-muted hover:text-ink">
+                  <Link
+                    href={m.href}
+                    className="inline-flex min-h-11 min-w-11 items-center text-muted hover:text-ink"
+                  >
                     {m.teks}
                   </Link>
                 </li>
@@ -92,15 +73,21 @@ export default function LayoutPublik({
             </ul>
           </div>
           <div>
-            <p className="eyebrow mb-3 text-muted">Pelanggan</p>
-            <ul className="space-y-2 text-[13.5px]">
+            <p className="eyebrow mb-1 text-muted">Pelanggan</p>
+            <ul className="text-[13.5px]">
               <li>
-                <Link href="/masuk" className="text-muted hover:text-ink">
+                <Link
+                  href="/masuk"
+                  className="inline-flex min-h-11 min-w-11 items-center text-muted hover:text-ink"
+                >
                   Masuk
                 </Link>
               </li>
               <li>
-                <Link href="/daftar" className="text-muted hover:text-ink">
+                <Link
+                  href="/daftar"
+                  className="inline-flex min-h-11 min-w-11 items-center text-muted hover:text-ink"
+                >
                   Daftar akun
                 </Link>
               </li>
