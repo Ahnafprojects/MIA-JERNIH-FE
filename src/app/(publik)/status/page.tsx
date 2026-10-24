@@ -1,25 +1,552 @@
+"use client";
+
 /**
- * J02 — Status Layanan
+ * J02 — Status layanan per zona. TANPA LOGIN.
  *
- * Peta status layanan air per zona: normal, gangguan, perbaikan. Tanpa login.
+ * Halaman paling penting untuk subtema Public Service Tracking: warga bisa
+ * tahu kenapa airnya mati tanpa punya akun dan tanpa menelepon siapa pun.
  *
- * BELUM DIKERJAKAN. Spesifikasi lengkap ada di issue GitHub repo ini.
- * Acuan rancangan: Aquantum `design/docs/03-website-admin.md` dan
- * `04-website-pelanggan.md` — isinya sama, tampilannya baru.
+ * ── Kenapa halaman ini panjang ─────────────────────────────────────────
+ *
+ * Versi pertamanya berhenti di peta dan daftar zona, dan seluruhnya adalah
+ * POTRET DETIK INI. Tapi melacak berarti melihat sesuatu SEPANJANG WAKTU;
+ * sebuah jepretan tidak melacak apa pun, ia hanya memberi kabar. Jadi
+ * halamannya dibaca dari sekarang ke belakang, lalu ke depan:
+ *
+ *   1. Sekarang      — ringkasan, peta, daftar zona, detail zona
+ *   2. Ke belakang   — keandalan 30 hari + strip harian, riwayat gangguan
+ *   3. Ke depan      — pemeliharaan terjadwal
+ *   4. Mutunya       — kualitas air terhadap ambang Permenkes
+ *   5. Lalu apa      — titik air darurat dan nomor yang bisa dihubungi
+ *
+ * Bagian 2 adalah inti temanya: ia yang mengubah "airnya mati" menjadi
+ * "airnya mati lima kali bulan ini, total 38 jam" — janji dibanding
+ * kenyataan. Bagian 5 ada karena halaman status tanpa langkah lanjutan hanya
+ * memindahkan kecemasan.
+ *
+ * Datanya datang dari DUA endpoint, dan yang kedua dibiarkan gagal sendiri:
+ * kalau riwayat tidak bisa dimuat, peta dan daftar zona di atas tetap utuh.
+ * Keadaan sekarang jauh lebih genting daripada sejarahnya, dan satu galat
+ * tidak boleh memutihkan keduanya.
+ *
+ * Peta adalah lapisan DI ATAS daftar, bukan penggantinya. Daftar teks harus
+ * tetap ada selamanya: peta tidak terbaca pembaca layar, gagal dimuat di
+ * koneksi buruk, dan mati sama sekali tanpa WebGL.
  */
-export default function Halaman() {
+
+import { useCallback, useState } from "react";
+import { Clock, RefreshCw, Users } from "lucide-react";
+import { Card, Panel } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { KeadaanGalat, KeadaanKosong, Skeleton } from "@/components/ui/keadaan";
+import PetaZonaDinamis from "@/components/peta/peta-zona-dinamis";
+import { STATUS, URUTAN_STATUS } from "@/components/peta/status-zona";
+import useApi from "@/lib/use-api";
+import { angka, tanggalJam } from "@/lib/format";
+import type { StatusLayanan, ZonaStatus } from "@/types/publik";
+import { SeksiBantuan } from "./_bagian/bantuan";
+import { SeksiKeandalan, TARGET_KEANDALAN } from "./_bagian/keandalan";
+import { SeksiKualitasAir } from "./_bagian/kualitas-air";
+import { SeksiPemeliharaan } from "./_bagian/pemeliharaan";
+import { SeksiRiwayat } from "./_bagian/riwayat";
+import { StripHarian } from "./_bagian/strip-harian";
+import { durasi } from "./_bagian/waktu";
+import type { KeandalanZona, RiwayatZona } from "./_bagian/tipe";
+
+/** Penutup halaman. Angka tanpa cara hitungnya bukan transparansi. */
+const ISTILAH: [string, React.ReactNode][] = [
+  [
+    "Keandalan",
+    <>
+      Bagian waktu layanan berjalan normal selama 30 hari terakhir: 720 jam
+      dikurangi seluruh jam gangguan dan perbaikan. Janji layanan PDAM adalah{" "}
+      <b className="text-ink">{TARGET_KEANDALAN}%</b> — setara paling banyak 36
+      jam tanpa air sebulan.
+    </>,
+  ],
+  [
+    "Perbaikan ikut dihitung",
+    <>
+      Pekerjaan terjadwal tetap memotong keandalan. Warga yang airnya mati
+      tidak merasakan bedanya apakah matinya sudah direncanakan; yang berbeda
+      hanya ia sempat bersiap atau tidak.
+    </>,
+  ],
+  [
+    "Satu petak, satu hari",
+    <>
+      Petak pada strip diwarnai menurut kejadian terparah hari itu. Hari dengan
+      gangguan tiga jam tetap ditandai sebagai hari gangguan, bukan dirata-rata
+      menjadi “sebagian besar normal”.
+    </>,
+  ],
+  [
+    "Yang belum selesai tetap tampil",
+    <>
+      Gangguan yang masih berlangsung dihitung dari jam mulainya sampai
+      sekarang, dan angkanya terus bertambah selama belum beres. Tidak ada
+      kejadian yang disembunyikan sampai tuntas.
+    </>,
+  ],
+];
+
+export default function HalamanStatus() {
+  const { data, memuat, galat, muatUlang } = useApi<StatusLayanan>(
+    "/api/publik/status-layanan",
+  );
+  const {
+    data: riwayat,
+    memuat: memuatRiwayat,
+    galat: galatRiwayat,
+    muatUlang: muatUlangRiwayat,
+  } = useApi<RiwayatZona>("/api/publik/riwayat-zona");
+
+  const [dipilih, setDipilih] = useState<string | null>(null);
+
+  const zona = data?.zona ?? [];
+  const aktif = zona.find((z) => z.id === dipilih) ?? null;
+
+  const zonaRiwayat = riwayat?.zona ?? [];
+  const riwayatAktif = zonaRiwayat.find((z) => z.id === dipilih) ?? null;
+  const hariPantau = riwayat?.periode.hari ?? 30;
+
+  // Klik kedua pada zona yang sama melepas pilihan — pengguna yang membuka
+  // detail tanpa sengaja tidak perlu mencari tombol tutup.
+  const pilih = useCallback((id: string) => {
+    setDipilih((lama) => (lama === id ? null : id));
+  }, []);
+
+  // Keping penyaring riwayat memilih LANGSUNG, tanpa membalik: menekan keping
+  // yang sedang aktif lalu melihat daftarnya melompat kembali ke seluruh zona
+  // terbaca sebagai tombol yang salah pasang.
+  const pilihLangsung = useCallback((id: string | null) => {
+    setDipilih(id);
+  }, []);
+
   return (
-    <main className="mx-auto max-w-5xl px-6 py-16">
-      <p className="text-xs font-semibold uppercase tracking-widest text-sky-600">
-        J02
+    <div className="mx-auto max-w-6xl px-5 py-10 sm:py-14">
+      <header>
+        <p className="eyebrow text-brand-600">Transparansi</p>
+        <h1 className="mt-2 font-display text-[clamp(1.9rem,6vw,2.75rem)] leading-[1.05] font-extrabold tracking-[-0.02em]">
+          Status layanan air, zona per zona
+        </h1>
+        <p className="mt-3 max-w-[62ch] text-[15px] leading-relaxed text-muted">
+          Kondisi layanan di tiap wilayah, dibaca langsung dari sistem
+          pemantauan. Tidak perlu akun, tidak perlu menelepon.
+        </p>
+      </header>
+
+      {galat ? (
+        <Card className="mt-8">
+          <KeadaanGalat pesan={galat} onCoba={muatUlang} />
+        </Card>
+      ) : (
+        <>
+          <RingkasanStatus data={data} memuat={memuat} />
+
+          {/* ── Peta ─────────────────────────────────────────────────── */}
+          <section
+            aria-labelledby="judul-peta"
+            className="mt-8 overflow-hidden rounded-card border border-line bg-surface"
+          >
+            <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 border-b border-line px-4 py-3.5 sm:px-5">
+              <div className="min-w-0">
+                <h2
+                  id="judul-peta"
+                  className="font-display text-[15px] font-bold tracking-[-0.02em]"
+                >
+                  Peta zona layanan
+                </h2>
+                <p className="mt-0.5 text-[12.5px] text-muted">
+                  Pilih satu wilayah untuk membuka detailnya.
+                </p>
+              </div>
+              {/* Ukuran `md` (44px), bukan `sm`: ini satu-satunya tombol di
+                  kepala seksi peta, dan 36px tidak memenuhi target sentuh
+                  minimum di ponsel. */}
+              <Button
+                varian="halus"
+                ukuran="md"
+                onClick={muatUlang}
+                aria-label="Muat ulang status layanan"
+              >
+                <RefreshCw size={15} aria-hidden />
+                Perbarui
+              </Button>
+            </div>
+
+            {memuat ? (
+              <div className="flex h-[280px] items-center justify-center sm:h-[360px] lg:h-[440px]">
+                <p className="text-[13px] text-muted">Memuat data zona…</p>
+              </div>
+            ) : (
+              <PetaZonaDinamis zona={zona} dipilih={dipilih} onPilih={pilih} />
+            )}
+          </section>
+
+          {/* ── Daftar teks + detail ─────────────────────────────────── */}
+          <div className="mt-6 grid gap-5 lg:grid-cols-[1fr_21rem] lg:items-start">
+            <Panel
+              judul="Daftar zona"
+              sub={
+                data
+                  ? `${zona.length} zona · diperbarui ${tanggalJam(data.ts)}`
+                  : undefined
+              }
+              isiClassName="p-0"
+            >
+              {memuat ? (
+                <div className="space-y-px p-4">
+                  <Skeleton className="h-14 w-full" />
+                  <Skeleton className="h-14 w-full" />
+                  <Skeleton className="h-14 w-full" />
+                </div>
+              ) : zona.length === 0 ? (
+                <KeadaanKosong
+                  judul="Belum ada zona terdaftar"
+                  pesan="Sistem belum mengirimkan data wilayah layanan. Coba muat ulang beberapa saat lagi."
+                />
+              ) : (
+                <ul>
+                  {zona.map((z) => (
+                    <li
+                      key={z.id}
+                      className="border-t border-line first:border-0"
+                    >
+                      <BarisZona
+                        zona={z}
+                        terpilih={z.id === dipilih}
+                        onPilih={() => pilih(z.id)}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Panel>
+
+            <Panel judul={aktif ? "Detail zona" : "Pilih satu zona"}>
+              {aktif ? (
+                <DetailZona zona={aktif} riwayat={riwayatAktif} />
+              ) : (
+                <p className="max-w-[48ch] text-[13.5px] leading-relaxed text-muted">
+                  Pilih satu zona di peta atau di daftar untuk melihat penyebab
+                  gangguan, jumlah pelanggan terdampak, perkiraan waktu pulih,
+                  dan rekam jejaknya selama {angka(hariPantau)} hari terakhir.
+                </p>
+              )}
+            </Panel>
+          </div>
+        </>
+      )}
+
+      {/* ── Melacak: dari sekarang ke belakang, lalu ke depan ─────────── */}
+      {galatRiwayat ? (
+        <section className="mt-12">
+          <div aria-hidden className="takar h-2.5 border-t border-line" />
+          <Card className="mt-7">
+            <KeadaanGalat pesan={galatRiwayat} onCoba={muatUlangRiwayat} />
+          </Card>
+        </section>
+      ) : (
+        <>
+          <SeksiKeandalan
+            zona={zonaRiwayat}
+            keandalanJaringanPct={riwayat?.keandalanJaringanPct ?? null}
+            hari={hariPantau}
+            memuat={memuatRiwayat}
+            dipilih={dipilih}
+            onPilih={pilih}
+          />
+
+          <SeksiRiwayat
+            insiden={riwayat?.insiden ?? []}
+            zona={zonaRiwayat}
+            hari={hariPantau}
+            memuat={memuatRiwayat}
+            dipilih={dipilih}
+            onPilihZona={pilihLangsung}
+          />
+
+          <SeksiPemeliharaan
+            jadwal={riwayat?.pemeliharaan ?? []}
+            memuat={memuatRiwayat}
+            dipilih={dipilih}
+          />
+
+          <SeksiKualitasAir
+            zona={zonaRiwayat}
+            ambang={riwayat?.ambang ?? null}
+            memuat={memuatRiwayat}
+            dipilih={dipilih}
+            onPilih={pilih}
+          />
+
+          <SeksiBantuan
+            titikAir={riwayat?.titikAir ?? []}
+            kontak={riwayat?.kontak ?? []}
+            memuat={memuatRiwayat}
+          />
+
+          <section aria-labelledby="judul-istilah" className="mt-12">
+            <div aria-hidden className="takar h-2.5 border-t border-line" />
+            <h2
+              id="judul-istilah"
+              className="mt-7 font-display text-[1.5rem] leading-tight font-semibold tracking-[-0.02em]"
+            >
+              Bagaimana angka ini dihitung
+            </h2>
+            <dl className="mt-6 grid border-t border-line sm:grid-cols-2 sm:gap-x-10">
+              {ISTILAH.map(([judul, isi]) => (
+                <div key={judul} className="border-b border-line py-5">
+                  <dt className="font-display text-[15px] font-bold tracking-tight">
+                    {judul}
+                  </dt>
+                  <dd className="mt-1.5 max-w-[60ch] text-[13.5px] leading-relaxed text-muted">
+                    {isi}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        </>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Tiga angka pembuka — jawaban tiga detik sebelum orang membaca detailnya.
+ *
+ * Dibuat sebagai PITA BERGARIS, bukan tiga kartu membulat: halaman ini adalah
+ * catatan publik, dan angka yang dipisah garis terbaca sebagai satu bacaan
+ * alat ukur, bukan tiga benda yang tak berhubungan.
+ */
+function RingkasanStatus({
+  data,
+  memuat,
+}: {
+  data: StatusLayanan | null;
+  memuat: boolean;
+}) {
+  return (
+    <section aria-label="Ringkasan status zona" className="mt-8">
+      <div aria-hidden className="takar h-1.5" />
+      <dl className="grid border-y border-line sm:grid-cols-3">
+        {URUTAN_STATUS.map((s, i) => (
+          <div
+            key={s}
+            className={
+              "px-4 py-4 sm:px-5 " +
+              (i > 0
+                ? "border-t border-line sm:border-t-0 sm:border-l sm:border-line"
+                : "")
+            }
+          >
+            <dt className="flex items-center gap-2">
+              <span
+                aria-hidden
+                className={`size-2.5 shrink-0 rounded-[3px] ${STATUS[s].titik}`}
+              />
+              <span className="text-[13px] font-semibold">
+                {STATUS[s].label}
+              </span>
+            </dt>
+            <dd className="mt-2 flex items-baseline gap-1.5">
+              {memuat ? (
+                <Skeleton className="h-7 w-12" />
+              ) : (
+                <>
+                  <span className="tabular font-mono text-[30px] leading-none font-bold">
+                    {/* Nilai yang tidak dikirim server tampil "—". Nol di sini
+                        adalah hasil pengukuran yang sah dan tetap ditulis 0. */}
+                    {data ? data.ringkas[s] : "—"}
+                  </span>
+                  <span className="text-[12.5px] text-muted">zona</span>
+                </>
+              )}
+            </dd>
+            <p className="mt-1.5 text-[12.5px] leading-snug text-muted">
+              {STATUS[s].arti}
+            </p>
+          </div>
+        ))}
+      </dl>
+    </section>
+  );
+}
+
+/** Satu baris daftar zona. Tombol penuh, jadi tetap bisa dicapai keyboard. */
+function BarisZona({
+  zona,
+  terpilih,
+  onPilih,
+}: {
+  zona: ZonaStatus;
+  terpilih: boolean;
+  onPilih: () => void;
+}) {
+  const s = STATUS[zona.status];
+  return (
+    <button
+      type="button"
+      onClick={onPilih}
+      aria-pressed={terpilih}
+      className={`relative flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors sm:px-5 ${
+        terpilih ? "bg-brand-50 dark:bg-brand-900/25" : "hover:bg-soft"
+      }`}
+    >
+      {/* Pita tepi menandai baris terpilih tanpa bergantung pada warna latar
+          saja — ia tetap terlihat di tema gelap dan saat dicetak. */}
+      <span
+        aria-hidden
+        className={`absolute inset-y-0 left-0 w-[3px] ${
+          terpilih ? "bg-brand-500" : "bg-transparent"
+        }`}
+      />
+      <div className="min-w-0 flex-1">
+        <p className="font-display font-bold tracking-[-0.01em]">{zona.nama}</p>
+        {/*
+          Dibungkus, BUKAN dipotong.
+
+          Dulu `truncate`, dan di 390px dua keterangan terpotong di tengah
+          kalimat — "Perbaikan pipa induk di Jl. Soekarno-Ha…". Yang hilang
+          persis alasan KENAPA zonanya terganggu, yaitu satu-satunya hal yang
+          dicari pembaca di baris ini. Satu baris yang rapi tidak sebanding
+          dengan jawaban yang disembunyikan.
+        */}
+        <p className="mt-0.5 text-[12.5px] leading-snug text-balance text-muted">
+          {zona.keterangan ?? "Tidak ada gangguan dilaporkan"}
+        </p>
+      </div>
+      <div className="flex shrink-0 flex-col items-end gap-1.5">
+        <Badge nada={s.nada} titik>
+          {s.label}
+        </Badge>
+        <span className="flex items-center gap-1 text-[12px] text-muted">
+          <Users size={12} aria-hidden />
+          <span className="tabular font-mono font-semibold">
+            {angka(zona.pelangganTerdampak)}
+          </span>
+          terdampak
+        </span>
+      </div>
+    </button>
+  );
+}
+
+/**
+ * Detail zona: keadaan sekarang DAN rekam jejaknya.
+ *
+ * Dua sumber data bertemu di panel ini dengan sengaja. "Gangguan sejak 5 jam
+ * lalu" saja tidak bisa dinilai siapa pun — yang membuatnya berarti adalah
+ * apakah ini kejadian pertama bulan ini atau yang kelima. Strip 30 hari di
+ * bawah angkanya menjawab itu dalam satu pandangan.
+ *
+ * `riwayat` boleh `null`: endpoint kedua bisa gagal sendiri, dan panel ini
+ * tetap harus menampilkan keadaan sekarang dengan utuh.
+ */
+function DetailZona({
+  zona,
+  riwayat,
+}: {
+  zona: ZonaStatus;
+  riwayat: KeandalanZona | null;
+}) {
+  const s = STATUS[zona.status];
+  return (
+    <div>
+      <div className="flex items-start justify-between gap-3">
+        <h3 className="font-display text-lg font-bold tracking-[-0.02em]">
+          {zona.nama}
+        </h3>
+        <Badge nada={s.nada} titik>
+          {s.label}
+        </Badge>
+      </div>
+
+      <p className="mt-3 max-w-[48ch] text-[13.5px] leading-relaxed">
+        {zona.keterangan ?? (
+          <span className="text-muted">
+            Layanan di zona ini berjalan normal. Tidak ada pekerjaan perbaikan
+            yang sedang berlangsung.
+          </span>
+        )}
       </p>
-      <h1 className="mt-2 text-3xl font-bold tracking-tight">Status Layanan</h1>
-      <p className="mt-3 max-w-2xl text-slate-600 dark:text-slate-400">
-        Peta status layanan air per zona: normal, gangguan, perbaikan. Tanpa login.
-      </p>
-      <p className="mt-8 rounded-xl border border-dashed border-slate-300 px-5 py-4 text-sm text-slate-500 dark:border-slate-700">
-        Halaman ini belum dikerjakan. Lihat issue GitHub untuk spesifikasinya.
-      </p>
-    </main>
+
+      <dl className="mt-5 border-t border-line text-[13px]">
+        <Baris label="Pelanggan terdampak">
+          <span className="tabular font-mono font-semibold">
+            {angka(zona.pelangganTerdampak)}
+          </span>{" "}
+          <span className="text-muted">pelanggan</span>
+        </Baris>
+        <Baris label="Berlangsung sejak">
+          {zona.sejak ? tanggalJam(zona.sejak) : "—"}
+        </Baris>
+        <Baris
+          label={
+            <span className="flex items-center gap-1.5">
+              <Clock size={13} aria-hidden />
+              Perkiraan pulih
+            </span>
+          }
+        >
+          {zona.perkiraanPulih ? tanggalJam(zona.perkiraanPulih) : "—"}
+        </Baris>
+      </dl>
+
+      {riwayat ? (
+        <div className="mt-5 border-t border-line pt-4">
+          <p className="eyebrow text-muted">
+            Rekam jejak {angka(riwayat.harian.length)} hari
+          </p>
+          <p className="mt-2 flex items-baseline gap-1.5">
+            <span
+              className={`tabular font-mono text-[1.5rem] leading-none font-bold ${
+                riwayat.keandalanPct === null
+                  ? "text-muted"
+                  : riwayat.keandalanPct >= TARGET_KEANDALAN
+                    ? "text-success"
+                    : "text-warn"
+              }`}
+            >
+              {riwayat.keandalanPct === null
+                ? "—"
+                : `${angka(riwayat.keandalanPct, 1)}%`}
+            </span>
+            <span className="text-[12.5px] text-muted">waktu normal</span>
+          </p>
+          <p className="tabular mt-1.5 font-mono text-[12.5px] text-muted">
+            {angka(riwayat.jumlahGangguan)} kali terganggu ·{" "}
+            {durasi(riwayat.totalJamTerganggu)} tanpa air
+          </p>
+          <StripHarian harian={riwayat.harian} className="mt-3.5" />
+        </div>
+      ) : null}
+
+      {zona.status !== "normal" ? (
+        <p className="mt-5 border-l-2 border-line-strong pl-3.5 text-[12.5px] leading-relaxed text-muted">
+          Perkiraan waktu pulih bisa berubah mengikuti kondisi di lapangan.
+          Sudah melapor? Lacak perkembangannya di halaman Lacak Pengaduan.
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+/** Baris keterangan bergaris — pasangan label dan nilai, tanpa angka telanjang. */
+function Baris({
+  label,
+  children,
+}: {
+  label: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-baseline justify-between gap-4 border-b border-line/70 py-2.5 last:border-0">
+      <dt className="text-muted">{label}</dt>
+      <dd className="text-right font-medium">{children}</dd>
+    </div>
   );
 }
