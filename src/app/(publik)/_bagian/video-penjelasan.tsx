@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const SUMBER = "/penjelasan.mp4";
 const POSTER = "/penjelasan.jpg";
@@ -23,6 +23,29 @@ const TAKARIR = "/penjelasan.id.vtt";
  */
 export function VideoPenjelasan() {
   const [gagal, setGagal] = useState(false);
+  const ref = useRef<HTMLVideoElement>(null);
+
+  /*
+   * Video DIHENTIKAN saat komponennya dilepas.
+   *
+   * Terbukti di browser: setelah berpindah dari landing ke /status lewat
+   * navigasi klien, elemen videonya masih ada di DOM dan suaranya terus
+   * berjalan — `paused=false`, waktu putar naik dari 1,44 ke 4,45 detik.
+   * Pengguna mendengar narasi dari halaman yang sudah ia tinggalkan dan
+   * tidak punya cara menghentikannya, karena pemutarnya sudah tidak terlihat.
+   *
+   * Menjeda saja tidak cukup: `src` ikut dikosongkan dan `load()` dipanggil,
+   * supaya unduhan 25 MB-nya benar-benar berhenti, bukan hanya suaranya.
+   */
+  useEffect(() => {
+    const v = ref.current;
+    return () => {
+      if (!v) return;
+      v.pause();
+      v.removeAttribute("src");
+      v.load();
+    };
+  }, []);
 
   /*
    * Keberadaan berkasnya DITANYAKAN, tidak ditunggu.
@@ -72,6 +95,7 @@ export function VideoPenjelasan() {
         </div>
       ) : (
         <video
+          ref={ref}
           className="block aspect-video w-full bg-brand-900"
           controls
           preload="none"
