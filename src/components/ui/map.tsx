@@ -945,7 +945,10 @@ function ControlButton({
       aria-label={label}
       type="button"
       className={cn(
-        "flex size-8 items-center justify-center transition-colors",
+        // 44px, bukan 32px. Ini satu-satunya cara memperbesar peta bagi
+        // orang yang tidak terbiasa mencubit layar, dan di ponsel 32px
+        // terlalu kecil untuk jempol.
+        "flex size-11 items-center justify-center transition-colors",
         "first:rounded-t-md last:rounded-b-md",
         "hover:bg-soft dark:hover:bg-soft/40",
         "focus-visible:ring-brand-500 focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset",

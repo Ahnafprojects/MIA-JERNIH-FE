@@ -560,7 +560,7 @@ export function KolomAir() {
     <figure className="relative mx-auto flex items-end gap-5">
       {/* Skala liter di sisi kiri tabung — tetap HTML supaya angkanya bisa
           dipilih dan diperbesar bersama teks halaman. */}
-      <div className="relative h-[clamp(18rem,42vw,25rem)] w-14 shrink-0">
+      <div className="relative h-[clamp(18rem,42vw,28.6rem)] w-14 shrink-0">
         {takar.map((t) => (
           <div
             key={t}
@@ -576,7 +576,7 @@ export function KolomAir() {
       </div>
 
       {/* Tabung. */}
-      <div className="relative h-[clamp(18rem,42vw,25rem)] w-[clamp(9rem,22vw,12.5rem)]">
+      <div className="relative h-[clamp(18rem,42vw,28.6rem)] w-[clamp(9rem,22vw,12.5rem)]">
         <canvas
           ref={kanvasRef}
           aria-hidden

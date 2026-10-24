@@ -51,3 +51,13 @@ next-env.d.ts
 AGENTS.md
 CLAUDE.md
 .cursorrules
+
+# Berkas sumber video penjelasan. Yang dipakai situs ada di `public/penjelasan.*`;
+# ketiganya di akar repo hanya salinan kerja dan menambah 23 MB percuma.
+/jernih-penjelasan-produk.mp4
+/jernih-narasi.srt
+/jernih-teks-layar.srt
+/jernih-hero.mp4
+/jernih-penjelasan-bernarasi.mp4
+/jernih-penjelasan-final.mp4
+/Jernih_Narasi_fenrir.wav

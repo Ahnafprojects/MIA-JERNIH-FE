@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, Public_Sans, JetBrains_Mono } from "next/font/google";
 import { skripTema } from "@/components/ui/tema";
+import { skripRingkas } from "./(konsol)/_ringkas";
 import "./globals.css";
 
 /*
@@ -46,7 +47,21 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="id" suppressHydrationWarning>
+    /*
+      Variabel huruf dipasang di <html>, BUKAN <body>.
+
+      next/font menaruh `--font-*-src` di elemen yang diberi kelasnya,
+      sedangkan token yang memakainya (`--font-sans` dkk.) diterbitkan
+      Tailwind di `:root` — yaitu <html> itu sendiri. Kalau sumbernya ada di
+      <body>, token di `:root` menunjuk ke variabel yang belum ada di sana,
+      nilainya jadi tidak sah, dan SELURUH situs diam-diam memakai huruf
+      bawaan sistem tanpa satu pun galat bangun. Jangan dipindah ke <body>.
+    */
+    <html
+      lang="id"
+      suppressHydrationWarning
+      className={`${display.variable} ${sans.variable} ${mono.variable}`}
+    >
       <head>
         {/*
           Tema dipasang SEBELUM render pertama. Tanpa ini halaman berkedip
@@ -54,12 +69,19 @@ export default function RootLayout({
           persis itu yang akan dilihat juri saat membuka situsnya.
         */}
         <script dangerouslySetInnerHTML={{ __html: skripTema }} />
+        {/*
+          Lebar sidebar konsol dipasang sebelum render pertama, sama seperti
+          tema. Tanpa ini sidebar melebar sekejap lalu menyempit tiap kali
+          petugas berpindah halaman — kedipan yang terjadi puluhan kali
+          sehari di layar yang dipakai berjam-jam.
+
+          Dipasang di sini, bukan di layout konsol, karena hanya skrip di
+          <head> yang jalan SEBELUM halaman digambar. Di halaman publik
+          atributnya tidak dipakai siapa pun dan tidak berpengaruh apa-apa.
+        */}
+        <script dangerouslySetInnerHTML={{ __html: skripRingkas }} />
       </head>
-      <body
-        className={`${display.variable} ${sans.variable} ${mono.variable} antialiased`}
-      >
-        {children}
-      </body>
+      <body className="antialiased">{children}</body>
     </html>
   );
 }
