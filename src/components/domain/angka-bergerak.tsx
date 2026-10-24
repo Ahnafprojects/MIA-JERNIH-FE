@@ -18,13 +18,15 @@ const keluar = (t: number) => 1 - Math.pow(1 - t, 3);
  *
  * - `null` berarti server tidak mengirim angkanya. Ditampilkan em dash, dan
  *   TIDAK dianimasikan dari atau menuju nol — nol itu nilai yang sah, dan
- *   melintasinya akan terbaca sebagai hasil pengukuran sesaat.
+ *   melintasinya akan terbaca sebagai hasil pengukuran sesaat. `NaN` dan tak
+ *   hingga diperlakukan sama: keduanya bukan hasil pengukuran, dan menuliskan
+ *   "NaN" di halaman publik lebih buruk daripada mengaku angkanya tidak ada.
  * - `prefers-reduced-motion` melompat langsung ke nilai akhir.
  * - Animasi dibatalkan saat nilai berganti di tengah jalan, supaya dua
  *   perjalanan tidak berebut menulis angka yang sama.
  */
 export function AngkaBergerak({
-  nilai,
+  nilai: nilaiMasuk,
   desimal = 0,
   durasi = 650,
   className,
@@ -34,6 +36,10 @@ export function AngkaBergerak({
   durasi?: number;
   className?: string;
 }) {
+  const nilai =
+    typeof nilaiMasuk === "number" && Number.isFinite(nilaiMasuk)
+      ? nilaiMasuk
+      : null;
   const [tampil, setTampil] = useState<number | null>(nilai);
   const dariRef = useRef<number | null>(nilai);
   const rafRef = useRef<number | null>(null);

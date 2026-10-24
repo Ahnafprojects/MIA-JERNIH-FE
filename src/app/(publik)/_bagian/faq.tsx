@@ -27,7 +27,12 @@ export function Faq() {
       {ISI.map((f) => (
         // <details> dipakai agar accordion tetap berfungsi tanpa JavaScript
         // dan sudah bisa dinavigasi papan ketik tanpa kode tambahan.
-        <details key={f.t} className="group py-5">
+        //
+        // `faq-isi` hanya menambahkan transisi tinggi (lihat `globals.css`).
+        // Buka-tutupnya tetap milik <details>: kalau mesin render belum
+        // mengenal `::details-content`, yang hilang transisinya saja —
+        // jawabannya tetap terbuka seperti biasa.
+        <details key={f.t} className="faq-isi group py-5">
           <summary className="flex cursor-pointer list-none items-baseline justify-between gap-5 font-display text-[1.05rem] font-semibold tracking-[-0.01em]">
             {f.t}
             <span

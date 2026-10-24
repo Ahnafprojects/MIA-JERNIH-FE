@@ -15,6 +15,7 @@ import { KolomAir } from "./_bagian/kolom-air";
 import { VideoHero } from "./_bagian/video-hero";
 import { PitaStatistik } from "./_bagian/pita-statistik";
 import { MeterPeraga } from "./_bagian/meter-peraga";
+import { VideoPenjelasan } from "./_bagian/video-penjelasan";
 import { Faq } from "./_bagian/faq";
 import { Muncul } from "./_bagian/muncul";
 import { angka, rupiah } from "@/lib/format";
@@ -29,7 +30,7 @@ const TRANSPARANSI = [
   {
     href: "/lacak",
     judul: "Lacak pengaduan",
-    teks: "Nomor tiket, lalu lihat sudah sampai mana. Tidak perlu masuk.",
+    teks: "Masukkan nomor tiket, lalu lihat penanganannya sudah sampai mana.",
   },
   {
     href: "/kinerja",
@@ -59,7 +60,7 @@ const LANGKAH = [
   },
   {
     judul: "Lihat tiap liter",
-    teks: "Saldo dan debit berubah di layar, bukan menunggu akhir bulan.",
+    teks: "Saldo dan debit berubah di layar seketika, tanpa menunggu akhir bulan.",
   },
 ];
 
@@ -124,8 +125,8 @@ export default function Landing() {
       </Muncul>
 
       {/* ── Empat pintu transparansi ─────────────────────────────────── */}
-      <Muncul sebagai="section" className="mx-auto max-w-6xl px-5 py-24">
-        <div className="max-w-2xl">
+      <section className="mx-auto max-w-6xl px-5 py-24">
+        <Muncul className="max-w-2xl">
           <p className="eyebrow text-muted">Tanpa akun</p>
           <h2 className="mt-3 font-display text-[clamp(1.9rem,3.6vw,2.8rem)] leading-tight font-semibold tracking-[-0.02em]">
             Yang biasanya tertutup, di sini dibuka
@@ -134,67 +135,112 @@ export default function Landing() {
             Empat halaman berikut bisa dibuka siapa pun — termasuk yang bukan
             pelanggan, termasuk yang sedang menilai layanannya.
           </p>
-        </div>
+        </Muncul>
 
         {/*
           Daftar bergaris, bukan kartu membulat. Kartu seragam adalah pola
           yang paling sering dipakai dan paling cepat terlupa; baris bergaris
           membuat keempatnya terbaca sebagai satu daftar catatan publik.
+
+          Keempat baris masuk berjenjang, bukan serentak: daftar ini memang
+          dibaca satu per satu dari atas, dan jenjang 70ms itulah yang
+          memberitahu mata urutannya. Yang berjenjang BARISNYA, bukan
+          wadahnya — dua transform bertumpuk terbaca ramai.
         */}
-        <ul className="mt-12 border-t border-line">
-          {TRANSPARANSI.map((t, i) => (
-            <li key={t.href}>
-              <Link
-                href={t.href}
-                className="group relative grid grid-cols-[2.5rem_1fr_auto] items-baseline gap-x-4 gap-y-1 border-b border-line py-7 transition-colors hover:bg-surface sm:grid-cols-[3.5rem_16rem_1fr_auto] sm:gap-x-8"
-              >
-                {/* Garis bawah melebar dari kiri — arah yang sama dengan
-                    arah baca dan dengan panah di ujung kanan, jadi dua
-                    gerakan kecil ini menunjuk ke tempat yang sama. */}
-                <span
-                  aria-hidden
-                  className="pointer-events-none absolute -bottom-px left-0 h-px w-full origin-left scale-x-0 bg-brand-500 transition-transform duration-[380ms] ease-out group-hover:scale-x-100 group-focus-visible:scale-x-100"
-                />
-                <span className="tabular font-mono text-[13px] text-brand-400">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <span className="font-display text-[1.35rem] font-semibold tracking-[-0.01em]">
-                  {t.judul}
-                </span>
-                <span className="col-start-2 text-[14.5px] leading-relaxed text-muted sm:col-start-3">
-                  {t.teks}
-                </span>
-                <ArrowRight
-                  size={18}
-                  aria-hidden
-                  className="col-start-3 row-start-1 self-center text-line-strong transition-all group-hover:translate-x-1 group-hover:text-brand-600 sm:col-start-4"
-                />
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </Muncul>
+        <Muncul className="mt-12" pilih="li" langkah={70}>
+          <ul className="border-t border-line">
+            {TRANSPARANSI.map((t, i) => (
+              <li key={t.href}>
+                <Link
+                  href={t.href}
+                  className="sorot group relative isolate grid grid-cols-[2.5rem_1fr_auto] items-baseline gap-x-4 gap-y-1 border-b border-line py-7 sm:grid-cols-[3.5rem_16rem_1fr_auto] sm:gap-x-8"
+                >
+                  {/* Garis bawah melebar dari kiri — arah yang sama dengan
+                      arah baca dan dengan panah di ujung kanan, jadi dua
+                      gerakan kecil ini menunjuk ke tempat yang sama. */}
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute -bottom-px left-0 h-px w-full origin-left scale-x-0 bg-brand-500 transition-transform duration-[380ms] ease-out group-hover:scale-x-100 group-focus-visible:scale-x-100"
+                  />
+                  {/* Nomor urutnya isi, bukan hiasan — jadi ia harus terbaca.
+                      brand-400 hanya 2,4:1 di atas latar terang. */}
+                  <span className="tabular font-mono text-[13px] text-brand-600">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <span className="font-display text-[1.35rem] font-semibold tracking-[-0.01em]">
+                    {t.judul}
+                  </span>
+                  <span className="col-start-2 text-[14.5px] leading-relaxed text-muted sm:col-start-3">
+                    {t.teks}
+                  </span>
+                  {/* Hanya panah yang bergerak — 4px ke arah tujuannya. Nomor
+                      urut dan teks tetap diam: sorotnya tidak menyentuh tata
+                      letak sama sekali. */}
+                  <ArrowRight
+                    size={18}
+                    aria-hidden
+                    className="col-start-3 row-start-1 self-center text-line-strong transition-[transform,color] duration-200 group-hover:translate-x-1 group-hover:text-brand-600 sm:col-start-4"
+                  />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Muncul>
+      </section>
 
       {/* ── Meter: benda nyata di balik angka ────────────────────────── */}
-      <Muncul sebagai="section" className="border-y border-line bg-silt dark:bg-silt">
+      {/* ── Video penjelasan ─────────────────────────────────────────── */}
+      <section className="mx-auto max-w-4xl px-5 pb-24">
+        <Muncul>
+          <p className="eyebrow text-brand-700">Video penjelasan</p>
+          <h2 className="mt-3 max-w-2xl font-display text-[clamp(1.9rem,3.6vw,2.8rem)] leading-tight font-semibold tracking-[-0.02em]">
+            Seluruhnya dalam sembilan puluh detik
+          </h2>
+          <p className="mt-4 max-w-xl text-[16px] leading-relaxed text-muted">
+            Cara meternya bekerja, apa yang terbuka tanpa akun, dan angka mana
+            yang masih di bawah target.
+          </p>
+          <div className="mt-9">
+            <VideoPenjelasan />
+          </div>
+          {/*
+            Keterangan ini bukan basa-basi: ia menjanjikan bahwa tidak ada
+            satu pun keterangan yang HANYA hidup di dalam video. Halaman
+            yang menyembunyikan isinya di balik pemutar video adalah
+            kebalikan dari transparansi.
+          */}
+          <p className="mt-4 text-[13px] text-muted">
+            Bertakarir Bahasa Indonesia. Seluruh isinya juga tersedia sebagai
+            teks di keempat halaman di atas.
+          </p>
+        </Muncul>
+      </section>
+
+      <section className="lapis-endap border-y border-line">
         <div className="mx-auto grid max-w-6xl items-center gap-14 px-5 py-24 lg:grid-cols-[1fr_auto]">
-          <div className="max-w-lg">
+          {/*
+            Keterangan datang dari kiri, alatnya menyusul dari bawah sepersekian
+            detik kemudian. Dua arah yang berbeda membuat keduanya terbaca
+            sebagai PASANGAN — kalimat lalu bendanya — bukan dua blok yang
+            kebetulan sebaris.
+          */}
+          <Muncul className="max-w-lg" arah="kiri">
             <p className="eyebrow text-brand-700 dark:text-brand-500">
               Di balik angkanya
             </p>
             <h2 className="mt-3 font-display text-[clamp(1.9rem,3.6vw,2.8rem)] leading-tight font-semibold tracking-[-0.02em]">
-              Ada meter yang benar-benar berbunyi
+              Meternya benar-benar berbunyi
             </h2>
             <p className="mt-4 text-[16px] leading-relaxed text-muted">
               Saldo tinggal 5 liter, meter berbunyi tiap 10 detik. Tinggal 2
-              liter, tiap 2 detik. Habis, aliran menutup sendiri. Angka di
-              layar ponsel Anda adalah angka yang sama di layar meter.
+              liter, tiap 2 detik. Habis, aliran menutup sendiri. Angka di layar
+              ponsel Anda sama persis dengan angka di layar meter.
             </p>
 
             <dl className="mt-9 grid gap-x-8 gap-y-5 sm:grid-cols-2">
               {[
-                ["≤ 5 liter", "bip tiap 10 detik"],
-                ["≤ 2 liter", "bip tiap 2 detik"],
+                ["≤ 5 liter", "bunyi tiap 10 detik"],
+                ["≤ 2 liter", "bunyi tiap 2 detik"],
                 ["0 liter", "bunyi terus, aliran tertutup"],
                 ["Token masuk", "keran hidup kembali"],
               ].map(([t, d]) => (
@@ -206,7 +252,7 @@ export default function Landing() {
                 </div>
               ))}
             </dl>
-          </div>
+          </Muncul>
 
           {/*
             Kolom air berdampingan dengan meter. Di hero ia mubazir — klip
@@ -214,50 +260,81 @@ export default function Landing() {
             ini memang tentang benda fisik di balik angkanya, dan kolom ini
             satu-satunya yang angkanya BENAR-BENAR bergerak, bukan rekaman.
           */}
-          <div className="flex flex-wrap items-end justify-center gap-x-10 gap-y-12">
+          {/*
+            `items-start`, BUKAN `items-end`.
+
+            Dengan `items-end` yang disejajarkan adalah tepi bawah kedua blok
+            — padahal blok meter menyertakan teks keterangan di bawah
+            alatnya. Hasilnya badan meter berakhir 120px di atas dasar kolom
+            air sementara puncaknya 178px lebih tinggi: tidak ada satu sisi
+            pun yang benar-benar lurus. Dengan tepi atas yang dikunci,
+            kedua alat berangkat dari garis yang sama dan keterangannya
+            menggantung di bawah — yang memang tempatnya.
+          */}
+          <Muncul
+            className="flex flex-wrap items-start justify-center gap-x-10 gap-y-12"
+            tunda={140}
+          >
             <KolomAir />
             <MeterPeraga />
-          </div>
+          </Muncul>
         </div>
-      </Muncul>
+      </section>
 
       {/* ── Cara kerja ───────────────────────────────────────────────── */}
-      <Muncul sebagai="section" className="mx-auto max-w-6xl px-5 py-24">
-        <h2 className="max-w-xl font-display text-[clamp(1.9rem,3.6vw,2.8rem)] leading-tight font-semibold tracking-[-0.02em]">
-          Dari kode jadi air, empat langkah
-        </h2>
+      <section className="mx-auto max-w-6xl px-5 py-24">
+        <Muncul>
+          <h2 className="max-w-xl font-display text-[clamp(1.9rem,3.6vw,2.8rem)] leading-tight font-semibold tracking-[-0.02em]">
+            Dari kode jadi air, empat langkah
+          </h2>
+        </Muncul>
 
-        <ol className="mt-12 grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
-          {LANGKAH.map((l, i) => (
-            <li key={l.judul} className="border-t-2 border-brand-200 pt-5">
-              <span className="tabular font-mono text-[12px] font-semibold text-brand-500">
-                Langkah {i + 1}
-              </span>
-              <h3 className="mt-2 font-display text-[1.3rem] font-semibold tracking-[-0.01em]">
-                {l.judul}
-              </h3>
-              <p className="mt-2 text-[14.5px] leading-relaxed text-muted">
-                {l.teks}
-              </p>
-            </li>
-          ))}
-        </ol>
-      </Muncul>
+        {/* Jenjangnya mengikuti urutan bacanya, karena di sini urutan itu
+            memang syarat: tiap langkah baru mungkin setelah yang sebelumnya. */}
+        <Muncul className="mt-12" pilih="li" langkah={90}>
+          <ol className="grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
+            {LANGKAH.map((l, i) => (
+              <li key={l.judul} className="border-t-2 border-brand-200 pt-5">
+                {/* brand-500 adalah aksen untuk data hidup, bukan untuk teks
+                    12px di atas latar terang: di sana ia hanya 2,6:1. Label
+                    ini memakai brand-600 yang lulus di kedua tema. */}
+                <span className="tabular font-mono text-[12px] font-semibold text-brand-600">
+                  Langkah {i + 1}
+                </span>
+                <h3 className="mt-2 font-display text-[1.3rem] font-semibold tracking-[-0.01em]">
+                  {l.judul}
+                </h3>
+                <p className="mt-2 text-[14.5px] leading-relaxed text-muted">
+                  {l.teks}
+                </p>
+              </li>
+            ))}
+          </ol>
+        </Muncul>
+      </section>
 
       {/* ── Paket ────────────────────────────────────────────────────── */}
-      <Muncul sebagai="section" className="border-t border-line bg-surface">
+      <section className="lapis-permukaan border-t border-line">
         <div className="mx-auto max-w-6xl px-5 py-24">
-          <div className="flex flex-wrap items-end justify-between gap-6">
+          <Muncul className="flex flex-wrap items-end justify-between gap-6">
             <h2 className="max-w-md font-display text-[clamp(1.9rem,3.6vw,2.8rem)] leading-tight font-semibold tracking-[-0.02em]">
-              Beli seberapa yang dibutuhkan
+              Beli sebanyak yang dibutuhkan
             </h2>
             <p className="text-[15px] text-muted">
               Tarif {rupiah(TARIF_PER_LITER, 1)} per liter · minimal 500 liter
             </p>
-          </div>
+          </Muncul>
 
-          {/* Tabel harga, bukan empat kartu — harga memang dibandingkan. */}
-          <div className="mt-12 overflow-x-auto">
+          {/* Tabel harga, bukan empat kartu — harga memang dibandingkan.
+              Barisnya hanya memudar masuk berurutan: paket memang dibaca
+              dari yang terkecil, dan geseran di dalam wadah yang bisa
+              digulir mendatar justru menambah lebar gulirnya. */}
+          <Muncul
+            className="mt-12 overflow-x-auto"
+            pilih="tbody tr"
+            arah="pudar"
+            langkah={70}
+          >
             <table className="w-full min-w-[32rem] border-collapse text-left">
               <thead>
                 <tr className="border-b border-line-strong">
@@ -265,7 +342,7 @@ export default function Landing() {
                   <th className="eyebrow pb-3 text-right text-muted">Liter</th>
                   <th className="eyebrow pb-3 text-right text-muted">Harga</th>
                   <th className="eyebrow pb-3 text-right text-muted">
-                    Kira-kira cukup
+                    Perkiraan pemakaian
                   </th>
                 </tr>
               </thead>
@@ -292,9 +369,9 @@ export default function Landing() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </Muncul>
         </div>
-      </Muncul>
+      </section>
 
       {/* ── FAQ ──────────────────────────────────────────────────────── */}
       <Muncul sebagai="section" className="border-t border-line">

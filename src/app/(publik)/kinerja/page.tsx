@@ -17,6 +17,7 @@ import { Badge, type Nada } from "@/components/ui/badge";
 import { KeadaanGalat, KeadaanKosong, Skeleton } from "@/components/ui/keadaan";
 import { BarMini, GrafikGaris } from "@/components/domain/grafik";
 import { AngkaUtama } from "@/components/domain/angka-utama";
+import { AngkaBergerak } from "@/components/domain/angka-bergerak";
 import useApi from "@/lib/use-api";
 import { cn } from "@/lib/cn";
 import { angka, tanggal } from "@/lib/format";
@@ -69,8 +70,8 @@ const ISTILAH: [string, React.ReactNode][] = [
   [
     "Yang terlambat tetap dihitung",
     <>
-      Pengaduan yang melewati batas waktu tidak dikeluarkan dari laporan.
-      Kalau angkanya turun, halaman ini memperlihatkannya turun.
+      Pengaduan yang melewati batas waktu tidak dikeluarkan dari laporan. Kalau
+      angkanya turun, halaman ini memperlihatkannya turun.
     </>,
   ],
 ];
@@ -92,30 +93,53 @@ export default function HalamanKinerja() {
   const perKategori = data?.perKategori ?? [];
   const meleset = perKategori.filter((k) => k.ketepatanPct < TARGET).length;
 
+  /** Bagian yang selesai, dalam persen. `null` bila salah satu sukunya hilang
+   *  — sebuah pembagian tanpa pembilang bukan "0%". */
+  const pctSelesai =
+    masuk !== null && selesai !== null && masuk > 0
+      ? (selesai / masuk) * 100
+      : null;
+
+  /*
+   * `nilai` disimpan sebagai ANGKA, bukan teks yang sudah diformat.
+   *
+   * Angka pendukung ikut berganti tiap kali rentang waktunya diganti, dan
+   * kalau ia melompat dalam satu bingkai sementara angka besar di atasnya
+   * berjalan, halamannya terbaca seperti hanya sebagian yang diperbarui.
+   * `AngkaBergerak` yang memformatnya, jadi ia butuh angkanya apa adanya.
+   */
   const ringkas: {
     label: string;
-    nilai: string | null;
+    nilai: number | null;
+    desimal?: number;
     satuan: string;
-    kaki: string;
+    kaki: React.ReactNode;
   }[] = [
     {
       label: "Pengaduan masuk",
-      nilai: masuk === null ? null : angka(masuk),
+      nilai: masuk,
       satuan: "laporan",
       kaki: `selama ${hari} hari terakhir`,
     },
     {
       label: "Selesai ditangani",
-      nilai: selesai === null ? null : angka(selesai),
+      nilai: selesai,
       satuan: "laporan",
+      // Persennya ikut berjalan: ia angka yang berubah juga, dan membiarkannya
+      // melompat sementara angka di atasnya berjalan justru menarik mata ke
+      // bagian yang salah.
       kaki:
-        masuk !== null && selesai !== null && masuk > 0
-          ? `${angka((selesai / masuk) * 100, 1)}% dari yang masuk`
-          : "termasuk yang melewati batas waktu",
+        pctSelesai === null ? (
+          "termasuk yang melewati batas waktu"
+        ) : (
+          <>
+            <AngkaBergerak nilai={pctSelesai} desimal={1} />% dari yang masuk
+          </>
+        ),
     },
     {
       label: "Rata-rata waktu tanggap",
-      nilai: tanggap === null ? null : angka(tanggap),
+      nilai: tanggap,
       satuan: "menit",
       kaki: "dari laporan masuk sampai petugas ditugaskan",
     },
@@ -139,13 +163,16 @@ export default function HalamanKinerja() {
           periode. */}
       <div className="flex flex-wrap items-center gap-2 border-b border-line pb-5">
         {RENTANG.map((r) => (
+          /* Tinggi 44px: ini satu-satunya kendali di halaman, dan di ponsel
+             ia harus bisa dikenai jempol. Tombol setinggi 37px lolos di tikus
+             dan meleset di tangan. */
           <button
             key={r.hari}
             type="button"
             onClick={() => setHari(r.hari)}
             aria-pressed={hari === r.hari}
             className={cn(
-              "rounded-input border px-4 py-2 text-[13px] font-semibold transition-colors",
+              "inline-flex h-11 items-center rounded-input border px-4 text-[13px] font-semibold transition-colors",
               hari === r.hari
                 ? "border-brand-500 bg-brand-600 text-white"
                 : "border-line-strong hover:bg-soft",
@@ -154,8 +181,12 @@ export default function HalamanKinerja() {
             {r.label}
           </button>
         ))}
+        {/* Di layar sempit tanggalnya turun ke barisnya sendiri. `ml-auto`
+            tetap dipertahankan supaya di layar lebar ia menempel ke kanan,
+            dan `basis-full sm:basis-auto` yang memastikan ia tidak pernah
+            terjepit di sisa ruang sebaris dengan tombol. */}
         {data ? (
-          <span className="tabular ml-auto font-mono text-[12.5px] text-muted">
+          <span className="tabular basis-full font-mono text-[12.5px] text-muted sm:ml-auto sm:basis-auto sm:text-right">
             {tanggal(data.periode.mulai)} – {tanggal(data.periode.selesai)}
           </span>
         ) : null}
@@ -195,11 +226,17 @@ export default function HalamanKinerja() {
                       nilai={ketepatan}
                       maks={100}
                       tanda={TARGET}
-                      nada={ketepatan !== null && ketepatan >= TARGET ? "sukses" : "peringatan"}
+                      nada={
+                        ketepatan !== null && ketepatan >= TARGET
+                          ? "sukses"
+                          : "peringatan"
+                      }
                       className="h-2.5"
                     />
                     <div className="relative mt-2 h-4 text-[11px] text-muted">
-                      <span className="tabular absolute top-0 left-0 font-mono">0%</span>
+                      <span className="tabular absolute top-0 left-0 font-mono">
+                        0%
+                      </span>
                       <span
                         className="absolute top-0 -translate-x-full pr-1.5 whitespace-nowrap"
                         style={{ left: `${TARGET}%` }}
@@ -265,14 +302,14 @@ export default function HalamanKinerja() {
                     <Skeleton className="h-7 w-20" />
                   ) : (
                     <>
-                      <span
+                      <AngkaBergerak
+                        nilai={r.nilai}
+                        desimal={r.desimal ?? 0}
                         className={cn(
                           "tabular font-mono text-[1.75rem] leading-none font-bold",
                           r.nilai === null && "text-muted",
                         )}
-                      >
-                        {r.nilai ?? "—"}
-                      </span>
+                      />
                       {r.nilai === null ? null : (
                         <span className="text-[13px] font-medium text-muted">
                           {r.satuan}
@@ -281,7 +318,9 @@ export default function HalamanKinerja() {
                     </>
                   )}
                 </dd>
-                <dd className="mt-1.5 text-[12.5px] text-muted">{r.kaki}</dd>
+                <dd className="tabular mt-1.5 text-[12.5px] text-muted">
+                  {r.kaki}
+                </dd>
               </div>
             ))}
           </dl>

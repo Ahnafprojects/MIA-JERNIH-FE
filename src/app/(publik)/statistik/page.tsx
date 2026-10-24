@@ -13,15 +13,22 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge, type Nada } from "@/components/ui/badge";
-import { Tabel, type Kolom } from "@/components/ui/tabel";
 import { KeadaanGalat, KeadaanKosong, Skeleton } from "@/components/ui/keadaan";
 import { BarMini, GrafikCelah } from "@/components/domain/grafik";
 import { AngkaUtama } from "@/components/domain/angka-utama";
+import { AngkaBergerak } from "@/components/domain/angka-bergerak";
 import { PipaAir } from "@/components/domain/pipa-air";
 import useApi from "@/lib/use-api";
 import { cn } from "@/lib/cn";
 import { angka } from "@/lib/format";
 import type { Deret, StatistikPublik } from "@/types/publik";
+import { SeksiTolokUkur } from "./_bagian/tolok-ukur";
+import { SeksiNeracaAir } from "./_bagian/neraca-air";
+import { SeksiTrenBulanan } from "./_bagian/tren-bulanan";
+import { SeksiPerOrang } from "./_bagian/per-orang";
+import { SeksiUnduh } from "./_bagian/unduh";
+import { SeksiMetodologi } from "./_bagian/metodologi";
+import type { NeracaAirPublik } from "./_bagian/tipe";
 
 const RENTANG = [
   { hari: 7, label: "7 hari" },
@@ -111,6 +118,23 @@ export default function HalamanStatistik() {
     `/api/publik/statistik?rentang=${hari}`,
   );
 
+  /*
+   * Lapisan kedua: neraca air, tolok ukur, pemakaian per orang, dan tren 12
+   * bulan. Diambil TERPISAH dari agregat di atas, dan kegagalannya ditangani
+   * di tiap seksi sendiri — bukan dengan mematikan seluruh halaman.
+   *
+   * Halaman transparansi yang kosong total karena satu endpoint tambahan
+   * gagal justru menghapus hal yang ia janjikan. Kalau lapisan ini tidak
+   * datang, cerita utamanya — jarak antara disalurkan dan tercatat — tetap
+   * utuh di layar.
+   */
+  const {
+    data: lanjut,
+    memuat: memuatLanjut,
+    galat: galatLanjut,
+    muatUlang: muatUlangLanjut,
+  } = useApi<NeracaAirPublik>(`/api/publik/neraca-air?rentang=${hari}`);
+
   // NRW di luar 0–100% mustahil. Menampilkannya apa adanya akan jadi
   // pertanyaan pertama juri; lebih baik tampil "—" sampai sumbernya benar.
   const nrwSah =
@@ -137,85 +161,48 @@ export default function HalamanStatistik() {
       ? data.volumeTercatatM3 / data.pelangganTerlayani
       : null;
 
+  /*
+   * Kehilangan menurut endpoint STATISTIK — bukan menurut endpoint neraca
+   * air. Keduanya sengaja dibandingkan di seksi neraca: kalau suatu hari
+   * dua sumber itu berbeda, halaman mengakuinya sendiri alih-alih diam.
+   */
+  const kehilanganDiLayar =
+    data && data.volumeDisalurkanM3 >= data.volumeTercatatM3
+      ? data.volumeDisalurkanM3 - data.volumeTercatatM3
+      : null;
+
+  /*
+   * `nilai` disimpan sebagai ANGKA, bukan teks yang sudah diformat, supaya
+   * `AngkaBergerak` bisa menjalankannya dari nilai lama ke nilai baru saat
+   * rentang waktu diganti. Angka pendukung yang melompat sementara angka besar
+   * di atasnya berjalan membuat halaman terbaca seperti hanya sebagian yang
+   * diperbarui.
+   */
   const ringkas: {
     label: string;
-    nilai: string | null;
+    nilai: number | null;
+    desimal?: number;
     satuan: string;
     kaki: string;
   }[] = [
     {
       label: "Pelanggan terlayani",
-      nilai: data ? angka(data.pelangganTerlayani) : null,
+      nilai: data?.pelangganTerlayani ?? null,
       satuan: "rumah",
       kaki: "sambungan aktif yang terpantau",
     },
     {
       label: "Zona terpantau",
-      nilai: data ? angka(data.jumlahZona) : null,
+      nilai: data?.jumlahZona ?? null,
       satuan: "zona",
       kaki: "wilayah distribusi dengan meter induk",
     },
     {
       label: "Rata-rata tercatat per pelanggan",
-      nilai: rataPerPelanggan === null ? null : angka(rataPerPelanggan, 1),
+      nilai: rataPerPelanggan,
+      desimal: 1,
       satuan: "m³",
       kaki: `selama ${hari} hari terakhir`,
-    },
-  ];
-
-  const kolom: Kolom<BarisZona>[] = [
-    {
-      kunci: "nama",
-      label: "Zona",
-      render: (b) => <span className="font-medium">{b.nama}</span>,
-    },
-    {
-      kunci: "pelanggan",
-      label: "Pelanggan",
-      rata: "kanan",
-      sembunyiKecil: true,
-      render: (b) => (
-        <span className="tabular font-mono">{angka(b.pelanggan)}</span>
-      ),
-    },
-    {
-      kunci: "volume",
-      label: "Volume",
-      rata: "kanan",
-      render: (b) => (
-        // Angka dan satuannya tidak boleh terpisah ke dua baris di ponsel:
-        // "12.480" di satu baris dan "m³" di baris berikutnya sekilas
-        // terbaca sebagai dua hal.
-        <span className="tabular font-mono whitespace-nowrap">
-          {angka(b.volumeM3)} m³
-        </span>
-      ),
-    },
-    {
-      kunci: "nrw",
-      label: "Kehilangan air",
-      rata: "kanan",
-      render: (b) => (
-        // Batang di dalam baris: mata membandingkan panjang jauh lebih cepat
-        // daripada membandingkan angka bertumpuk. Lencana tetap berisi KATA
-        // lewat warnanya, jadi perbandingannya tidak bergantung warna saja.
-        <div className="flex items-center justify-end gap-3">
-          <BarMini
-            nilai={b.nrwPct}
-            maks={maksBar}
-            tanda={AMBANG_BAIK}
-            nada={
-              nadaNrw(b.nrwPct) === "sukses"
-                ? "sukses"
-                : nadaNrw(b.nrwPct) === "peringatan"
-                  ? "peringatan"
-                  : "bahaya"
-            }
-            className="hidden h-2 w-24 sm:block"
-          />
-          <Badge nada={nadaNrw(b.nrwPct)}>{angka(b.nrwPct, 1)}%</Badge>
-        </div>
-      ),
     },
   ];
 
@@ -240,7 +227,10 @@ export default function HalamanStatistik() {
             onClick={() => setHari(r.hari)}
             aria-pressed={hari === r.hari}
             className={cn(
-              "rounded-input border px-4 py-2 text-[13px] font-semibold transition-colors",
+              // `min-h-11` (44px): tiga tombol ini mengatur SELURUH angka di
+              // halaman, dan di ponsel merekalah yang paling sering ditekan.
+              "inline-flex min-h-11 items-center rounded-input border px-4 py-2",
+              "text-[13px] font-semibold transition-colors",
               hari === r.hari
                 ? "border-brand-500 bg-brand-600 text-white"
                 : "border-line-strong hover:bg-soft",
@@ -328,14 +318,14 @@ export default function HalamanStatistik() {
                     <Skeleton className="h-7 w-20" />
                   ) : (
                     <>
-                      <span
+                      <AngkaBergerak
+                        nilai={r.nilai}
+                        desimal={r.desimal ?? 0}
                         className={cn(
                           "tabular font-mono text-[1.75rem] leading-none font-bold",
                           r.nilai === null && "text-muted",
                         )}
-                      >
-                        {r.nilai ?? "—"}
-                      </span>
+                      />
                       {r.nilai === null ? null : (
                         <span className="text-[13px] font-medium text-muted">
                           {r.satuan}
@@ -348,6 +338,17 @@ export default function HalamanStatistik() {
               </div>
             ))}
           </dl>
+
+          {/* ── Pembanding: angka tadi bagus atau buruk ──────────────── */}
+          <SeksiTolokUkur
+            tolokUkur={lanjut?.tolokUkur ?? []}
+            nrwPct={nrwSah}
+            nada={nrwSah === null ? "netral" : nadaNrw(nrwSah)}
+            hari={hari}
+            memuat={memuatLanjut || (lanjut === null && galatLanjut === null)}
+            galat={galatLanjut}
+            onCoba={muatUlangLanjut}
+          />
 
           {/* ── Celah itu sendiri, dari hari ke hari ─────────────────── */}
           <section className="mt-12">
@@ -376,6 +377,16 @@ export default function HalamanStatistik() {
             </div>
           </section>
 
+          {/* ── Gumpalan "hilang di perjalanan" itu dibongkar ────────── */}
+          <SeksiNeracaAir
+            kelompok={lanjut?.kelompok ?? []}
+            kehilanganDiLayar={kehilanganDiLayar}
+            hari={hari}
+            memuat={memuatLanjut || (lanjut === null && galatLanjut === null)}
+            galat={galatLanjut}
+            onCoba={muatUlangLanjut}
+          />
+
           {/* ── Per zona ────────────────────────────────────────────── */}
           <section className="mt-12">
             <div aria-hidden className="takar h-2.5 border-t border-line" />
@@ -389,25 +400,34 @@ export default function HalamanStatistik() {
             <div className="mt-5 overflow-hidden rounded-card border border-line bg-surface">
               {memuat ? (
                 <Skeleton className="m-5 h-48" />
-              ) : (
-                <Tabel
-                  kolom={kolom}
-                  data={perZona}
-                  kunciBaris={(b) => b.nama}
-                  kosong={
-                    <KeadaanKosong
-                      judul="Belum ada zona"
-                      pesan="Tidak ada zona distribusi yang terdata pada rentang ini."
-                    />
-                  }
-                  // Kolom kehilangan air adalah ISI halaman ini; kalau tabel
-                  // dipaksa selebar bawaan, justru kolom itu yang tergeser ke
-                  // luar pandangan di ponsel.
-                  lebarMin="20rem"
+              ) : perZona.length === 0 ? (
+                <KeadaanKosong
+                  judul="Belum ada zona"
+                  pesan="Tidak ada zona distribusi yang terdata pada rentang ini."
                 />
+              ) : (
+                <DaftarZona baris={perZona} maksBar={maksBar} />
               )}
             </div>
           </section>
+
+          {/* ── Arah, bukan cuma posisi ──────────────────────────────── */}
+          <SeksiTrenBulanan
+            bulanan={lanjut?.bulanan ?? []}
+            tolokUkur={lanjut?.tolokUkur ?? []}
+            memuat={memuatLanjut || (lanjut === null && galatLanjut === null)}
+            galat={galatLanjut}
+            onCoba={muatUlangLanjut}
+          />
+
+          {/* ── m³ diterjemahkan jadi sesuatu yang bisa dirasakan ───── */}
+          <SeksiPerOrang
+            perOrang={lanjut?.perOrang ?? null}
+            hari={hari}
+            memuat={memuatLanjut || (lanjut === null && galatLanjut === null)}
+            galat={galatLanjut}
+            onCoba={muatUlangLanjut}
+          />
 
           {/* ── Penjelasan: angka tanpa konteks bukan transparansi ──── */}
           <section className="mt-12">
@@ -430,6 +450,132 @@ export default function HalamanStatistik() {
           </section>
         </>
       )}
+
+      {/*
+       * Dua seksi terakhir sengaja DI LUAR cabang galat di atas.
+       *
+       * Kalau agregat gagal dimuat, justru saat itulah orang paling butuh
+       * jalan lain menuju datanya — alamat endpoint dan berkas mentahnya
+       * tidak bergantung pada permintaan yang baru saja gagal. Halaman yang
+       * menjanjikan data terbuka lalu menyembunyikan tautan unduhannya
+       * begitu satu permintaan gagal menarik kembali janjinya pada saat
+       * janji itu paling diperlukan.
+       */}
+      <SeksiUnduh hari={hari} />
+      <SeksiMetodologi
+        meta={lanjut?.meta ?? null}
+        memuat={memuatLanjut || (lanjut === null && galatLanjut === null)}
+      />
     </div>
+  );
+}
+
+/**
+ * Rincian per zona — daftar bergaris yang MENYUSUN ULANG dirinya, bukan tabel
+ * yang bergulir mendatar.
+ *
+ * ── Kenapa bukan `<Tabel>` lagi ────────────────────────────────────────
+ *
+ * Versi sebelumnya memakai `<Tabel>` dengan `lebarMin="20rem"`. Itu sudah
+ * lebih sempit dari bawaannya, tapi 20rem = 320px tetap lebih lebar daripada
+ * ruang yang tersisa di layar 320px (278px setelah padding halaman dan
+ * kartu). Hasilnya diukur di peramban: tabelnya bergulir di dalam kartunya,
+ * dan kolom "Kehilangan air" — satu-satunya angka yang jadi alasan seksi ini
+ * ada — duduk pada x 277–327px, yaitu DI LUAR layar. Kabar terpentingnya
+ * hanya bisa dibaca oleh orang yang menebak bahwa kartu itu bisa digeser.
+ *
+ * Sebagai daftar, tiap zona jadi satu blok: nama di atas, lalu jumlah
+ * pelanggan dan volumenya, lalu batang dan persennya memenuhi lebar baris.
+ * Tidak ada yang bisa tergeser ke luar pandangan, berapa pun sempit layarnya.
+ *
+ * Mulai `md` barisnya kembali berjajar sebagai kolom lewat `md:contents`,
+ * jadi bacaan tabularnya — membandingkan satu kolom dari atas ke bawah —
+ * tetap utuh di layar lebar, lengkap dengan kepala kolomnya.
+ */
+const KOLOM_ZONA =
+  "md:grid-cols-[minmax(0,1fr)_6rem_7.5rem_minmax(10rem,15rem)] md:gap-x-5";
+
+function DaftarZona({
+  baris,
+  maksBar,
+}: {
+  baris: BarisZona[];
+  maksBar: number;
+}) {
+  return (
+    <>
+      {/* Kepala kolom hanya ada saat kolomnya memang berjajar. Di bawah `md`
+          tiap angka membawa labelnya sendiri di dalam barisnya. */}
+      <div
+        aria-hidden
+        className={cn(
+          "hidden border-b border-line px-5 py-2.5 md:grid",
+          "text-[11px] font-semibold tracking-wider text-muted uppercase",
+          KOLOM_ZONA,
+        )}
+      >
+        <span>Zona</span>
+        <span className="text-right">Pelanggan</span>
+        <span className="text-right">Volume</span>
+        <span className="text-right">Kehilangan air</span>
+      </div>
+
+      <ul>
+        {baris.map((b) => (
+          <li
+            key={b.nama}
+            className={cn(
+              "grid gap-x-5 gap-y-2 border-b border-line/70 px-5 py-4 last:border-0",
+              "md:items-center md:gap-y-0 md:py-3",
+              KOLOM_ZONA,
+            )}
+          >
+            <p className="font-medium">{b.nama}</p>
+
+            {/* `md:contents` melepas pembungkus ini begitu kolomnya berjajar,
+                jadi kedua angka di dalamnya jatuh langsung ke kolomnya
+                masing-masing tanpa perlu ditulis dua kali. */}
+            <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 md:contents">
+              <p className="tabular font-mono text-[12.5px] text-muted md:text-right md:text-[13px] md:text-ink">
+                {angka(b.pelanggan)}{" "}
+                {/* Di layar lebar katanya pindah ke kepala kolom, tapi tetap
+                    dibacakan pembaca layar — `sr-only`, bukan `hidden`. */}
+                <span className="md:sr-only">pelanggan</span>
+              </p>
+              {/* Angka dan satuannya tidak boleh terpisah ke dua baris:
+                  "12.480" di satu baris dan "m³" di baris berikutnya sekilas
+                  terbaca sebagai dua hal. */}
+              <p className="tabular font-mono text-[12.5px] whitespace-nowrap text-muted md:text-right md:text-[13px] md:text-ink">
+                {angka(b.volumeM3)} m³
+              </p>
+            </div>
+
+            {/* Batang pembanding: mata membandingkan panjang jauh lebih cepat
+                daripada membandingkan angka bertumpuk. Sejak di ponsel pun ia
+                ikut tampil — dulu `hidden sm:block`, padahal justru di layar
+                sempit perbandingan antar zona paling sulit dilakukan. */}
+            <div className="flex items-center gap-3 md:justify-end">
+              <BarMini
+                nilai={b.nrwPct}
+                maks={maksBar}
+                tanda={AMBANG_BAIK}
+                nada={
+                  nadaNrw(b.nrwPct) === "sukses"
+                    ? "sukses"
+                    : nadaNrw(b.nrwPct) === "peringatan"
+                      ? "peringatan"
+                      : "bahaya"
+                }
+                className="h-2 min-w-0 flex-1 md:max-w-[9rem]"
+              />
+              <Badge nada={nadaNrw(b.nrwPct)}>
+                <span className="sr-only">Kehilangan air </span>
+                {angka(b.nrwPct, 1)}%
+              </Badge>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </>
   );
 }

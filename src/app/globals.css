@@ -1,6 +1,26 @@
 @import "tailwindcss";
 
 /*
+ * Varian `dark:` DIIKAT ke kelas `.dark`, bukan ke setelan sistem.
+ *
+ * Tanpa baris ini Tailwind v4 mengartikan `dark:` sebagai
+ * `@media (prefers-color-scheme: dark)` — setelan OS pengunjung. Situs ini
+ * punya tombol tema sendiri yang bekerja dengan memasang kelas `.dark` di
+ * <html>, jadi keduanya berjalan sendiri-sendiri: pengunjung ber-OS gelap
+ * yang membuka situs di tema terang mendapat halaman terang dengan gaya
+ * gelap bocor di mana-mana.
+ *
+ * Dibuktikan di browser pada elemen yang sama, situs sama-sama tema terang:
+ *   OS terang → rgb(8,34,44)   = brand-900  (benar)
+ *   OS gelap  → rgb(0,166,200) = brand-500  (gaya `dark:` bocor)
+ *
+ * Ada 74 pemakaian `dark:` di 38 berkas; semuanya bergantung pada baris ini.
+ * Kalau dihapus, tidak ada galat bangun — halamannya hanya salah bagi
+ * sebagian pengunjung, tergantung setelan laptop mereka.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
  * Sistem desain Jernih — "membaca air".
  *
  * Arahnya diambil dari arti namanya: jernih berarti tembus pandang. Halaman
@@ -20,7 +40,18 @@
   --color-brand-300: #63c5de;
   --color-brand-400: #26aecd;
   --color-brand-500: #00a6c8;
-  --color-brand-600: #0b7fa0;
+  /*
+   * brand-600 adalah satu-satunya nada merek yang dipakai sebagai TEKS kecil
+   * di atas latar terang (kening, harga, tautan). Nilai lamanya #0b7fa0
+   * berhenti di 4,49:1 pada permukaan putih — sudah di bawah 4,5:1 sebelum
+   * halaman punya gradasi, dan makin turun begitu latarnya memekat ke bawah.
+   * Digelapkan secukupnya sampai lulus di SELURUH kedalaman air, bukan hanya
+   * di puncak halaman. Sebagai latar (`bg-brand-600` + teks putih) perubahan
+   * ini juga menaikkan kontrasnya, jadi tidak ada pemakaian yang dirugikan.
+   */
+  /* Warna tautan dan label. Diukur di atas seksi TERDALAM, bukan di atas
+     putih — di situ #0a7390 turun ke 4,28:1. */
+  --color-brand-600: #0a6b85;
   --color-brand-700: #0b4a5e;
   --color-brand-800: #0a3647;
   --color-brand-900: #08222c;
@@ -37,7 +68,12 @@
   --color-line: #d3e2e6;
   --color-line-strong: #b2cbd2;
   --color-ink: #08222c;
-  --color-muted: #4e6a74;
+  /*
+   * #4e6a74 hanya 4,1:1 di atas bagian terdalam halaman — di bawah ambang.
+   * Nilai ini diukur dari piksel di seksi paling bawah, bukan dari latar
+   * putih; teks redup adalah yang pertama gugur begitu latarnya memekat.
+   */
+  --color-muted: #46626c;
 
   /*
    * Pita seksi berselang. Tetap di keluarga biru-air, hanya lebih pekat —
@@ -54,13 +90,29 @@
   --color-on-console-muted: #8aa9b3;
 
   /* ── Status — TERPISAH dari aksen, selalu didampingi kata ───────── */
-  --color-success: #17855c;
+  /*
+   * Seperti `warn`, `success` lebih sering jadi TEKS daripada latar —
+   * "Memenuhi janji layanan", "95,1%", "Tepat waktu". Pada #17855c angkanya
+   * 3,77–4,21:1, yaitu tepat pada angka yang paling sering dibaca orang.
+   */
+  --color-success: #0f6e4b;
   --color-success-soft: #dff2e9;
-  --color-warn: #b9741a;
+  /*
+   * `warn` dipakai sebagai TEKS 17 kali dan sebagai latar hanya 6 kali —
+   * jadi ia harus lolos sebagai teks lebih dulu. Nilai lamanya #b9741a cuma
+   * 2,94:1 di halaman Status dan 3,3:1 di Lacak: persis pada angka yang
+   * justru paling penting dibaca, yaitu yang sedang di luar ambang.
+   * Memperdalamnya juga MENAIKKAN kontras pemakaian `bg-warn` berteks putih,
+   * jadi tidak ada pemakaian yang dirugikan.
+   */
+  --color-warn: #96530a;
   --color-warn-soft: #fbeeda;
   --color-danger: #b23a32;
   --color-danger-soft: #fae4e2;
-  --color-info: #0b7fa0;
+  /* Lencana jadwal ("2 hari lagi") — 4,01:1 pada #0b7fa0. Terakhir dari
+     empat warna status yang semula dipilih untuk latar putih, padahal
+     semuanya lebih sering dipakai sebagai teks. */
+  --color-info: #0a6880;
   --color-info-soft: #e0f1f7;
 
   /* ── Grafik — urutan tetap agar deret sama selalu warna sama ────── */
@@ -70,13 +122,174 @@
   --color-chart-4: #b9741a;
   --color-chart-grid: #dbe7ea;
 
-  --font-display: var(--font-display-src), Georgia, serif;
-  --font-sans: var(--font-sans-src), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-mono-src), ui-monospace, monospace;
-
   --radius-input: 0.625rem;
   --radius-card: 0.875rem;
   --radius-sheet: 1.25rem;
+}
+
+/*
+ * Huruf — SENGAJA di luar `@theme`, dan sengaja tanpa `@layer`.
+ *
+ * Ketiganya pernah ditulis di dalam `@theme` bersama warnanya, dan hasilnya
+ * SELURUH SITUS diam-diam memakai huruf bawaan sistem: Fraunces, Public Sans,
+ * dan JetBrains Mono termuat lewat next/font tapi tidak pernah dipakai satu
+ * kali pun. Yang tersisa hanya nilai bawaan Tailwind di `@layer theme`.
+ * Kegagalannya tidak bersuara — tidak ada galat bangun, tidak ada peringatan,
+ * halaman tetap tampil; hanya hurufnya yang salah. Kalau sedang mengubah
+ * bagian ini, periksa `getComputedStyle(document.body).fontFamily` di browser,
+ * jangan percaya "build berhasil".
+ *
+ * Nilainya menunjuk ke `--font-*-src`, yang baru dipasang next/font SAAT
+ * JALAN pada elemen <body> — Tailwind tidak bisa melihatnya waktu dibangun.
+ * Karena ditulis di luar layer mana pun, deklarasi ini menang atas
+ * `@layer theme` tanpa perlu `!important`: CSS tak berlayer selalu
+ * mengalahkan CSS berlayer, berapa pun spesifisitasnya.
+ *
+ * Warna JANGAN dipindah ke sini — penimpaan `.dark` bergantung pada urutan
+ * di dalam layer yang sama.
+ */
+:root {
+  --font-display: var(--font-display-src), Georgia, serif;
+  --font-sans: var(--font-sans-src), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-mono-src), ui-monospace, monospace;
+}
+
+/*
+ * Kedalaman air — satu lembar gradasi untuk seluruh tinggi dokumen.
+ *
+ * Arahnya diambil dari subjeknya, bukan dari selera. Air meneruskan cahaya,
+ * tapi tidak seluruhnya: makin dalam, makin sedikit yang tersisa dan makin
+ * biru yang tertinggal. Jadi puncak halaman adalah air paling dangkal —
+ * nyaris menyerahkan seluruh cahaya — dan menggulir ke bawah berarti TURUN.
+ * Gradasinya bukan hiasan yang ditempel di belakang halaman; ia pernyataan
+ * yang sama dengan nama produknya, yaitu bahwa sesuatu bisa dilihat
+ * menembusnya.
+ *
+ * Tiga hal yang dijaga di sini:
+ *
+ * 1. Perhentian tengah SENGAJA diikat ke nilai `canvas`, dan diletakkan di
+ *    15% — kira-kira setinggi hero. Semua yang masih memakai `canvas` pekat
+ *    (bilah tempel, tabir penutup klip hero) duduk di wilayah itu, jadi
+ *    tidak ada satu pun sambungan yang terbaca sebagai pita.
+ * 2. Penurunannya cepat di awal lalu melandai — bentuk peredupan cahaya di
+ *    air sungguhan, dan juga yang membuat separuh bawah halaman tidak
+ *    pernah berubah cepat di dalam satu layar.
+ * 3. `in oklab` supaya langkahnya rata menurut mata. Interpolasi sRGB pada
+ *    jarak sepanjang ini menumpuk perubahannya di satu tempat, dan di situlah
+ *    pita muncul.
+ *
+ * Nilainya token, BUKAN kelas `bg-gradient-*` di JSX: dua tema ditukar di
+ * satu tempat, dan seksi yang punya latar sendiri bisa ikut menumpang di
+ * atas lembar yang sama (lihat `.lapis-permukaan` / `.lapis-endap`).
+ *
+ * Ditulis di `:root` tak berlayer, bukan di `@theme`. Dua alasan: token ini
+ * bukan warna Tailwind dan tidak boleh menerbitkan utilitas `bg-*` yang
+ * mengundang orang menempel gradasi per komponen; dan `@theme` boleh
+ * membuang variabel yang tidak terpakai utilitas mana pun. Penimpaan `.dark`
+ * tetap bekerja karena `.dark` juga tak berlayer dan ditulis SESUDAH blok
+ * ini — kalau blok ini dipindah ke bawah `.dark`, tema gelap diam-diam
+ * kembali memakai nilai terang.
+ */
+/*
+ * JARAK ANTAR UJUNG ADALAH SELURUH GUNANYA.
+ *
+ * Nilai pertama di sini praktis tidak terlihat: diukur dari piksel, atas ke
+ * bawah hanya berubah 1,150:1 di tema terang dan 1,037:1 di tema gelap —
+ * selisih merahnya SATU tingkat sepanjang 4.500 piksel. Gradasi yang tidak
+ * bisa dilihat sama saja dengan tidak ada, dan itulah yang terjadi.
+ *
+ * Batas bawahnya di tema terang bukan selera, melainkan hitungan: teks
+ * `--color-muted` (#4e6a74) harus tetap 4,5:1 di atas bagian TERDALAM.
+ * Itu mengunci luminansi dasar di sekitar 0,77, yaitu kira-kira #d7e8ee.
+ * Jangan digelapkan lagi tanpa mengukur ulang kontrasnya dari piksel.
+ *
+ * Tema gelap tidak punya batas itu — menggelapkan dasarnya justru MENAIKKAN
+ * kontras teks terang — jadi jaraknya dibuat jauh lebih jauh. Di situ
+ * memang tempatnya: permukaan memantulkan sisa langit, dasarnya tidak
+ * menerima apa-apa.
+ */
+/*
+ * ISI LATARNYA — riak air dan kisi ukur.
+ *
+ * Gradasi saja tidak menjawab keluhan "putihnya kosong melompong". Gradasi
+ * mengubah WARNA latar; yang hilang di sini BENDA di dalamnya. Bidang putih
+ * tanpa apa pun terbaca sebagai dokumen yang belum selesai, bukan halaman
+ * yang dirancang.
+ *
+ * Dua motif, keduanya diambil dari dunia subjeknya — bukan hiasan yang bisa
+ * ditempel di produk mana pun:
+ *
+ * - RIAK: lingkaran sepusat, bentuk tetesan jatuh di permukaan air. Diletakkan
+ *   di dua titik saja, besar dan tidak beraturan jaraknya, supaya terbaca
+ *   sebagai riak — bukan sebagai pola berulang.
+ * - KISI UKUR: garis halus seperti kertas milimeter. Ini motif yang SAMA
+ *   dengan garis takar di sisi kolom air dan pembatas seksi. Halaman ini
+ *   tentang MENGUKUR air; kisinya mengatakan itu tanpa satu kata pun.
+ *
+ * Nilainya sengaja sangat rendah (5–7%). Pola latar yang terbaca jelas akan
+ * berebut perhatian dengan angka, dan angka yang kalah adalah kegagalan
+ * untuk situs seperti ini. Yang dicari: mata tahu ada sesuatu di sana,
+ * tapi tidak berhenti untuk melihatnya.
+ */
+:root {
+  --kisi-ukur: color-mix(in oklab, var(--color-brand-700) 7%, transparent);
+  --riak-air: color-mix(in oklab, var(--color-brand-500) 9%, transparent);
+
+  --pola-latar:
+    repeating-radial-gradient(
+      circle at 88% 4%,
+      transparent 0 58px,
+      var(--riak-air) 58px 60px,
+      transparent 60px 122px
+    ),
+    repeating-radial-gradient(
+      circle at 6% 58%,
+      transparent 0 74px,
+      var(--riak-air) 74px 76px,
+      transparent 76px 158px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      var(--kisi-ukur) 0 1px,
+      transparent 1px 36px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      var(--kisi-ukur) 0 1px,
+      transparent 1px 36px
+    );
+
+  --air-dangkal: #ffffff;
+  --air-tengah: #f4f8f9;
+  --air-dalam: #c6dee7;
+
+  /*
+   * Cahaya yang masuk di permukaan.
+   *
+   * Ramp tegak sendirian tidak pernah cukup: ia berubah terlalu lambat untuk
+   * terbaca dalam satu layar, jadi yang terlihat hanya bidang datar. Sumber
+   * cahaya memberi halaman ini satu tempat yang jelas paling terang, dan
+   * dari situlah mata membaca sisanya sebagai menjauh — itu yang membuat
+   * ramp-nya akhirnya terasa.
+   *
+   * Diletakkan di atas-kiri, searah dengan judulnya, bukan di tengah: ini
+   * cahaya yang masuk dari suatu arah, bukan sorot panggung di belakang
+   * hero. Tingginya dibatasi 70% lebar supaya padam sebelum seksi pertama —
+   * kalau menyentuh kartu, kartunya terbaca bersinar sendiri.
+   */
+  --cahaya-permukaan: radial-gradient(
+    120% 70% at 18% -12%,
+    color-mix(in oklab, var(--color-brand-200) 42%, transparent) 0%,
+    transparent 62%
+  );
+
+  --gradasi-air: var(--cahaya-permukaan),
+    linear-gradient(
+      to bottom in oklab,
+      var(--air-dangkal) 0%,
+      var(--air-tengah) 15%,
+      var(--air-dalam) 100%
+    );
 }
 
 /*
@@ -87,6 +300,44 @@
  * supaya pita seksi tetap punya pembanding hangat.
  */
 .dark {
+  /*
+   * Air pada malam hari — bukan gradasi terang yang dibalik.
+   *
+   * Yang berubah bukan arah cahayanya, melainkan dari mana cahayanya
+   * datang. Di siang hari permukaan meneruskan cahaya ke bawah; di malam
+   * hari permukaan hanya MEMANTULKAN sisa langit, dan kedalamannya tidak
+   * menerima apa-apa. Karena itu jaraknya lebih pendek di atas dan jauh
+   * lebih gelap di bawah: dasarnya nyaris tanpa cahaya, dan hanya seksi
+   * berlatar sendiri yang masih mengambang di atasnya.
+   *
+   * Perhentian tengah tetap diikat ke `canvas` seperti di tema terang, agar
+   * bilah tempel dan tabir hero tidak pernah menyisakan sambungan.
+   */
+  /*
+   * Di tema gelap polanya dinaikkan sedikit. Garis terang di atas latar
+   * gelap selalu terbaca lebih lemah daripada garis gelap di atas latar
+   * terang pada persentase yang sama — memakai angka tema terang di sini
+   * membuat polanya hilang sama sekali.
+   */
+  --kisi-ukur: color-mix(in oklab, var(--color-brand-300) 11%, transparent);
+  --riak-air: color-mix(in oklab, var(--color-brand-400) 13%, transparent);
+
+  --air-dangkal: #0e3847;
+  --air-tengah: #05161c;
+  --air-dalam: #00080c;
+
+  /*
+   * Di malam hari permukaan tidak diterangi dari atas — ia MEMANTULKAN sisa
+   * langit. Jadi cahayanya lebih dingin, lebih redup, dan padam lebih cepat
+   * daripada di tema terang. Memakai nilai terang di sini akan terbaca
+   * sebagai lampu sorot yang menyala di dalam air, bukan langit di atasnya.
+   */
+  --cahaya-permukaan: radial-gradient(
+    110% 60% at 18% -12%,
+    color-mix(in oklab, var(--color-brand-300) 30%, transparent) 0%,
+    transparent 58%
+  );
+
   --color-canvas: #05161c;
   --color-surface: #0a2029;
   --color-surface-2: #0e2b36;
@@ -134,9 +385,45 @@
 
   body {
     background-color: var(--color-canvas);
+    /*
+     * Gradasinya dipasang di <body>, dan ukurannya SATU LEMBAR untuk seluruh
+     * tinggi dokumen — bukan diulang tiap layar. Kalau diulang, menggulir
+     * tidak membawa pembacanya turun ke mana pun; yang terasa hanya corak
+     * yang kembali ke awal. Warna dasarnya tetap dipertahankan sebagai
+     * jaring pengaman untuk mesin render yang menolak gradasinya.
+     */
+    background-image: var(--gradasi-air);
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
     color: var(--color-ink);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+  }
+
+  /*
+   * Lembar pola — riak dan kisi ukur.
+   *
+   * Dipasang sebagai pseudo-elemen TERSENDIRI, bukan lapisan tambahan di
+   * `background-image` body, karena body memakai `background-size: 100% 100%`
+   * untuk gradasinya. Satu ukuran itu berlaku ke SEMUA lapisan: pola
+   * berulangnya akan ditarik setinggi dokumen dan kisinya berubah jadi empat
+   * garis raksasa. Memisahkannya juga berarti ukuran kisi tetap 36px di
+   * halaman pendek maupun panjang.
+   *
+   * `fixed` supaya polanya diam saat digulir. Isi halaman bergerak di atas
+   * permukaan yang tenang — dan itu pembacaan yang benar untuk air.
+   *
+   * `z-index: -1` menaruhnya di belakang seluruh isi tapi di depan warna
+   * latar body. `pointer-events: none` wajib: tanpa itu lembar ini menutup
+   * seluruh halaman dan tidak ada satu tautan pun yang bisa diklik.
+   */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image: var(--pola-latar);
   }
 
   /* Judul panjang tidak boleh menyisakan satu kata sendirian di baris akhir. */
@@ -164,6 +451,47 @@
 }
 
 @layer utilities {
+  /*
+   * Seksi berlatar sendiri, di atas air — bukan lembar yang menutupinya.
+   *
+   * Pita statistik, seksi harga, seksi meter, dan kaki halaman punya latar
+   * sendiri. Kalau latar itu dicat PEKAT, masing-masing memotong gradasi dan
+   * terbaca sebagai lembar yang melayang — dan makin ke bawah makin kentara,
+   * karena airnya terus memekat sedangkan lembarnya tetap di warna yang sama
+   * seperti di puncak halaman.
+   *
+   * Dengan sedikit tembus, tiap seksi mengambil kedalaman air di tempat ia
+   * berdiri. Jaraknya terhadap latar tetap, batas seksinya tetap terbaca
+   * sebagai garis, dan tak satu pun terlihat ditempel dari halaman lain.
+   * Ini juga pembacaan paling harfiah dari nama produknya: lapisan yang
+   * masih bisa dilihat menembusnya.
+   *
+   * ANGKANYA DIUKUR, bukan dikira-kira.
+   *
+   * Nilai pertama 88% dan 90%, dan hasilnya gradasinya sama sekali tidak
+   * terlihat: seksi membentang selebar layar dari atas sampai bawah, jadi
+   * yang tembus cuma 10–12%. Diukur dari piksel, puncak ke dasar halaman
+   * hanya berbeda 1,15:1 di tema terang dan 1,04:1 di tema gelap — selisih
+   * merahnya SATU tingkat sepanjang 4.500 piksel. Menggelapkan gradasinya
+   * saja tidak akan pernah cukup selama lapisannya hampir tak tembus; yang
+   * harus dibuka adalah lapisannya.
+   *
+   * Batas bawahnya tetap kontras, bukan selera: `--color-muted` di atas
+   * seksi TERDALAM harus ≥ 4,5:1. Pada nilai di bawah ini hasil ukurnya
+   * masih 5,1:1, jadi masih ada ruang — tapi jangan diturunkan lagi tanpa
+   * mengukur ulang dari piksel, bukan dari nilai token.
+   */
+  .lapis-permukaan {
+    background-color: color-mix(
+      in oklab,
+      var(--color-surface) 62%,
+      transparent
+    );
+  }
+  .lapis-endap {
+    background-color: color-mix(in oklab, var(--color-silt) 70%, transparent);
+  }
+
   .eyebrow {
     font-size: 0.6875rem;
     font-weight: 600;
@@ -217,6 +545,45 @@
   }
 
   /*
+   * Sorot baris daftar.
+   *
+   * Dibuat sebagai pseudo-elemen, bukan `background` pada barisnya sendiri.
+   * Latar biasa berhenti persis di lebar konten, dan hasilnya terbaca sebagai
+   * kotak yang TERPOTONG di kiri dan kanan — tepi tajam yang menempel ke
+   * hurufnya. Pseudo-elemen bisa diberi inset negatif, jadi sorotnya melebar
+   * melampaui padding kolom dan menyisakan ruang di dua sisi.
+   *
+   * Melebarnya 1rem, sedangkan wadah halaman berpadding 1.25rem: sorotnya
+   * lega tapi tidak pernah menyentuh tepi layar di 390px.
+   *
+   * Yang beranimasi HANYA `opacity` — bukan `background-color`, bukan ukuran.
+   * Tata letak tidak disentuh sama sekali, jadi nomor urut dan panah tidak
+   * bisa ikut tergeser saat sorotnya datang.
+   */
+  .sorot::before {
+    content: "";
+    position: absolute;
+    inset: 0.3rem -1rem;
+    border-radius: 0.75rem;
+    background-color: var(--color-surface);
+    opacity: 0;
+    transition: opacity 240ms cubic-bezier(0.22, 0.72, 0.24, 1);
+    /* Di bawah isi baris, tapi tetap di dalam konteks tumpuk barisnya
+       sendiri (`isolate`), jadi ia tidak pernah tenggelam ke balik seksi. */
+    z-index: -1;
+  }
+  /* Di layar sentuh `:hover` menempel setelah ketukan; sorotnya hanya untuk
+     penunjuk sungguhan. Papan ketik tetap dapat sorot yang sama. */
+  @media (hover: hover) {
+    .sorot:hover::before {
+      opacity: 1;
+    }
+  }
+  .sorot:focus-visible::before {
+    opacity: 1;
+  }
+
+  /*
    * Reveal saat digulir.
    *
    * Kelas ini DIPASANG DARI JAVASCRIPT (lihat `_bagian/muncul.tsx`), tidak
@@ -230,6 +597,30 @@
       opacity 620ms cubic-bezier(0.22, 0.72, 0.24, 1),
       transform 620ms cubic-bezier(0.22, 0.72, 0.24, 1);
   }
+
+  /*
+   * Arah datang untuk pasangan teks + alat.
+   *
+   * Mendatar HANYA mulai lebar `lg`, yaitu saat keduanya memang berdampingan.
+   * Di bawah itu mereka bertumpuk, jadi gerak mendatar tidak berarti apa-apa —
+   * dan geseran ke kanan di layar sempit berisiko menambah gulir mendatar.
+   */
+  .gulir-kiri {
+    transform: translateY(16px);
+  }
+  @media (min-width: 64rem) {
+    .gulir-kiri {
+      transform: translateX(-20px);
+    }
+  }
+  /* Baris tabel: hanya memudar. `transform` pada `tr` ditangani berbeda-beda
+     antar mesin render, dan di dalam wadah yang bisa digeser mendatar ia bisa
+     menambah lebar gulir. */
+  .gulir-pudar {
+    transform: none;
+  }
+
+  /* Harus paling akhir: menang atas semua ragam arah di atas. */
   .gulir-tampil {
     opacity: 1;
     transform: none;
@@ -246,9 +637,48 @@
       animation: none;
     }
     .gulir,
+    .gulir-kiri,
+    .gulir-pudar,
     .gulir-tampil {
       opacity: 1;
       transform: none;
+      transition: none;
+    }
+    .sorot::before {
+      transition: none;
+    }
+  }
+}
+
+/*
+ * FAQ: tinggi yang tumbuh, bukan melompat.
+ *
+ * `<details>` dipertahankan apa adanya — tanpa JavaScript ia tetap membuka dan
+ * tetap bisa dinavigasi papan ketik. Transisinya ditambahkan lewat
+ * `::details-content`, jadi mesin render yang belum mengenalnya hanya
+ * kehilangan transisinya, bukan kehilangan isinya.
+ *
+ * `interpolate-size` wajib ikut diuji: tanpa itu `block-size: auto` bukan
+ * nilai yang bisa dilantar, dan panelnya tetap melompat.
+ */
+@supports (interpolate-size: allow-keywords) and selector(::details-content) {
+  :root {
+    interpolate-size: allow-keywords;
+  }
+
+  .faq-isi::details-content {
+    block-size: 0;
+    overflow: hidden;
+    transition:
+      block-size 300ms cubic-bezier(0.22, 0.72, 0.24, 1),
+      content-visibility 300ms allow-discrete;
+  }
+  .faq-isi[open]::details-content {
+    block-size: auto;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .faq-isi::details-content {
       transition: none;
     }
   }
