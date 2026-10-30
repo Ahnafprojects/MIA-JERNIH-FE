@@ -303,7 +303,7 @@ export default function HalamanHubungkanMeter() {
         </div>
       ) : null}
 
-      <div className="takar mt-8 pt-4 text-center text-xs text-muted">
+      <div className="takar-kepala mt-8 pt-4 text-center text-xs text-muted">
         <Link
           href="/beranda"
           className="text-muted hover:text-ink hover:underline"
