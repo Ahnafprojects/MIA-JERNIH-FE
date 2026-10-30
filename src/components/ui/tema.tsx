@@ -78,11 +78,24 @@ function pasangTema(gelap: boolean): void {
   akar.dataset.theme = gelap ? "dark" : "light";
 }
 
-/** Dijalankan sebelum render pertama; mencegah kedip tema saat muat halaman. */
+/**
+ * Dijalankan sebelum render pertama; mencegah kedip tema saat muat halaman.
+ *
+ * BAWAANNYA TERANG, bukan mengikuti setelan sistem.
+ *
+ * Sebelumnya baris ini jatuh ke `prefers-color-scheme`, sehingga pengunjung
+ * ber-OS gelap membuka situs dalam keadaan gelap tanpa pernah memilihnya.
+ * Untuk portal yang dibuka orang asing — dan dinilai juri yang laptopnya bisa
+ * saja bertema gelap — tampilan pertama harus tema yang memang dirancang dan
+ * diperiksa, bukan yang kebetulan dipakai perangkatnya.
+ *
+ * Pilihan pengguna tetap dihormati: begitu tombol tema ditekan, pilihannya
+ * tersimpan di localStorage dan dipakai di kunjungan berikutnya.
+ */
 export const skripTema = `
 (function(){try{
   var t=localStorage.getItem("${KUNCI}");
-  var g=t?t==="gelap":matchMedia("(prefers-color-scheme: dark)").matches;
+  var g=t==="gelap";
   var r=document.documentElement;
   if(g)r.classList.add("dark");
   r.dataset.theme=g?"dark":"light";
