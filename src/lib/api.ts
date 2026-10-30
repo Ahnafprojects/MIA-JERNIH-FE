@@ -48,27 +48,53 @@ export function apiUrl(path: string): string {
 /** `true` bila 401 di jalur ini berarti kredensial salah, bukan sesi habis. */
 const jawabanKredensial = (path: string): boolean => path.includes("/auth/");
 
+let tokenAksesMemori: string | null = null;
+let penanganRefresh: (() => Promise<string | null>) | null = null;
+
+export function aturTokenAkses(token: string | null) {
+  tokenAksesMemori = token;
+}
+
+export function aturPenanganRefresh(penangan: (() => Promise<string | null>) | null) {
+  penanganRefresh = penangan;
+}
+
 export async function api<T>(
   path: string,
   init: RequestInit = {},
 ): Promise<T> {
-  let res: Response;
-  try {
-    res = await fetch(apiUrl(path), {
-      ...init,
-      credentials: "include",
-      headers: {
-        Accept: "application/json",
-        ...(init.body ? { "Content-Type": "application/json" } : {}),
-        ...init.headers,
-      },
-    });
-  } catch {
-    throw new ApiError(
-      "NETWORK",
-      "Tidak dapat terhubung ke server. Periksa koneksi internet Anda.",
-      0,
-    );
+  const kirimPermintaan = async (token: string | null) => {
+    const headers: Record<string, string> = {
+      Accept: "application/json",
+      ...(init.body ? { "Content-Type": "application/json" } : {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(init.headers as Record<string, string>),
+    };
+
+    try {
+      return await fetch(apiUrl(path), {
+        ...init,
+        credentials: "include",
+        headers,
+      });
+    } catch {
+      throw new ApiError(
+        "NETWORK",
+        "Tidak dapat terhubung ke server. Periksa koneksi internet Anda.",
+        0,
+      );
+    }
+  };
+
+  let res = await kirimPermintaan(tokenAksesMemori);
+
+  // Jika 401 di luar jalur kredensial auth dan kita punya handler refresh, lakukan refresh otomatis
+  if (res.status === 401 && !jawabanKredensial(path) && penanganRefresh) {
+    const tokenBaru = await penanganRefresh();
+    if (tokenBaru) {
+      tokenAksesMemori = tokenBaru;
+      res = await kirimPermintaan(tokenBaru);
+    }
   }
 
   if (!res.ok) {
