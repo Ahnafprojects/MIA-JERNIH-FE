@@ -522,6 +522,25 @@
       transparent 1px 0.75rem
     );
   }
+  /*
+   * Garis takar sebagai KEPALA, bukan latar seluruh kotak.
+   *
+   * `.takar` mengecat seluruh tinggi elemen. Itu benar untuk div kosong
+   * setinggi tetap, tapi pada kotak berisi teks garisnya menembus hurufnya —
+   * paragraf di panel masuk dan baris "Sudah punya akun?" terbaca seperti
+   * dicoret. Semua pemakaian semacam itu memang sudah memberi `pt-4`, jadi
+   * niatnya memang garis di atas lalu teks di bawahnya.
+   */
+  .takar-kepala {
+    background-image: repeating-linear-gradient(
+      to right,
+      var(--color-line) 0 1px,
+      transparent 1px 0.75rem
+    );
+    background-size: 100% 0.5rem;
+    background-repeat: no-repeat;
+    background-position: top left;
+  }
   .takar-tegak {
     background-image: repeating-linear-gradient(
       to bottom,
@@ -738,6 +757,85 @@
 
 /* `riak` dihapus: permukaan air kini dihitung di canvas sebagai jumlah
    tiga sinus, bukan satu elemen yang dipentalkan keyframe. */
+
+/* ── Gerak latar halaman masuk/daftar ──────────────────────────────────
+   Hanya `transform`: ditangani compositor, tidak memicu layout ulang pada
+   halaman yang sedang dipakai mengetik. Pengaman "kurangi gerak" menyeluruh
+   di atas sudah mencakup ketiganya. */
+@keyframes geser-air {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+@keyframes geser-air-balik {
+  from { transform: translateX(-50%); }
+  to   { transform: translateX(0); }
+}
+
+@keyframes gelembung {
+  0%   { transform: translateY(0) scale(0.6); opacity: 0; }
+  12%  { opacity: 0.8; }
+  85%  { opacity: 0.5; }
+  100% { transform: translateY(-16rem) scale(1.1); opacity: 0; }
+}
+
+/*
+ * Tetes yang jatuh dari atas panel sampai ke permukaan air.
+ *
+ * Pembungkusnya setinggi jarak ke permukaan, dan yang terlihat hanya titik
+ * kecil di ujung atasnya. Jadi `translateY(100%)` memindahkan titik itu PERSIS
+ * dari atas ke garis air berapa pun tinggi panelnya — tanpa satu pun angka
+ * tinggi yang ditulis tangan lalu meleset di ukuran layar lain.
+ */
+@keyframes tetes {
+  0%   { transform: translateY(-6%) scaleY(1);    opacity: 0; }
+  9%   { opacity: 1; }
+  88%  { opacity: 1; }
+  100% { transform: translateY(100%) scaleY(1.8); opacity: 0; }
+}
+
+/*
+ * Riak di titik jatuhnya tetes.
+ *
+ * Durasinya SAMA dengan tetesnya dan tundanya digeser sepanjang satu kali
+ * jatuh, supaya keduanya seirama selamanya. Dengan durasi berbeda keduanya
+ * saling menyusul sedikit demi sedikit, dan setelah semenit riaknya muncul di
+ * saat tidak ada tetes yang mendarat.
+ *
+ * Gerakannya selesai di 35% lalu diam tak terlihat — sisa timeline-nya sengaja
+ * kosong, menunggu tetes berikutnya.
+ */
+@keyframes riak {
+  0%   { transform: scale(0.25); opacity: 0.6; }
+  35%  { transform: scale(1);    opacity: 0; }
+  100% { transform: scale(1);    opacity: 0; }
+}
+
+/*
+ * Kabut yang mengambang pelan di bagian atas panel.
+ *
+ * Ruang antara bilah merek dan kutipan terlalu lapang untuk dibiarkan mati.
+ * Yang dipakai bentuk kabur berdiameter besar, bukan objek bertepi — apa pun
+ * yang tepinya terbaca di belakang kutipan akan bersaing dengannya.
+ */
+/*
+ * Kisi ukur yang hanyut pelan.
+ *
+ * Jaraknya PERSIS satu petak, jadi bingkai terakhir jatuh tepat di atas
+ * bingkai pertama dan perulangannya tidak punya sambungan yang terlihat.
+ * Angka di sini terikat pada `bg-[size:72px_72px]` di `panel-air.tsx`;
+ * mengubah salah satunya tanpa yang lain memunculkan lompatan tiap putaran.
+ */
+@keyframes hanyut {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-72px, -72px, 0); }
+}
+
+@keyframes kabut {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  50%  { transform: translate3d(6%, -3%, 0) scale(1.12); }
+  100% { transform: translate3d(0, 0, 0) scale(1); }
+}
 
 @keyframes naik {
   from {
