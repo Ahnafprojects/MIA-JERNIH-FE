@@ -13,11 +13,16 @@
  *    masuk daftar blokir. Tanpa batas ini satu kegagalan itu memutihkan
  *    SELURUH halaman status, termasuk daftar zona yang sebenarnya masih
  *    bisa dibaca. Peta boleh gagal; halamannya tidak.
+ *
+ *    Yang ditangkapnya BUKAN hanya WebGL — lemparan apa pun dari pohon peta
+ *    berakhir di sini. Karena itu kalimat cadangannya tidak boleh memastikan
+ *    sebabnya; `PesanPetaGagal` yang memeriksanya sendiri.
  */
 
 import { Component, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import type { PetaZonaProps } from "./peta-zona";
+import { PesanPetaGagal } from "./pesan-gagal";
 
 const Peta = dynamic(() => import("./peta-zona"), {
   ssr: false,
@@ -45,17 +50,7 @@ class BatasGalat extends Component<
 
 export default function PetaZonaDinamis(props: PetaZonaProps) {
   return (
-    <BatasGalat
-      cadangan={
-        <div className="px-5 py-10 text-center">
-          <p className="font-display font-bold">Peta tidak bisa ditampilkan</p>
-          <p className="mx-auto mt-1.5 max-w-sm text-[13px] text-muted">
-            Peramban ini tidak mendukung WebGL. Seluruh isi peta tetap tersedia
-            sebagai daftar zona di bawah.
-          </p>
-        </div>
-      }
-    >
+    <BatasGalat cadangan={<PesanPetaGagal />}>
       <Peta {...props} />
     </BatasGalat>
   );

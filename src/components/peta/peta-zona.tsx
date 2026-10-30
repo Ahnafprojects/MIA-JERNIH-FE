@@ -114,10 +114,23 @@ export interface PetaZonaProps {
 export default function PetaZona({ zona, dipilih, onPilih }: PetaZonaProps) {
   const warna = useWarnaStatus();
 
-  // Zona tanpa batas wilayah tetap muncul di daftar teks, hanya tidak
-  // digambar. Backend yang belum mengirim GeoJSON bukan alasan halaman kosong.
+  /*
+   * Zona tanpa batas wilayah tetap muncul di daftar teks, hanya tidak
+   * digambar. Backend yang belum mengirim GeoJSON bukan alasan halaman kosong.
+   *
+   * `Array.isArray`, BUKAN `!== null`. Penjaga lama hanya menutup satu dari
+   * dua kemungkinan: saat server tidak mengirim medan `batas` sama sekali,
+   * nilainya `undefined` — dan `undefined !== null` bernilai benar, sehingga
+   * `batas.length` di baris yang sama melempar TypeError.
+   *
+   * Akibatnya tidak terbatas pada satu zona. Lemparannya terjadi saat render,
+   * batas galat di pembungkus menangkapnya, dan SELURUH peta digantikan pesan
+   * "Peramban ini tidak mendukung WebGL" — pada peramban yang WebGL-nya
+   * sehat. Data yang kurang harus terbaca sebagai zona tanpa batas, bukan
+   * sebagai peta yang rusak.
+   */
   const berbatas = useMemo(
-    () => zona.filter((z) => z.batas !== null && z.batas.length >= 4),
+    () => zona.filter((z) => Array.isArray(z.batas) && z.batas.length >= 4),
     [zona],
   );
 

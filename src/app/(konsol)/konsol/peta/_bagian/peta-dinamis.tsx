@@ -16,6 +16,8 @@
 import { Component, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import type { PetaMeterProps } from "./peta-meter";
+import { PesanPetaGagal } from "@/components/peta/pesan-gagal";
+
 
 const Peta = dynamic(() => import("./peta-meter"), {
   ssr: false,
@@ -45,17 +47,12 @@ export default function PetaDinamis(props: PetaMeterProps) {
   return (
     <BatasGalat
       cadangan={
-        <div className="grid h-full place-items-center px-6 py-10 text-center">
-          <div>
-            <p className="font-display font-bold">
-              Peta tidak bisa ditampilkan
-            </p>
-            <p className="mx-auto mt-1.5 max-w-sm text-[13px] text-muted">
-              Peramban ini tidak mendukung WebGL. Seluruh isi peta tetap
-              tersedia sebagai daftar meter di bawah, lengkap dengan status dan
-              koordinatnya.
-            </p>
-          </div>
+        <div className="grid h-full place-items-center">
+          {/* Sebabnya DIPERIKSA, bukan dipastikan: batas galat ini menangkap
+              lemparan apa pun dari pohon peta, dan menuding WebGL untuk semua
+              di antaranya mengirim orang memeriksa kartu grafisnya padahal
+              yang rusak ada di tempat lain. */}
+          <PesanPetaGagal sisa="daftar meter di bawah, lengkap dengan status dan koordinatnya" />
         </div>
       }
     >
