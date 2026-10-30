@@ -73,7 +73,7 @@ export default function HalamanLupaSandi() {
             {!memuat ? <ArrowRight size={16} /> : null}
           </Button>
 
-          <div className="takar mt-6 pt-4 text-center text-xs text-muted">
+          <div className="takar-kepala mt-6 pt-4 text-center text-xs text-muted">
             <Link
               href="/masuk"
               className="inline-flex items-center gap-1.5 font-medium text-brand-700 hover:underline dark:text-accent"
@@ -98,7 +98,7 @@ export default function HalamanLupaSandi() {
             </p>
           </div>
 
-          <div className="takar pt-4">
+          <div className="takar-kepala pt-4">
             <Link href="/masuk">
               <Button varian="sekunder" blok type="button">
                 <ArrowLeft size={16} />

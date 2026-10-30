@@ -200,7 +200,7 @@ export default function HalamanMasuk() {
             {!memuat ? <ArrowRight size={16} /> : null}
           </Button>
 
-          <div className="takar mt-6 pt-4 text-center text-xs text-muted">
+          <div className="takar-kepala mt-6 pt-4 text-center text-xs text-muted">
             Belum punya akun warga?{" "}
             <Link
               href="/daftar"

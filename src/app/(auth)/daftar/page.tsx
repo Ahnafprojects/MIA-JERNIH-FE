@@ -203,7 +203,7 @@ export default function HalamanDaftar() {
           {!memuat ? <ArrowRight size={16} /> : null}
         </Button>
 
-        <div className="takar mt-6 pt-4 text-center text-xs text-muted">
+        <div className="takar-kepala mt-6 pt-4 text-center text-xs text-muted">
           Sudah punya akun?{" "}
           <Link
             href="/masuk"
