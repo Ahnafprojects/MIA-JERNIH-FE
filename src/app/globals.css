@@ -522,6 +522,25 @@
       transparent 1px 0.75rem
     );
   }
+  /*
+   * Garis takar sebagai KEPALA, bukan latar seluruh kotak.
+   *
+   * `.takar` mengecat seluruh tinggi elemen. Itu benar untuk div kosong
+   * setinggi tetap, tapi pada kotak berisi teks garisnya menembus hurufnya —
+   * paragraf di panel masuk dan baris "Sudah punya akun?" terbaca seperti
+   * dicoret. Semua pemakaian semacam itu memang sudah memberi `pt-4`, jadi
+   * niatnya memang garis di atas lalu teks di bawahnya.
+   */
+  .takar-kepala {
+    background-image: repeating-linear-gradient(
+      to right,
+      var(--color-line) 0 1px,
+      transparent 1px 0.75rem
+    );
+    background-size: 100% 0.5rem;
+    background-repeat: no-repeat;
+    background-position: top left;
+  }
   .takar-tegak {
     background-image: repeating-linear-gradient(
       to bottom,
@@ -738,6 +757,27 @@
 
 /* `riak` dihapus: permukaan air kini dihitung di canvas sebagai jumlah
    tiga sinus, bukan satu elemen yang dipentalkan keyframe. */
+
+/* ── Gerak latar halaman masuk/daftar ──────────────────────────────────
+   Hanya `transform`: ditangani compositor, tidak memicu layout ulang pada
+   halaman yang sedang dipakai mengetik. Pengaman "kurangi gerak" menyeluruh
+   di atas sudah mencakup ketiganya. */
+@keyframes geser-air {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+@keyframes geser-air-balik {
+  from { transform: translateX(-50%); }
+  to   { transform: translateX(0); }
+}
+
+@keyframes gelembung {
+  0%   { transform: translateY(0) scale(0.6); opacity: 0; }
+  12%  { opacity: 0.8; }
+  85%  { opacity: 0.5; }
+  100% { transform: translateY(-16rem) scale(1.1); opacity: 0; }
+}
 
 @keyframes naik {
   from {
