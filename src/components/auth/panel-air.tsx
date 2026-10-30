@@ -17,11 +17,49 @@
  * memicu layout ulang. `prefers-reduced-motion` sudah dijaga menyeluruh di
  * `globals.css`, jadi tidak perlu diulang per elemen di sini.
  */
+
+/**
+ * Tetes yang jatuh, dan riak yang ditinggalkannya.
+ *
+ * Satu daftar untuk dua elemen: titik yang jatuh dan lingkaran yang memuai di
+ * tempat ia mendarat. Keduanya WAJIB berbagi `lama` dan selisih tunda yang
+ * tepat satu kali jatuh — kalau tidak, keduanya saling menyusul sedikit demi
+ * sedikit dan riaknya berakhir muncul di saat tidak ada tetes yang turun.
+ *
+ * Posisinya menghindari sepertiga kiri tempat kutipan dan paragraf berada.
+ * Tetesnya memang digambar di belakang teks, tetapi titik terang yang lewat
+ * tepat di antara baris tetap menarik mata menjauh dari kalimatnya.
+ */
+const TETES = [
+  { kiri: "38%", tunda: 0, lama: 4.6, ukuran: 5 },
+  { kiri: "54%", tunda: 1.9, lama: 5.8, ukuran: 4 },
+  { kiri: "71%", tunda: 3.4, lama: 5.1, ukuran: 6 },
+  { kiri: "86%", tunda: 2.3, lama: 6.4, ukuran: 4 },
+  { kiri: "47%", tunda: 5.1, lama: 7.2, ukuran: 3 },
+  { kiri: "63%", tunda: 6.3, lama: 6.7, ukuran: 4 },
+];
+
 export function PanelAir() {
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
       {/* Cahaya dari atas — memberi arah, supaya panel tidak terbaca rata. */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_22%_18%,var(--color-brand-500)_0%,transparent_58%)] opacity-[0.14]" />
+
+      {/*
+        Kisi ukur yang hanyut pelan.
+
+        Petaknya 72px dan keyframe `hanyut` menggeser tepat 72px, jadi
+        putarannya tidak punya sambungan yang terlihat. Elemennya dilebihkan
+        ke luar bingkai (`-inset-[12%]`) supaya tepi kisinya tidak pernah
+        masuk layar saat bergeser.
+      */}
+      <div className="absolute -inset-[12%] bg-[linear-gradient(to_right,var(--color-on-console)_1px,transparent_1px),linear-gradient(to_bottom,var(--color-on-console)_1px,transparent_1px)] bg-[size:72px_72px] opacity-[0.045] animate-[hanyut_24s_linear_infinite]" />
+
+      {/* Dua kabut yang mengambang berlawanan arah di paruh atas. Lajunya
+          sangat lambat — pada panel yang tugasnya menampung formulir, gerakan
+          yang terbaca sebagai gerakan justru mengganggu. */}
+      <div className="absolute -top-1/4 left-[18%] h-[62%] w-[62%] rounded-full bg-[radial-gradient(circle,var(--color-brand-500)_0%,transparent_68%)] opacity-[0.1] blur-3xl animate-[kabut_26s_ease-in-out_infinite]" />
+      <div className="absolute top-[6%] left-[46%] h-[50%] w-[55%] rounded-full bg-[radial-gradient(circle,var(--color-accent)_0%,transparent_70%)] opacity-[0.07] blur-3xl animate-[kabut_34s_ease-in-out_-12s_infinite_reverse]" />
 
       {/*
         Garis takar vertikal di tepi kiri. Tiap tanda kelima dibuat lebih
@@ -37,6 +75,90 @@ export function PanelAir() {
               width: i % 5 === 0 ? "1.4rem" : "0.7rem",
             }}
           />
+        ))}
+      </div>
+
+      {/*
+        Tetes yang jatuh dari atas panel ke permukaan air.
+
+        Pembungkusnya berakhir TEPAT di permukaan air yang TERLIHAT — setinggi
+        airnya, dikurangi separuh tinggi gelombang. Blok airnya mulai di 28%
+        tetapi lengkung gelombangnya digambar di tengah pita 2,5rem, jadi
+        garis air yang dilihat mata ada ~1,1rem di bawah tepi blok itu;
+        tanpa koreksi ini tetesnya berhenti menggantung di atas air.
+        Tiap tetes adalah kolom setinggi pembungkus itu dengan
+        titik di ujung atasnya. Jadi `translateY(100%)` di keyframe membawa
+        titiknya persis sampai permukaan, berapa pun tinggi panelnya — tidak
+        ada angka tinggi yang ditulis tangan lalu meleset di layar lain.
+      */}
+      <div className="absolute inset-x-0 top-0 bottom-[calc(28%-1.1rem)]">
+        {TETES.map((t, i) => (
+          <span
+            key={i}
+            /*
+              `opacity-0` sebagai keadaan dasar, bukan hiasan.
+
+              Animasi bertunda TIDAK menyembunyikan elemennya selama menunggu
+              giliran — yang tampil adalah keadaan statisnya. Tanpa baris ini
+              keenam tetes berdiam sebagai titik terang berjejer di tepi atas
+              panel sampai tundanya habis, dan yang terbaca justru kotoran di
+              layar. Keyframe menimpanya begitu animasinya mulai.
+            */
+            className="absolute top-0 block h-full opacity-0 animate-[tetes_var(--lama)_cubic-bezier(0.55,0,0.85,0.4)_var(--tunda)_infinite]"
+            style={
+              {
+                left: t.kiri,
+                "--lama": `${t.lama}s`,
+                "--tunda": `${t.tunda}s`,
+              } as React.CSSProperties
+            }
+          >
+            <span
+              className="block rounded-full bg-accent/45"
+              style={{ width: t.ukuran, height: t.ukuran * 1.5 }}
+            />
+          </span>
+        ))}
+      </div>
+
+      {/*
+        Riak di titik jatuhnya tiap tetes.
+
+        Tundanya digeser tepat satu kali jatuh (`tunda + lama`) dan durasinya
+        disamakan, jadi riaknya muncul saat tetesnya mendarat dan tetap
+        seirama selamanya.
+      */}
+      <div className="absolute inset-x-0 bottom-[calc(28%-1.1rem)] h-0">
+        {TETES.map((t, i) => (
+          /*
+            Dua elemen, bukan satu: pemusatan ada di pembungkus dan hanya
+            pemuaian yang dianimasikan. Keduanya pada elemen yang sama akan
+            saling meniadakan — `transform` dari keyframe menimpa kelas
+            `-translate-x-1/2`, dan riaknya memuai dari tepi kiri, bukan dari
+            titik jatuhnya tetes.
+          */
+          <span
+            key={i}
+            className="absolute block -translate-x-1/2 -translate-y-1/2"
+            style={{
+              left: t.kiri,
+              width: `${5 + t.ukuran}rem`,
+              height: `${0.7 + t.ukuran * 0.1}rem`,
+            }}
+          >
+            <span
+              // `opacity-0` sama alasannya dengan pada tetes: tanpa itu
+              // keenam riak tampil diam di ukuran penuh sebelum gilirannya,
+              // berjejer di garis air seperti rantai cincin.
+              className="block h-full w-full rounded-[50%] border border-accent/40 opacity-0 animate-[riak_var(--lama)_ease-out_var(--tunda)_infinite]"
+              style={
+                {
+                  "--lama": `${t.lama}s`,
+                  "--tunda": `${t.tunda + t.lama}s`,
+                } as React.CSSProperties
+              }
+            />
+          </span>
         ))}
       </div>
 
