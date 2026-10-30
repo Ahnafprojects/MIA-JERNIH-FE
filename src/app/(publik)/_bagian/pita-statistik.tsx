@@ -94,8 +94,19 @@ export function PitaStatistik() {
       desimal: 0,
     },
     {
-      label: "Air disalurkan 30 hari terakhir",
-      nilai: data?.volumeDisalurkanM3 ?? null,
+      /*
+       * "Tercatat", bukan "disalurkan" — dan bedanya bukan main-main.
+       *
+       * Air DISALURKAN adalah yang keluar dari instalasi; air TERCATAT adalah
+       * yang terbaca di meter pelanggan. Selisihnya justru yang disebut
+       * kehilangan air. Sistem ini hanya memasang meter di sisi pelanggan,
+       * jadi yang jujur dilaporkan adalah yang tercatat.
+       *
+       * Label sebelumnya menjanjikan angka yang tidak pernah diukur, dan
+       * karena backend memang tidak mengirimnya, ubin ini selalu kosong.
+       */
+      label: "Air tercatat 30 hari terakhir",
+      nilai: data?.volumeTercatatM3 ?? null,
       satuan: "m³",
       desimal: 0,
     },
