@@ -23,7 +23,7 @@
  * sini: dua halaman yang menyebut angka berbeda untuk hal yang sama adalah
  * cacat yang paling cepat ditemukan orang.
  */
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { Check, Search } from "lucide-react";
 import { Card, Panel } from "@/components/ui/card";
@@ -87,6 +87,31 @@ export default function HalamanLacak() {
     galat: galatPanduan,
     muatUlang,
   } = useApi<PanduanAduan>("/api/publik/panduan-lacak");
+
+  /*
+   * Bawa hasilnya ke layar begitu ketemu.
+   *
+   * Kartu hasil muncul di bawah panduan dan daftar nomor contoh — pada layar
+   * laptop ia lahir di luar pandangan. Tanpa ini halaman tampak tidak
+   * bereaksi sama sekali setelah tombol Lacak ditekan, dan orang menekannya
+   * lagi karena menyangka gagal.
+   *
+   * Dipicu oleh BERUBAHNYA `tiket`, bukan dipanggil di dalam `jalankanCari`:
+   * di sana `setTiket` belum selesai dan elemennya belum ada di DOM untuk
+   * digulirkan.
+   */
+  const rujukanHasil = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!tiket) return;
+    rujukanHasil.current?.scrollIntoView({
+      // Gulir mendadak pada orang yang menyetel "kurangi gerak" bukan sekadar
+      // tidak nyaman — bagi sebagian orang ia memicu pusing.
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth",
+      block: "start",
+    });
+  }, [tiket]);
 
   /** Satu jalur pencarian untuk form dan untuk nomor contoh — supaya tombol
    *  contoh tidak bisa diam-diam berperilaku lain dari tombol Lacak. */
@@ -249,12 +274,19 @@ export default function HalamanLacak() {
         </div>
       ) : null}
 
-      {tiket ? (
-        <HasilTiket
-          tiket={tiket}
-          janjiJam={janjiTiket === null ? null : janjiTiket.janjiJam}
-        />
-      ) : null}
+      {/*
+        `scroll-mt-24` WAJIB: bilah atas situs ini melekat (sticky), dan
+        `scrollIntoView` menaruh elemennya di garis nol — tepat di bawah bilah
+        itu, sehingga baris pertama hasilnya tertutup.
+      */}
+      <div ref={rujukanHasil} className="scroll-mt-24">
+        {tiket ? (
+          <HasilTiket
+            tiket={tiket}
+            janjiJam={janjiTiket === null ? null : janjiTiket.janjiJam}
+          />
+        ) : null}
+      </div>
 
       {galatPanduan ? (
         <Card className="mt-12">
