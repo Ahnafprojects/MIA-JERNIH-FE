@@ -779,6 +779,64 @@
   100% { transform: translateY(-16rem) scale(1.1); opacity: 0; }
 }
 
+/*
+ * Tetes yang jatuh dari atas panel sampai ke permukaan air.
+ *
+ * Pembungkusnya setinggi jarak ke permukaan, dan yang terlihat hanya titik
+ * kecil di ujung atasnya. Jadi `translateY(100%)` memindahkan titik itu PERSIS
+ * dari atas ke garis air berapa pun tinggi panelnya — tanpa satu pun angka
+ * tinggi yang ditulis tangan lalu meleset di ukuran layar lain.
+ */
+@keyframes tetes {
+  0%   { transform: translateY(-6%) scaleY(1);    opacity: 0; }
+  9%   { opacity: 1; }
+  88%  { opacity: 1; }
+  100% { transform: translateY(100%) scaleY(1.8); opacity: 0; }
+}
+
+/*
+ * Riak di titik jatuhnya tetes.
+ *
+ * Durasinya SAMA dengan tetesnya dan tundanya digeser sepanjang satu kali
+ * jatuh, supaya keduanya seirama selamanya. Dengan durasi berbeda keduanya
+ * saling menyusul sedikit demi sedikit, dan setelah semenit riaknya muncul di
+ * saat tidak ada tetes yang mendarat.
+ *
+ * Gerakannya selesai di 35% lalu diam tak terlihat — sisa timeline-nya sengaja
+ * kosong, menunggu tetes berikutnya.
+ */
+@keyframes riak {
+  0%   { transform: scale(0.25); opacity: 0.6; }
+  35%  { transform: scale(1);    opacity: 0; }
+  100% { transform: scale(1);    opacity: 0; }
+}
+
+/*
+ * Kabut yang mengambang pelan di bagian atas panel.
+ *
+ * Ruang antara bilah merek dan kutipan terlalu lapang untuk dibiarkan mati.
+ * Yang dipakai bentuk kabur berdiameter besar, bukan objek bertepi — apa pun
+ * yang tepinya terbaca di belakang kutipan akan bersaing dengannya.
+ */
+/*
+ * Kisi ukur yang hanyut pelan.
+ *
+ * Jaraknya PERSIS satu petak, jadi bingkai terakhir jatuh tepat di atas
+ * bingkai pertama dan perulangannya tidak punya sambungan yang terlihat.
+ * Angka di sini terikat pada `bg-[size:72px_72px]` di `panel-air.tsx`;
+ * mengubah salah satunya tanpa yang lain memunculkan lompatan tiap putaran.
+ */
+@keyframes hanyut {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-72px, -72px, 0); }
+}
+
+@keyframes kabut {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  50%  { transform: translate3d(6%, -3%, 0) scale(1.12); }
+  100% { transform: translate3d(0, 0, 0) scale(1); }
+}
+
 @keyframes naik {
   from {
     height: 0%;
