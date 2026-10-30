@@ -7,6 +7,9 @@ untuk publik tanpa perlu akun.
 Dibuat untuk **Web In Action — Multimedia In Action (MIA) 2026**, subtema
 **Public Service Tracking**.
 
+- **Live:** <https://jernih.biz.id> (Vercel)
+- **API:** <https://api.jernih.biz.id> ([repo backend](https://github.com/Ahnafprojects/MIA-JERNIH-BE))
+
 > Gagasan yang menyatukan seluruh halaman: **melacak layanan publik berarti
 > melihatnya sepanjang waktu, bukan satu jepretan.** Janji, lalu kenyataan —
 > termasuk ketika kenyataannya meleset.
@@ -39,8 +42,16 @@ npm run dev
 
 Buka <http://localhost:3000>.
 
-**Backend belum wajib jalan.** Halaman publik dan konsol dilayani rute tiruan
-di dalam aplikasi ini — lihat [Data sementara](#data-sementara).
+Satu-satunya variabel yang wajib diisi di `.env.local`:
+
+```ini
+NEXT_PUBLIC_API_URL=https://api.jernih.biz.id   # atau http://localhost:4000
+```
+
+**Backend sudah hidup**, jadi tidak ada yang perlu dijalankan selain ini.
+Kalau menunjuk backend lokal, pastikan asalnya terdaftar di CORS backend —
+`http://localhost:3000` terdaftar, `http://127.0.0.1:3000` **tidak**, dan
+keduanya adalah asal yang berbeda bagi peramban.
 
 ```bash
 npm run build      # build produksi
@@ -79,16 +90,22 @@ yang masuk, bukan tiga website terpisah.
 | ✅ | Publik: status layanan (peta + keandalan 30 hari + kualitas air), lacak pengaduan, rapor kinerja, statistik |
 | ✅ | Konsol: dashboard live, pelanggan (8.219 baris, paginasi server), peta jaringan (8.055 pin) |
 | ✅ | Responsif 320–1920, aksesibilitas, tema gelap |
+| ✅ | Halaman masuk, daftar, lupa sandi, atur ulang, hubungkan meter — panel merek beranimasi (air, tetes, riak, kisi ukur) |
+| ✅ | Terhubung ke backend sungguhan di produksi (`api.jernih.biz.id`) |
 | ⏳ | Layout portal warga, penjaga rute, refresh sesi — menunggu autentikasi backend (BE#1) |
-| ⏳ | Autentikasi, portal warga, sisa halaman konsol — dikerjakan anggota tim lain |
+| ⏳ | Sisa halaman konsol — dikerjakan anggota tim lain |
 
 Rincian tiap halaman ada di **Issues** repo ini.
 
 ## Data sementara
 
-Backend masih dikerjakan. Sementara ini `src/app/api/publik/*` dan
-`src/app/api/admin/*` menyajikan bentuk jawaban yang **sama persis** dengan
-kontrak BE#2 dan BE#8.
+Backend **sudah hidup dan dipakai di produksi** — `NEXT_PUBLIC_API_URL`
+menunjuk ke sana, dan rute tiruan di bawah ini tidak lagi tersentuh saat
+aplikasi berjalan normal. Keduanya ditahan sebagai cadangan peragaan offline
+dan sebagai catatan kontrak.
+
+`src/app/api/publik/*` dan `src/app/api/admin/*` menyajikan bentuk jawaban
+yang sama persis dengan kontrak BE#2 dan BE#8.
 
 ```
 /api/publik   status-layanan · riwayat-zona · kinerja · statistik
@@ -96,9 +113,9 @@ kontrak BE#2 dan BE#8.
 /api/admin    dashboard · pelanggan · pelanggan/[id] · peta
 ```
 
-Mematikannya nanti: arahkan `NEXT_PUBLIC_API_URL` ke backend sungguhan, lalu
-hapus kedua folder itu. Tidak ada perubahan lain yang diperlukan — halaman
-tidak tahu dari mana datanya datang, dan memang harus begitu.
+Menghapusnya: cukup buang kedua folder itu. Tidak ada perubahan lain yang
+diperlukan — halaman tidak tahu dari mana datanya datang, dan memang harus
+begitu.
 
 Angkanya **diturunkan, bukan ditulis**: KPI dihitung dari deret trennya, dan
 rincian per zona berjumlah persis sama dengan totalnya di setiap rentang.
@@ -133,9 +150,9 @@ Prompt video ada di `docs/PROMPT-VIDEO-PENJELASAN.md`; versi siap salin ada di `
 - **Tema terang dan gelap dua-duanya wajib jalan.**
 - `prefers-reduced-motion: reduce` wajib mematikan seluruh animasi.
 
-## Tiga jebakan yang pernah memakan waktu berhari-hari
+## Empat jebakan yang pernah memakan waktu berhari-hari
 
-Ketiganya **lolos `build`, lolos `lint`, lolos `typecheck`** — dan tetap salah
+Keempatnya **lolos `build`, lolos `lint`, lolos `typecheck`** — dan tetap salah
 di layar. Kalau menyentuh area ini, periksa di browser, jangan percaya build.
 
 **1. Huruf tidak terpakai sama sekali.** `next/font` menaruh `--font-*-src` di
@@ -156,10 +173,58 @@ lebih sering dipakai sebagai **teks**. Terburuk 2,94:1 — tepat pada angka yang
 paling penting dibaca, yaitu yang sedang di luar ambang. Ukur kontras dari
 **piksel tangkapan layar**, bukan dari nilai token.
 
+**4. Peta menuduh WebGL untuk kegagalan apa pun.** Halaman `/status`
+produksi menulis "Peramban ini tidak mendukung WebGL" pada peramban yang
+WebGL-nya sehat. Dua cacat bertumpuk:
+
+`zona.filter((z) => z.batas !== null && z.batas.length >= 4)` hanya menutup
+satu dari dua kemungkinan. Saat server tidak mengirim medan `batas` sama
+sekali, nilainya `undefined` — dan `undefined !== null` **bernilai benar**,
+sehingga `.length` di baris yang sama melempar. Karena lemparannya terjadi
+saat render, yang hilang bukan satu zona melainkan seluruh peta. Pakai
+`Array.isArray`, jangan `!== null`.
+
+Lalu batas galat menangkap lemparan **apa pun** dan menampilkan kalimat yang
+memastikan sebabnya. Pesan yang menuding hal yang salah mengirim orang
+memeriksa kartu grafisnya selama berjam-jam, sementara yang rusak ada di
+server. `PesanPetaGagal` sekarang benar-benar memeriksa WebGL sebelum
+menyebutnya.
+
+Cara menemukannya: buka halaman produksinya di Chrome lewat DevTools Protocol
+dan baca `Runtime.exceptionThrown`. Tidak ada yang terlihat dari membaca kode,
+karena kode frontendnya memang sah — yang berubah bentuknya ada di jawaban API.
+
 Satu lagi, bukan bug tapi memakan waktu: **cache CSS Turbopack di dev server
 sering basi.** Kalau perubahan `globals.css` tampak tidak berlaku, jangan
 simpulkan kodenya salah — hentikan dev server, `rm -rf .next/dev`, jalankan
 lagi.
+
+## Penyebaran
+
+Produksi berjalan di **Vercel**, terhubung ke cabang `main` — setiap merge
+memicu build dan rilis otomatis.
+
+Variabel lingkungan yang harus ada di Vercel:
+
+| Nama | Nilai |
+| --- | --- |
+| `NEXT_PUBLIC_API_URL` | `https://api.jernih.biz.id` |
+
+`NEXT_PUBLIC_*` **disisipkan saat build**, bukan dibaca saat jalan. Mengubah
+nilainya di dasbor Vercel tidak berpengaruh apa pun sampai ada build baru.
+
+Dua hal soal domain yang pernah memakan waktu:
+
+- **Apex dan `www` adalah asal yang berbeda bagi peramban.** `jernih.biz.id`
+  dialihkan 308 ke `www.jernih.biz.id`, dan pengalihan itu MENGUBAH header
+  `Origin` yang sampai ke backend. Kalau hanya salah satu yang terdaftar di
+  CORS backend, seluruh halaman tampil sebagai rangka pemuatan tanpa satu pun
+  pesan galat yang menjelaskan kenapa.
+- **Catatan DNS-nya diproksikan Cloudflare (awan oranye).** Untuk `api.`
+  proksi itu yang menutup Cloudflare Tunnel ke server; jangan diubah ke
+  DNS-only.
+
+---
 
 ## Yang diukur, bukan dikira
 
