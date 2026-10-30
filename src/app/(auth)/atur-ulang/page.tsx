@@ -132,7 +132,7 @@ function KontenAturUlang() {
             </p>
           </div>
 
-          <div className="takar pt-4">
+          <div className="takar-kepala pt-4">
             <Button
               varian="utama"
               blok
