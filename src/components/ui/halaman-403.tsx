@@ -42,7 +42,7 @@ export function Halaman403({
         Anda tidak memiliki izin membuka halaman ini
       </h1>
 
-      <div className="takar mx-auto my-6 w-full max-w-md pt-6 text-sm text-muted">
+      <div className="takar-kepala mx-auto my-6 w-full max-w-md pt-6 text-sm text-muted">
         <p>
           Akun Anda saat ini terdaftar sebagai{" "}
           <strong className="text-ink font-semibold">
