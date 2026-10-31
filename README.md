@@ -2,7 +2,15 @@
 
 Antarmuka platform transparansi layanan air PDAM. Warga memantau pemakaian, saldo, dan pengaduannya secara langsung, sementara data layanan dan kinerja instansi terbuka untuk publik tanpa perlu akun.
 
-Dibuat untuk **Web In Action — Multimedia In Action (MIA) 2026**, subtema **Public Service Tracking**.
+Dibuat untuk **Web In Action — Multimedia In Action (MIA) 2026**.
+
+Tiga sub-tema yang dipilih, beserta halaman yang mewujudkannya:
+
+| Sub-tema | Halamannya |
+| --- | --- |
+| **Public Service Tracking** | `/lacak` melacak pengaduan dengan nomor tiket tanpa login, lengkap dengan janji waktu, kronologi penanganan, dan tanda tepat atau terlambat. `/status` memantau kondisi tiap zona lewat peta dan riwayat gangguan. |
+| **Open Government Data** | `/statistik` menyajikan neraca air, tolok ukur, dan tren 12 bulan, dengan data mentah yang bisa diunduh sebagai CSV atau JSON berlisensi CC BY 4.0. Alamat API-nya ditampilkan di halaman supaya bisa dipanggil langsung. |
+| **Civic Reporting & Accountability** | Alur pengaduan warga dari laporan sampai penugasan teknisi, dan `/kinerja` yang melaporkan ketepatan penanganan termasuk yang terlambat, bukan hanya yang berhasil. |
 
 | | |
 | --- | --- |
