@@ -197,8 +197,6 @@ Konvensi yang berlaku di seluruh berkas:
 - **Tema terang dan gelap sama-sama wajib berfungsi.** Bawaannya terang.
 - **`prefers-reduced-motion: reduce` wajib mematikan seluruh animasi.**
 
-Prompt video ada di [`docs/PROMPT-VIDEO-PENJELASAN.md`](docs/PROMPT-VIDEO-PENJELASAN.md), versi siap salin di [`docs/VIDEO-PROMPT-SALIN.md`](docs/VIDEO-PROMPT-SALIN.md).
-
 ## Penyebaran
 
 Produksi berjalan di Vercel, terhubung ke cabang `main`. Setiap merge memicu build dan rilis otomatis.
