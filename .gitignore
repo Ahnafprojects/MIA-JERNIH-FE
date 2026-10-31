@@ -47,8 +47,6 @@ next-env.d.ts
 # Contoh konfigurasi WAJIB ikut ter-commit — README menyuruh menyalinnya.
 !.env.example
 
-# Panduan lokal untuk perkakas, tidak ikut dipublikasikan.
-
 # Berkas sumber video penjelasan. Yang dipakai situs ada di `public/penjelasan.*`;
 # ketiganya di akar repo hanya salinan kerja dan menambah 23 MB percuma.
 /jernih-penjelasan-produk.mp4
