@@ -91,28 +91,46 @@ npm start          # menjalankan hasil build
 
 ## Progres saat ini
 
-Seluruh halaman publik, autentikasi, portal warga, dan konsol petugas sudah terhubung ke backend sungguhan di produksi.
+**19 dari 33 halaman sudah jadi dan terhubung ke backend sungguhan di
+produksi.** Sisanya masih kerangka: judul, satu kalimat keterangan, dan
+penanda bahwa halamannya belum dikerjakan. Tiap kerangka punya issue dengan
+spesifikasi lengkapnya.
 
-| Status | Bagian |
+### Sudah jadi
+
+| Bagian | Halaman |
 | --- | --- |
-| Selesai | Sistem desain, token tema terang dan gelap, komponen dasar dan domain |
-| Selesai | Layout publik dan konsol, navigasi responsif dengan laci di ponsel |
-| Selesai | Landing page: video hero, peraga meter interaktif, video penjelasan 90 detik bertakarir |
-| Selesai | Halaman publik: status layanan, lacak pengaduan, rapor kinerja, statistik |
-| Selesai | Halaman statistik: neraca air, tolok ukur, tren 12 bulan, unduhan CSV dan JSON |
-| Selesai | Autentikasi: masuk, daftar, verifikasi, lupa sandi, atur ulang, hubungkan meter |
-| Selesai | Panel merek beranimasi di halaman autentikasi: air, tetes, riak, kisi ukur |
-| Selesai | Portal warga dan konsol petugas dengan penjaga rute berbasis peran |
-| Selesai | Terhubung ke `api.jernih.biz.id` di produksi, tanpa data tiruan |
-| Selesai | Responsif 320–1920 px, aksesibilitas, tema gelap |
-| Berjalan | Penyempurnaan halaman konsol bersama anggota tim lain |
-| Belum | Notifikasi push dan mode luring |
+| Fondasi | Sistem desain, token tema terang dan gelap, komponen dasar dan domain |
+| Layout | Publik dan konsol, navigasi responsif dengan laci di ponsel |
+| Publik (5) | Landing, Status Layanan, Lacak Pengaduan, Rapor Kinerja, Statistik |
+| Autentikasi (6) | Masuk, Daftar, Verifikasi, Lupa sandi, Atur ulang, Hubungkan meter |
+| Portal warga (4) | Beranda, Token, Beli, Bayar |
+| Konsol petugas (4) | Dashboard, Pelanggan, Detail pelanggan, Peta jaringan |
+| Lintas halaman | Penjaga rute berbasis peran, responsif 320–1920 px, aksesibilitas, tema gelap |
 
-Rincian tiap halaman ada di **Issues** repositori ini.
+Seluruhnya mengambil data dari `api.jernih.biz.id`, tanpa data tiruan.
+
+### Belum dikerjakan
+
+| Halaman | Issue |
+| --- | --- |
+| Konsol: Token, Insiden | [#21](https://github.com/Ahnafprojects/MIA-JERNIH-FE/issues/21) |
+| Konsol: Laporan (kanban SLA), Perangkat | [#23](https://github.com/Ahnafprojects/MIA-JERNIH-FE/issues/23) |
+| Konsol: Broadcast, Analitik, Audit, Pengaturan | [#24](https://github.com/Ahnafprojects/MIA-JERNIH-FE/issues/24) |
+| Portal: Riwayat transaksi dan struk | [#15](https://github.com/Ahnafprojects/MIA-JERNIH-FE/issues/15) |
+| Portal: Meter saya dan kontrol aliran | [#16](https://github.com/Ahnafprojects/MIA-JERNIH-FE/issues/16) |
+| Portal: Bantuan dan lapor gangguan | [#17](https://github.com/Ahnafprojects/MIA-JERNIH-FE/issues/17) |
+| Portal: Notifikasi, Akun | [#18](https://github.com/Ahnafprojects/MIA-JERNIH-FE/issues/18) |
+| Portal: Pemakaian | belum ada issue |
+| Berkas submission lomba | [#26](https://github.com/Ahnafprojects/MIA-JERNIH-FE/issues/26) |
+
+Di luar halaman: notifikasi push dan mode luring belum dikerjakan.
 
 ## Peta rute
 
 33 halaman dalam empat kelompok. Satu aplikasi melayani tiga peran, dan tampilannya menyesuaikan siapa yang masuk, bukan tiga situs terpisah.
+
+Rute bertanda **(kerangka)** rutenya sudah ada dan bisa dibuka, tetapi isinya belum dikerjakan.
 
 ### `(publik)` — tanpa akun
 
@@ -132,11 +150,15 @@ Seluruhnya berbagi `AuthShell`: panel merek beranimasi di kiri, formulir di kana
 
 ### `(portal)` — warga
 
-`/beranda`, `/meter`, `/token`, `/beli`, `/bayar/[invoice]`, `/pemakaian`, `/riwayat`, `/notifikasi`, `/akun`, `/bantuan`
+`/beranda`, `/token`, `/beli`, `/bayar/[invoice]`
+
+Kerangka: `/meter`, `/pemakaian`, `/riwayat`, `/notifikasi`, `/akun`, `/bantuan`
 
 ### `(konsol)` — petugas PDAM
 
-`/konsol`, `/pelanggan`, `/pelanggan/[id]`, `/perangkat`, `/peta`, `/insiden`, `/token`, `/analitik`, `/laporan`, `/audit`, `/broadcast`, `/pengaturan`
+`/konsol`, `/pelanggan`, `/pelanggan/[id]`, `/peta`
+
+Kerangka: `/perangkat`, `/insiden`, `/token`, `/analitik`, `/laporan`, `/audit`, `/broadcast`, `/pengaturan`
 
 ## Struktur direktori
 
@@ -222,7 +244,7 @@ Dua hal tentang domain yang pernah memakan waktu:
 | Responsif | 320–1920 px: 0 gulir mendatar, 0 teks terpotong |
 | Sasaran sentuh | 0 di bawah 44x44 px, kecuali atribusi peta yang ukurannya diatur penyedianya |
 | Konsistensi data | Legenda peta sama dengan jumlah pin; neraca air sama dengan total kehilangan di tiga rentang |
-| Build | 45 entri rute (33 halaman dan 12 rute tiruan), `tsc` dan `eslint` bersih |
+| Build | 44 entri rute, 12 di antaranya rute tiruan; `tsc` dan `eslint` bersih |
 
 ## Tim
 
