@@ -197,8 +197,8 @@ palet, pasangan huruf, perangkat struktural, dan daftar tampilan yang
 Orisinalitas (20%) = 40% nilai lomba; spesifikasi fungsional saja menghasilkan
 tampilan yang bisa dipakai produk mana pun.
 
-Prompt video ada di `docs/PROMPT-VIDEO-PENJELASAN.md`; versi siap salin ke
-Claude ada di `docs/VIDEO-PROMPT-SALIN.md`.
+Prompt video ada di `docs/PROMPT-VIDEO-PENJELASAN.md`; versi siap salin ada
+di `docs/VIDEO-PROMPT-SALIN.md`.
 
 ## Konvensi
 

@@ -1,6 +1,6 @@
 # Prompt video penjelasan Jernih — 90 detik
 
-Untuk digenerate di Claude. Salin **seluruh** isi blok di bawah sebagai satu
+Untuk digenerate di model video generatif. Salin **seluruh** isi blok di bawah sebagai satu
 prompt. Bagian "Spesifikasi teknis" dan "Jangan" ikut disalin — keduanya yang
 paling menentukan hasilnya tidak terlihat seperti template.
 

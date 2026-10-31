@@ -49,7 +49,6 @@ next-env.d.ts
 
 # Panduan lokal untuk perkakas, tidak ikut dipublikasikan.
 AGENTS.md
-CLAUDE.md
 .cursorrules
 
 # Berkas sumber video penjelasan. Yang dipakai situs ada di `public/penjelasan.*`;
