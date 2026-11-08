@@ -1,9 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { QrCode, Keyboard, ArrowRight, CheckCircle2, AlertCircle } from "lucide-react";
+import {
+  QrCode,
+  Keyboard,
+  ArrowRight,
+  CheckCircle2,
+  AlertCircle,
+} from "lucide-react";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { StepperAuth } from "@/components/auth/stepper";
 import { Button } from "@/components/ui/button";
@@ -27,7 +33,11 @@ interface DataMeterDitemukan {
 
 export default function HalamanHubungkanMeter() {
   const router = useRouter();
-  const { muatUlangData } = useAuth();
+  const { pengguna, muatUlangData } = useAuth();
+
+  useEffect(() => {
+    if (!pengguna) router.replace("/masuk");
+  }, [pengguna, router]);
 
   const [metode, setMetode] = useState<"ketik" | "pindai">("ketik");
   const [targetId, setTargetId] = useState("");
@@ -36,10 +46,13 @@ export default function HalamanHubungkanMeter() {
   const [pesanGalat, setPesanGalat] = useState<string | null>(null);
 
   // Status izin kamera untuk scanner QR
-  const [izinKamera, setIzinKamera] = useState<"belum" | "minta" | "diberikan" | "ditolak">("belum");
+  const [izinKamera, setIzinKamera] = useState<
+    "belum" | "minta" | "diberikan" | "ditolak"
+  >("belum");
 
   // State data meter jika ditemukan
-  const [meterDitemukan, setMeterDitemukan] = useState<DataMeterDitemukan | null>(null);
+  const [meterDitemukan, setMeterDitemukan] =
+    useState<DataMeterDitemukan | null>(null);
 
   const cariMeter = async (id: string) => {
     if (!id.trim()) {
@@ -51,17 +64,23 @@ export default function HalamanHubungkanMeter() {
     setMemuatCari(true);
 
     try {
-      const res = await api<{ meter: DataMeterDitemukan }>(`/api/meter/${encodeURIComponent(id.trim())}`);
+      const res = await api<{ meter: DataMeterDitemukan }>(
+        `/api/meter/${encodeURIComponent(id.trim())}`,
+      );
       setMeterDitemukan(res.meter);
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.code === "BUKAN_PEMILIK_METER" || err.status === 403) {
-          setPesanGalat("Meter ini sudah terhubung ke akun lain. Hubungi kantor layanan PDAM bila ini adalah meter Anda.");
+          setPesanGalat(
+            "Meter ini sudah terhubung ke akun lain. Hubungi kantor layanan PDAM bila ini adalah meter Anda.",
+          );
         } else {
           setPesanGalat(err.message);
         }
       } else {
-        setPesanGalat("Meter tidak ditemukan. Periksa ID pelanggan pada stiker fisik meter.");
+        setPesanGalat(
+          "Meter tidak ditemukan. Periksa ID pelanggan pada stiker fisik meter.",
+        );
       }
       setMeterDitemukan(null);
     } finally {
@@ -74,16 +93,22 @@ export default function HalamanHubungkanMeter() {
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         setIzinKamera("ditolak");
-        setPesanGalat("Perangkat Anda tidak mendukung akses kamera. Silakan ketik ID secara manual.");
+        setPesanGalat(
+          "Perangkat Anda tidak mendukung akses kamera. Silakan ketik ID secara manual.",
+        );
         return;
       }
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" },
+      });
       // Matikan stream setelah tes izin berhasil
       stream.getTracks().forEach((track) => track.stop());
       setIzinKamera("diberikan");
     } catch {
       setIzinKamera("ditolak");
-      setPesanGalat("Izin kamera tidak diberikan. Anda tetap dapat melanjutkan dengan mengetik ID meter secara manual di tab Ketik ID.");
+      setPesanGalat(
+        "Izin kamera tidak diberikan. Anda tetap dapat melanjutkan dengan mengetik ID meter secara manual di tab Ketik ID.",
+      );
     }
   };
 
@@ -104,7 +129,9 @@ export default function HalamanHubungkanMeter() {
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.code === "METER_SUDAH_TERHUBUNG") {
-          setPesanGalat("Meter ini sudah terhubung ke akun pelanggan lain. Hubungi petugas PDAM untuk bantuan pengalihan kepemilikan.");
+          setPesanGalat(
+            "Meter ini sudah terhubung ke akun pelanggan lain. Hubungi petugas PDAM untuk bantuan pengalihan kepemilikan.",
+          );
         } else {
           setPesanGalat(err.message);
         }
@@ -183,17 +210,14 @@ export default function HalamanHubungkanMeter() {
             required
             placeholder="Contoh: P0001 atau JRN-10000"
             value={targetId}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTargetId(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              setTargetId(e.target.value)
+            }
             disabled={memuatCari || memuatHubung}
             hint="Lihat stiker barcode atau plat kuningan di badan meter air Anda."
           />
 
-          <Button
-            type="submit"
-            varian="sekunder"
-            blok
-            memuat={memuatCari}
-          >
+          <Button type="submit" varian="sekunder" blok memuat={memuatCari}>
             Cari & Periksa Meter
           </Button>
         </form>
@@ -201,12 +225,16 @@ export default function HalamanHubungkanMeter() {
         <div className="space-y-4 text-center">
           {izinKamera === "belum" || izinKamera === "minta" ? (
             <div className="rounded-[3px] border border-dashed border-line p-6">
-              <QrCode size={36} className="mx-auto text-brand-600 dark:text-accent" />
+              <QrCode
+                size={36}
+                className="mx-auto text-brand-600 dark:text-accent"
+              />
               <p className="mt-3 text-xs font-medium text-ink">
                 Akses Kamera untuk Pemindai QR
               </p>
               <p className="mt-1 text-[11px] text-muted text-balance">
-                Kamera hanya dipakai untuk membaca kode QR pada stiker fisik meter. Jernih tidak pernah merekam atau menyimpan video.
+                Kamera hanya dipakai untuk membaca kode QR pada stiker fisik
+                meter. Jernih tidak pernah merekam atau menyimpan video.
               </p>
               <div className="mt-4">
                 <Button
@@ -244,9 +272,12 @@ export default function HalamanHubungkanMeter() {
             </div>
           ) : (
             <div className="rounded-[3px] border border-warn/30 bg-warn/10 p-4 text-xs text-ink text-left">
-              <p className="font-semibold text-warn">Izin kamera tidak tersedia</p>
+              <p className="font-semibold text-warn">
+                Izin kamera tidak tersedia
+              </p>
               <p className="mt-1 text-muted">
-                Silakan beralih ke tab <strong>Ketik ID Pelanggan</strong> di atas untuk memasukkan nomor meter secara manual.
+                Silakan beralih ke tab <strong>Ketik ID Pelanggan</strong> di
+                atas untuk memasukkan nomor meter secara manual.
               </p>
             </div>
           )}
@@ -273,10 +304,12 @@ export default function HalamanHubungkanMeter() {
 
           <div className="space-y-1 text-xs text-muted">
             <p>
-              <strong className="text-ink">Alamat:</strong> {meterDitemukan.alamat || "—"}
+              <strong className="text-ink">Alamat:</strong>{" "}
+              {meterDitemukan.alamat || "—"}
             </p>
             <p>
-              <strong className="text-ink">Zona Distribusi:</strong> {meterDitemukan.zona || "—"}
+              <strong className="text-ink">Zona Distribusi:</strong>{" "}
+              {meterDitemukan.zona || "—"}
             </p>
           </div>
 

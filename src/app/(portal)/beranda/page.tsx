@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo, Suspense } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  Suspense,
+} from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -10,6 +16,7 @@ import {
   Calendar,
   CheckCircle2,
   Droplet,
+  LifeBuoy,
   ExternalLink,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
@@ -50,14 +57,17 @@ function KontenBeranda() {
   // Form isi token cepat
   const [tokenInput, setTokenInput] = useState("");
   const [memuatTukar, setMemuatTukar] = useState(false);
-  const [pesanTukar, setPesanTukar] = useState<{ tipe: "sukses" | "galat"; teks: string } | null>(null);
+  const [pesanTukar, setPesanTukar] = useState<{
+    tipe: "sukses" | "galat";
+    teks: string;
+  } | null>(null);
 
   // Jika warga belum menghubungkan meter, arahkan ke /hubungkan-meter
   useEffect(() => {
-    if (!memuat && meter.length === 0) {
+    if (!memuat && pengguna && meter.length === 0) {
       router.replace("/hubungkan-meter");
     }
-  }, [memuat, meter, router]);
+  }, [memuat, meter, pengguna, router]);
 
   // Polling data telemetri live tiap 5 detik
   const ambilDataLive = useCallback(async (meterId: string) => {
@@ -76,7 +86,9 @@ function KontenBeranda() {
     (async () => {
       setMemuatPemakaian(true);
       try {
-        const live = await api<DataLiveMeter>(`/api/meter/${meterAktif.id}/live`);
+        const live = await api<DataLiveMeter>(
+          `/api/meter/${meterAktif.id}/live`,
+        );
         if (aktif) setDataLive(live);
       } catch {
         // Abaikan
@@ -159,13 +171,21 @@ function KontenBeranda() {
     if (deretPemakaian.length === 0) {
       return {
         labels: ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"],
-        deret: [{ name: "Pemakaian", unit: "L", points: [120, 145, 95, 180, 110, 210, 130] }],
+        deret: [
+          {
+            name: "Pemakaian",
+            unit: "L",
+            points: [120, 145, 95, 180, 110, 210, 130],
+          },
+        ],
       };
     }
 
     const mapHari = new Map<string, number>();
     deretPemakaian.forEach((d) => {
-      const tgl = new Date(d.waktu).toLocaleDateString("id-ID", { weekday: "short" });
+      const tgl = new Date(d.waktu).toLocaleDateString("id-ID", {
+        weekday: "short",
+      });
       mapHari.set(tgl, (mapHari.get(tgl) ?? 0) + d.volumeL);
     });
 
@@ -211,10 +231,12 @@ function KontenBeranda() {
                 Peringatan Saldo Kritis
               </p>
               <h2 className="text-sm font-bold text-ink">
-                Saldo air tersisa {liter(saldoSekarang, 1)} — meter sudah berbunyi tiap 10 detik.
+                Saldo air tersisa {liter(saldoSekarang, 1)} — meter sudah
+                berbunyi tiap 10 detik.
               </h2>
               <p className="mt-0.5 text-xs text-muted">
-                Katup relay akan menutup otomatis saat saldo 0 liter. Segera isi token untuk menjaga pasokan air.
+                Katup relay akan menutup otomatis saat saldo 0 liter. Segera isi
+                token untuk menjaga pasokan air.
               </p>
             </div>
           </div>
@@ -237,7 +259,11 @@ function KontenBeranda() {
             Halo, {pengguna?.nama ?? "Warga"}
           </h1>
           <p className="mt-1 text-xs text-muted">
-            Meter aktif: <strong className="font-mono text-ink">{meterAktif.nomorSeri}</strong> &middot; Zona {pengguna?.zonaId ?? "Layanan"}
+            Meter aktif:{" "}
+            <strong className="font-mono text-ink">
+              {meterAktif.nomorSeri}
+            </strong>{" "}
+            &middot; Zona {pengguna?.zonaId ?? "Layanan"}
           </p>
         </div>
 
@@ -251,6 +277,12 @@ function KontenBeranda() {
           <Link href="/token">
             <Button varian="sekunder" ukuran="sm">
               Keypad & Tukar
+            </Button>
+          </Link>
+          <Link href="/bantuan">
+            <Button varian="bahaya" ukuran="sm" className="font-bold shadow-sm">
+              <LifeBuoy size={14} />
+              Laporkan Gangguan
             </Button>
           </Link>
         </div>
@@ -317,9 +349,7 @@ function KontenBeranda() {
               <p className="tabular mt-2 font-mono text-2xl font-bold text-ink">
                 {liter(totalHariIniL * 24, 0)}
               </p>
-              <p className="mt-1 text-[11px] text-muted">
-                Estimasi akumulasi
-              </p>
+              <p className="mt-1 text-[11px] text-muted">Estimasi akumulasi</p>
             </div>
 
             <div className="rounded-[3px] border border-line bg-surface p-4">
@@ -375,7 +405,9 @@ function KontenBeranda() {
           <div className="rounded-[4px] border border-line bg-surface p-5 shadow-xs">
             <div className="mb-3 flex items-center justify-between">
               <span className="eyebrow text-muted">Layar LCD Fisik Meter</span>
-              <span className="font-mono text-[10px] text-muted">HD44780 16×2</span>
+              <span className="font-mono text-[10px] text-muted">
+                HD44780 16×2
+              </span>
             </div>
 
             <LcdDisplay
@@ -384,7 +416,8 @@ function KontenBeranda() {
             />
 
             <p className="mt-3 text-[11px] leading-relaxed text-muted">
-              Layar ini disinkronkan secara presisi dengan tampilan LCD pada fisik perangkat ESP32 di lokasi meter air Anda.
+              Layar ini disinkronkan secara presisi dengan tampilan LCD pada
+              fisik perangkat ESP32 di lokasi meter air Anda.
             </p>
           </div>
 
@@ -451,7 +484,10 @@ function KontenBeranda() {
               </span>
             </div>
             <p className="mt-1 text-[11px]">
-              Laporan terakhir: {dataLive?.ts ? new Date(dataLive.ts).toLocaleTimeString("id-ID") : "Baru saja"}
+              Laporan terakhir:{" "}
+              {dataLive?.ts
+                ? new Date(dataLive.ts).toLocaleTimeString("id-ID")
+                : "Baru saja"}
             </p>
           </div>
         </div>

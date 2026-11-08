@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Fraunces, Public_Sans, JetBrains_Mono } from "next/font/google";
 import { skripTema } from "@/components/ui/tema";
 import { skripRingkas } from "./(konsol)/_ringkas";
+
+const PENANDA_JS = `document.documentElement.dataset.js="1"`;
 import { AuthProvider } from "@/lib/auth-context";
 import "./globals.css";
 
@@ -40,6 +43,9 @@ export default function RootLayout({
       className={`${display.variable} ${sans.variable} ${mono.variable}`}
     >
       <head>
+        <Script id="jernih-penanda-js" strategy="beforeInteractive">
+          {PENANDA_JS}
+        </Script>
         <script dangerouslySetInnerHTML={{ __html: skripTema }} />
         <script dangerouslySetInnerHTML={{ __html: skripRingkas }} />
       </head>
