@@ -149,7 +149,7 @@
  * di dalam layer yang sama.
  */
 :root {
-  --font-display: var(--font-display-src), Georgia, serif;
+  --font-display: var(--font-display-src), "Segoe UI", system-ui, sans-serif;
   --font-sans: var(--font-sans-src), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-mono-src), ui-monospace, monospace;
 }
@@ -840,5 +840,51 @@
 @keyframes naik {
   from {
     height: 0%;
+  }
+}
+
+/* ── Cetak struk ──────────────────────────────────────────────────────
+ *
+ * `window.print()` tanpa aturan ini mencetak SELURUH halaman: navigasi,
+ * daftar transaksi, tombol, latar belakang. Yang diinginkan warga hanyalah
+ * struknya.
+ *
+ * Dipakai `visibility`, bukan `display: none`, karena menyembunyikan dengan
+ * display membongkar tata letak induknya dan membuat struk ikut bergeser.
+ * Dengan visibility, kerangkanya tetap utuh dan hanya isinya yang hilang.
+ *
+ * Penandanya `data-struk` (atribut), bukan id, sebab panel desktop dan
+ * lembar bawah untuk ponsel sama-sama ada di DOM — id ganda tidak sah.
+ */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  [data-struk],
+  [data-struk] * {
+    visibility: visible;
+  }
+
+  /* Angkat struk ke pojok kiri atas halaman cetak. */
+  [data-struk] {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    max-height: none;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 0;
+  }
+
+  /* Tombol aksi tidak ada gunanya di atas kertas. */
+  [data-struk] button {
+    display: none;
+  }
+
+  @page {
+    margin: 14mm;
   }
 }

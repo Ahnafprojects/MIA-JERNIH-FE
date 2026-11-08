@@ -127,6 +127,15 @@ function KontenRiwayat() {
     }
   };
 
+  /*
+   * Mencetak HANYA struknya.
+   *
+   * Sebelumnya ini memanggil window.print() tanpa satu pun aturan @media
+   * print, jadi yang keluar adalah tangkapan seluruh halaman web — navigasi,
+   * daftar transaksi, tombol, semuanya — bukan struk. Aturan cetak ada di
+   * globals.css dan menyembunyikan segalanya kecuali elemen bertanda
+   * `data-struk`.
+   */
   const handleUnduhStrukPdf = () => {
     if (!transaksiTerpilih) return;
     window.print();
@@ -305,7 +314,7 @@ function KontenRiwayat() {
         {/* Kolom Panel Struk Desktop (1/3 lebar) */}
         <div className="hidden lg:block">
           {transaksiTerpilih ? (
-            <div className="sticky top-24 rounded-[4px] border border-line bg-surface p-6 shadow-xs">
+            <div data-struk className="sticky top-24 rounded-[4px] border border-line bg-surface p-6 shadow-xs">
               <div className="flex items-center justify-between border-b border-line pb-3">
                 <div className="flex items-center gap-2">
                   <FileText size={16} className="text-brand-600 dark:text-accent" />
@@ -417,7 +426,7 @@ function KontenRiwayat() {
           />
 
           {/* Konten Sheet Meluncur dari Bawah */}
-          <div className="relative z-10 max-h-[85vh] w-full overflow-y-auto rounded-t-[8px] border-t border-line bg-surface p-6 shadow-2xl">
+          <div data-struk className="relative z-10 max-h-[85vh] w-full overflow-y-auto rounded-t-[8px] border-t border-line bg-surface p-6 shadow-2xl">
             <div className="flex items-center justify-between border-b border-line pb-3">
               <div>
                 <span className="font-mono text-[11px] font-bold text-brand-600 uppercase">

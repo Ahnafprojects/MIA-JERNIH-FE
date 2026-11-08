@@ -27,6 +27,7 @@ interface DataPaketResponse {
   golongan: string;
   tarifPerLiter: number;
   minimalLiter: number;
+  maksimalLiter?: number;
   paket: PaketOpsi[];
 }
 
@@ -42,6 +43,16 @@ export default function HalamanBeliToken() {
   const { meter, meterAktif, pilihMeter } = useAuth();
 
   const [tarifPerLiter, setTarifPerLiter] = useState(7.5);
+  /*
+   * Batas satu kali pembelian DIAMBIL DARI SERVER, bukan ditulis ulang di sini.
+   *
+   * Sebelumnya tidak ada batas atas sama sekali: warga bisa mengetik berapa pun
+   * digit sampai muncul tagihan "Rp 15.000.000.000.000.000.000.000" yang jebol
+   * keluar kartu — dan server menerimanya. Menyimpan angkanya di dua tempat
+   * hanya memindahkan masalah: begitu salah satu berubah, yang lain diam-diam
+   * tertinggal. Nilai di bawah hanya cadangan bila /api/paket gagal dimuat.
+   */
+  const [maksLiter, setMaksLiter] = useState(100_000);
   const [golonganNama, setGolonganNama] = useState("Rumah Tangga Umum");
   const [daftarPaket, setDaftarPaket] = useState<PaketOpsi[]>([]);
   const [modePilihan, setModePilihan] = useState<"paket" | "bebas">("paket");
@@ -61,6 +72,7 @@ export default function HalamanBeliToken() {
       try {
         const res = await api<DataPaketResponse>("/api/paket");
         setTarifPerLiter(res.tarifPerLiter);
+        if (res.maksimalLiter) setMaksLiter(res.maksimalLiter);
         setGolonganNama(res.golongan);
         setDaftarPaket(res.paket);
         if (res.paket.length > 0) {
@@ -82,17 +94,21 @@ export default function HalamanBeliToken() {
   // Sinkronisasi dua arah untuk nominal bebas
   const handleUbahLiterBebas = (val: string) => {
     const angkaSaja = val.replace(/\D/g, "");
-    setInputLiterBebas(angkaSaja);
-    const n = Number(angkaSaja) || 0;
+    // Dipotong di sumbernya, bukan hanya ditolak saat menekan bayar: angka
+    // yang mustahil tidak boleh sempat tergambar di kartu ringkasan.
+    const n = Math.min(Number(angkaSaja) || 0, maksLiter);
+    setInputLiterBebas(n > 0 ? String(n) : "");
     const rp = Math.round(n * tarifPerLiter);
     setInputRupiahBebas(rp > 0 ? String(rp) : "");
   };
 
   const handleUbahRupiahBebas = (val: string) => {
     const angkaSaja = val.replace(/\D/g, "");
-    setInputRupiahBebas(angkaSaja);
-    const rp = Number(angkaSaja) || 0;
-    const l = Math.round(rp / tarifPerLiter);
+    const rpMentah = Number(angkaSaja) || 0;
+    const literMentah = Math.round(rpMentah / tarifPerLiter);
+    const l = Math.min(literMentah, maksLiter);
+    const rp = l === literMentah ? rpMentah : Math.round(l * tarifPerLiter);
+    setInputRupiahBebas(rp > 0 ? String(rp) : "");
     setInputLiterBebas(l > 0 ? String(l) : "");
   };
 
@@ -107,6 +123,12 @@ export default function HalamanBeliToken() {
     }
     if (volumeFinalL < 500) {
       setPesanGalat("Pembelian minimal adalah 500 liter.");
+      return;
+    }
+    if (volumeFinalL > maksLiter) {
+      setPesanGalat(
+        `Pembelian maksimal ${maksLiter.toLocaleString("id-ID")} liter sekali transaksi.`,
+      );
       return;
     }
 
@@ -384,7 +406,7 @@ export default function HalamanBeliToken() {
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted">Tarif Dasar</span>
+                <span className="shrink-0 text-muted">Tarif Dasar</span>
                 <span className="font-mono text-muted">
                   {rupiah(tarifPerLiter, 1)} / Liter
                 </span>
@@ -396,9 +418,16 @@ export default function HalamanBeliToken() {
             </div>
 
             <div className="my-4 border-t border-line pt-4">
-              <div className="flex items-baseline justify-between">
-                <span className="text-xs font-bold text-muted">Total Tagihan</span>
-                <span className="tabular font-mono text-2xl font-black text-ink">
+              {/*
+                `min-w-0` + `break-all` pada angkanya: tanpa itu, nominal
+                panjang memaksa lebar flex melebihi kartu dan tulisannya
+                menjulur keluar kotak, bukan membungkus ke bawah.
+              */}
+              <div className="flex items-baseline justify-between gap-3">
+                <span className="shrink-0 text-xs font-bold text-muted">
+                  Total Tagihan
+                </span>
+                <span className="tabular min-w-0 break-all text-right font-mono text-2xl font-black text-ink">
                   {rupiah(totalHargaRp)}
                 </span>
               </div>
