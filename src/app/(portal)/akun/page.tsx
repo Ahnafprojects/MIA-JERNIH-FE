@@ -1,15 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import {
-  Shield,
-  Bell,
-  User,
-  Gauge,
-  Monitor,
-  Unlink,
-  LogOut,
-} from "lucide-react";
+import { Unlink, LogOut } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
 import { liter } from "@/lib/format";
@@ -32,7 +24,7 @@ const BAGIAN = [
   "Tampilan",
 ];
 export default function HalamanAkun() {
-  const { pengguna, meter, keluar, muatUlangData } = useAuth();
+  const { pengguna, meter } = useAuth();
   const [bagian, setBagian] = useState("Profil");
   const [sesi, setSesi] = useState<Sesi[]>([]);
   const [ambang, setAmbang] = useState(100);

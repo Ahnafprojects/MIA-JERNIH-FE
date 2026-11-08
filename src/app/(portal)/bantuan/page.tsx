@@ -317,6 +317,13 @@ function KontenBantuan() {
                 <div className="mt-2 flex flex-wrap gap-3">
                   {daftarFoto.map((fotoUrl, idx) => (
                     <div key={idx} className="relative size-20 overflow-hidden rounded-[3px] border border-line">
+                      {/*
+                        Sengaja <img>, bukan next/image: sumbernya data URI
+                        hasil FileReader yang belum pernah diunggah ke mana pun.
+                        next/image tidak bisa mengoptimalkan skema `data:` dan
+                        akan melempar galat saat dirender.
+                      */}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={fotoUrl} alt={`Foto bukti ${idx + 1}`} className="size-full object-cover" />
                       <button
                         type="button"

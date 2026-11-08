@@ -20,15 +20,32 @@ import { KeadaanKosong } from "@/components/ui/keadaan";
 interface TransaksiBaris {
   id: string;
   meterId: string;
-  jenis: "BELI" | "ISI";
+  jenis: "BELI" | "ISI_TOKEN";
   volumeL: number;
   jumlahRp: number;
   metode: string;
-  status: "LUNAS" | "MENUNGGU" | "KEDALUWARSA" | "DIBATALKAN";
+  status: "LUNAS" | "MENUNGGU" | "GAGAL" | "KEDALUWARSA";
   token?: string | null;
   dibuatPada: string;
   dibayarPada?: string | null;
 }
+
+/**
+ * Nilai status HARUS sama persis dengan enum `StatusTransaksi` di backend
+ * (`prisma/schema.prisma`): MENUNGGU, LUNAS, GAGAL, KEDALUWARSA.
+ *
+ * Sebelumnya daftar ini memuat "DIBATALKAN" yang tidak pernah dikirim backend,
+ * sekaligus melewatkan "GAGAL" yang benar-benar dikirim. Akibatnya transaksi
+ * yang gagal tampil sebagai lencana kelabu bertuliskan nama enum mentah, dan
+ * warga tidak punya cara menyaringnya.
+ */
+const LABEL_FILTER = [
+  { nilai: "SEMUA", label: "Semua Transaksi" },
+  { nilai: "LUNAS", label: "Lunas" },
+  { nilai: "MENUNGGU", label: "Menunggu" },
+  { nilai: "GAGAL", label: "Gagal" },
+  { nilai: "KEDALUWARSA", label: "Kedaluwarsa" },
+] as const;
 
 function lencanaStatus(status: string) {
   switch (status) {
@@ -36,10 +53,10 @@ function lencanaStatus(status: string) {
       return <Badge nada="sukses" titik>Lunas</Badge>;
     case "MENUNGGU":
       return <Badge nada="peringatan" titik>Menunggu</Badge>;
+    case "GAGAL":
+      return <Badge nada="bahaya" titik>Gagal</Badge>;
     case "KEDALUWARSA":
       return <Badge nada="netral" titik>Kedaluwarsa</Badge>;
-    case "DIBATALKAN":
-      return <Badge nada="bahaya" titik>Dibatalkan</Badge>;
     default:
       return <Badge nada="netral">{status}</Badge>;
   }
@@ -196,7 +213,7 @@ function KontenRiwayat() {
         {/* Filter Status */}
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="mr-1 text-xs font-semibold text-muted">Status:</span>
-          {["SEMUA", "LUNAS", "MENUNGGU", "KEDALUWARSA"].map((st) => (
+          {LABEL_FILTER.map(({ nilai: st, label }) => (
             <button
               key={st}
               type="button"
@@ -210,7 +227,7 @@ function KontenRiwayat() {
                   : "border border-line bg-soft text-muted hover:text-ink"
               }`}
             >
-              {st === "SEMUA" ? "Semua Transaksi" : st}
+              {label}
             </button>
           ))}
         </div>
