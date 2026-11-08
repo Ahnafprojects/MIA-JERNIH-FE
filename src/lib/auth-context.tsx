@@ -10,10 +10,20 @@ import React, {
 } from "react";
 import { useRouter } from "next/navigation";
 import { api, aturPenanganRefresh, aturTokenAkses } from "./api";
-import type { MeterSingkat, Pengguna, SesiState } from "./auth-tipe";
+import {
+  normalisasiDaftarMeter,
+  type MeterApi,
+  type MeterSingkat,
+  type Pengguna,
+  type SesiState,
+} from "./auth-tipe";
 
 interface AuthContextValue extends SesiState {
-  masukDenganAkses: (accessToken: string, pengguna: Pengguna, meter?: MeterSingkat[]) => Promise<MeterSingkat[]>;
+  masukDenganAkses: (
+    accessToken: string,
+    pengguna: Pengguna,
+    meter?: MeterSingkat[],
+  ) => Promise<MeterSingkat[]>;
   keluar: () => Promise<void>;
   pilihMeter: (meterId: string) => void;
   segarkanSesi: () => Promise<string | null>;
@@ -63,17 +73,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Ambil profil meter bila peran warga
         if (data.pengguna.peran === "WARGA") {
           try {
-            const dataMe = await api<{ meter: MeterSingkat[] }>("/api/me", {
+            const dataMe = await api<{ meter: MeterApi[] }>("/api/me", {
               headers: { Authorization: `Bearer ${data.accessToken}` },
             });
             if (dataMe.meter) {
-              setMeter(dataMe.meter);
+              const meterList = normalisasiDaftarMeter(dataMe.meter);
+              setMeter(meterList);
               setMeterAktifId((prev) => {
                 const tersimpan = localStorage.getItem("jernih_meter_aktif");
-                if (tersimpan && dataMe.meter.some((m) => m.id === tersimpan)) {
+                if (tersimpan && meterList.some((m) => m.id === tersimpan))
                   return tersimpan;
-                }
-                return prev ?? dataMe.meter[0]?.id ?? null;
+                return prev ?? meterList[0]?.id ?? null;
               });
             }
           } catch {
@@ -96,16 +106,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const muatUlangData = useCallback(async () => {
     try {
-      const dataMe = await api<{ pengguna: Pengguna; meter?: MeterSingkat[] }>("/api/me");
+      const dataMe = await api<{ pengguna: Pengguna; meter?: MeterApi[] }>(
+        "/api/me",
+      );
       setPengguna(dataMe.pengguna);
       if (dataMe.meter) {
-        setMeter(dataMe.meter);
+        const meterList = normalisasiDaftarMeter(dataMe.meter);
+        setMeter(meterList);
         setMeterAktifId((prev) => {
-          const tersimpan = typeof window !== "undefined" ? localStorage.getItem("jernih_meter_aktif") : null;
-          if (tersimpan && dataMe.meter?.some((m) => m.id === tersimpan)) {
+          const tersimpan =
+            typeof window !== "undefined"
+              ? localStorage.getItem("jernih_meter_aktif")
+              : null;
+          if (tersimpan && meterList.some((m) => m.id === tersimpan))
             return tersimpan;
-          }
-          return prev ?? dataMe.meter?.[0]?.id ?? null;
+          return prev ?? meterList[0]?.id ?? null;
         });
       }
     } catch {
@@ -114,7 +129,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const masukDenganAkses = useCallback(
-    async (token: string, dataPengguna: Pengguna, meterAwal?: MeterSingkat[]) => {
+    async (
+      token: string,
+      dataPengguna: Pengguna,
+      meterAwal?: MeterSingkat[],
+    ) => {
       aturTokenAkses(token);
       setAccessToken(token);
       setPengguna(dataPengguna);
@@ -122,10 +141,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       let meterList = meterAwal;
       if (!meterList && dataPengguna.peran === "WARGA") {
         try {
-          const dataMe = await api<{ meter: MeterSingkat[] }>("/api/me", {
+          const dataMe = await api<{ meter: MeterApi[] }>("/api/me", {
             headers: { Authorization: `Bearer ${token}` },
           });
-          meterList = dataMe.meter || [];
+          meterList = normalisasiDaftarMeter(dataMe.meter || []);
         } catch {
           meterList = [];
         }
@@ -155,7 +174,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Tetap lanjutkan pembersihan lokal jika gagal
     }
     bersihkanSesi();
-    router.push("/masuk");
+    router.replace("/masuk");
   }, [bersihkanSesi, router]);
 
   const pilihMeter = useCallback((meterId: string) => {
@@ -187,7 +206,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [segarkanSesi]);
 
-  const meterAktif = meter.find((m) => m.id === meterAktifId) ?? meter[0] ?? null;
+  const meterAktif =
+    meter.find((m) => m.id === meterAktifId) ?? meter[0] ?? null;
 
   const value: AuthContextValue = {
     pengguna,
