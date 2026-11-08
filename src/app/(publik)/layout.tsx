@@ -10,17 +10,6 @@ const MENU: readonly ButirMenu[] = [
   { href: "/statistik", teks: "Statistik" },
 ];
 
-/*
- * Penanda "JavaScript hidup" di elemen akar.
- *
- * Dibaca `bilah-atas.css` untuk memutuskan apakah laci navigasi boleh
- * disembunyikan. Urutannya yang penting: skrip sebaris ini jalan saat HTML
- * diurai, jadi penandanya sudah terpasang sebelum bilah atas pernah
- * tergambar sekali pun. Tanpa itu, pengunjung ber-JavaScript melihat laci
- * terbentang sekejap pada setiap muat halaman.
- */
-const PENANDA_JS = `document.documentElement.dataset.js="1"`;
-
 /**
  * Kerangka halaman publik — TANPA login.
  *
@@ -36,8 +25,6 @@ export default function LayoutPublik({
 }) {
   return (
     <div className="flex min-h-dvh flex-col">
-      <script dangerouslySetInnerHTML={{ __html: PENANDA_JS }} />
-
       <BilahAtas menu={MENU} />
 
       <main className="flex-1">{children}</main>
