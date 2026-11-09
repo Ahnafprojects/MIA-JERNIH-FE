@@ -23,10 +23,9 @@ interface Keadaan<T> {
 /**
  * Pengambil data sederhana untuk komponen klien.
  *
- * Sengaja TIDAK memakai data tiruan sebagai cadangan saat API gagal. Versi
- * sebelumnya dari proyek ini melakukannya, dan akibatnya halaman tampak
- * baik-baik saja sambil menampilkan angka karangan — tidak ada yang sadar
- * servernya mati sampai angkanya dicocokkan dengan database.
+ * Sengaja TIDAK memakai data tiruan sebagai cadangan saat API gagal: halaman
+ * akan tampak baik-baik saja sambil menampilkan angka karangan, dan tidak ada
+ * yang sadar servernya mati sampai angkanya dicocokkan dengan database.
  *
  * Kalau gagal: `data` tetap null dan `galat` berisi pesan dari server.
  * Halaman wajib menampilkan keadaan galat itu apa adanya.
