@@ -8,6 +8,7 @@ import { liter } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { TombolTema } from "@/components/ui/tema";
 import { Badge } from "@/components/ui/badge";
+import { SaluranKabar } from "./_bagian/saluran-kabar";
 
 interface Sesi {
   id: string;
@@ -18,6 +19,7 @@ interface Sesi {
 }
 const BAGIAN = [
   "Profil",
+  "Saluran kabar",
   "Keamanan",
   "Peringatan",
   "Meter tertaut",
@@ -222,6 +224,7 @@ export default function HalamanAkun() {
               </div>
             </div>
           )}
+          {bagian === "Saluran kabar" && <SaluranKabar />}
           {bagian === "Keamanan" && (
             <div className="space-y-6">
               <div>
