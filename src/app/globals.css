@@ -116,7 +116,21 @@
   --color-info-soft: #e0f1f7;
 
   /* ── Grafik — urutan tetap agar deret sama selalu warna sama ────── */
+  /*
+   * Tiap warna deret punya pasangan GELAP untuk dasar kolom. Batang diisi
+   * gradien dari warna deret di puncak ke pasangannya di garis dasar: itu
+   * pola pencahayaan pada benda tegak yang disinari dari atas, dan itu yang
+   * membuat batang terbaca sebagai kolom padat, bukan bidang datar.
+   *
+   * Dipilih satu per satu, bukan dihitung — pencampuran otomatis membuat
+   * `chart-2` (yang sudah gelap) jatuh ke hitam dan `chart-4` berubah
+   * kecokelatan. Keduanya tetap satu keluarga dengan warna induknya.
+   */
   --color-chart-1: #00a6c8;
+  --color-chart-1-dalam: #065d75;
+  --color-chart-2-dalam: #06303d;
+  --color-chart-3-dalam: #0d5339;
+  --color-chart-4-dalam: #7d4c0c;
   --color-chart-2: #0b4a5e;
   --color-chart-3: #17855c;
   --color-chart-4: #b9741a;
@@ -290,6 +304,72 @@
       var(--air-tengah) 15%,
       var(--air-dalam) 100%
     );
+
+  /* ── Kedalaman: bagaimana benda duduk di atas halaman ──────────────
+   *
+   * Portal warga sebelumnya memakai satu garis 1px dan sudut 3px untuk
+   * SEMUA hal: kartu saldo, kotak statistik, panel grafik, struk. Hasilnya
+   * tidak ada yang terbaca lebih penting dari yang lain — mata tidak punya
+   * urutan, jadi seluruh halaman terbaca sebagai satu lembar datar yang
+   * dibagi garis, bukan sebagai benda yang bisa disentuh.
+   *
+   * Yang membuat sesuatu terbaca timbul bukan satu bayangan besar,
+   * melainkan TIGA hal yang terjadi bersamaan pada benda nyata:
+   *
+   *   1. Bayangan kontak — gelap, rapat, tepat di bawah benda. Ini yang
+   *      memberi tahu mata bahwa benda itu MENYENTUH sesuatu.
+   *   2. Bayangan ambien — lebar, sangat lembut, jauh. Ini jaraknya.
+   *   3. Kilau tepi atas — garis terang tipis di sisi yang menghadap
+   *      cahaya. Tanpa ini sebuah kartu hanya kotak yang melayang; dengan
+   *      ini ia punya tebal.
+   *
+   * Nomor 3 yang paling sering dilewatkan, dan justru itu yang paling
+   * menentukan. Bayangan saja membuat benda MELAYANG; kilau tepi membuatnya
+   * punya permukaan yang menghadap ke atas.
+   *
+   * Arah cahayanya sama dengan `--cahaya-permukaan`: dari atas-kiri. Semua
+   * bayangan di sini karena itu jatuh ke bawah-kanan. Satu halaman dengan
+   * dua arah cahaya langsung terbaca palsu, bahkan oleh orang yang tidak
+   * tahu kenapa.
+   */
+
+  /* Nada bayangan diambil dari biru tinta, bukan hitam netral. Bayangan
+     hitam di atas permukaan biru-air terbaca kotor dan mati. */
+  --bayang-nada: 200 60% 12%;
+
+  /* Duduk rata di halaman — kotak statistik, baris daftar. */
+  --kedalaman-1: 0 1px 2px hsl(var(--bayang-nada) / 0.07), 0 3px 8px -2px
+    hsl(var(--bayang-nada) / 0.06);
+  /* Terangkat — kartu biasa, panel. Tingkat bawaan portal. */
+  --kedalaman-2: 0 1px 2px hsl(var(--bayang-nada) / 0.08), 0 6px 16px -4px
+    hsl(var(--bayang-nada) / 0.1), 0 16px 32px -12px
+    hsl(var(--bayang-nada) / 0.08);
+  /* Menonjol — kartu saldo, paket terpilih, struk. Dipakai HEMAT: kalau
+     semuanya menonjol, tidak ada yang menonjol. */
+  --kedalaman-3: 0 2px 4px hsl(var(--bayang-nada) / 0.08), 0 12px 24px -6px
+    hsl(var(--bayang-nada) / 0.12), 0 28px 56px -16px
+    hsl(var(--bayang-nada) / 0.14);
+  /* Melayang — lembar bawah, laci, menu. Benda di LAPISAN LAIN. */
+  --kedalaman-4: 0 4px 8px hsl(var(--bayang-nada) / 0.1), 0 20px 40px -8px
+    hsl(var(--bayang-nada) / 0.16), 0 48px 88px -24px
+    hsl(var(--bayang-nada) / 0.2);
+
+  /* Tebal benda: terang di tepi atas, gelap di tepi bawah. */
+  --kilau-tepi: inset 0 1px 0 rgb(255 255 255 / 0.9), inset 0 -1px 0
+    hsl(var(--bayang-nada) / 0.05);
+  /* Cekung — kolom isian, alur, tangki. Cahayanya terbalik: gelap di atas
+     karena dindingnya sendiri yang menghalangi. */
+  --cekung-dalam: inset 0 2px 4px hsl(var(--bayang-nada) / 0.1), inset 0 1px 1px
+    hsl(var(--bayang-nada) / 0.06);
+
+  /* Lapisan tipis yang ditumpuk di atas warna dasar permukaan supaya
+     bidangnya tidak rata — benda nyata menerima lebih banyak cahaya di
+     bagian yang menghadap ke atas. */
+  --kilap-permukaan: linear-gradient(
+    to bottom,
+    rgb(255 255 255 / 0.8) 0%,
+    rgb(255 255 255 / 0) 42%
+  );
 }
 
 /*
@@ -373,6 +453,54 @@
   --color-chart-3: #3dba87;
   --color-chart-4: #d99c45;
   --color-chart-grid: #17404e;
+
+  /* Pasangan gelap dasar kolom. Di tema gelap jaraknya LEBIH PENDEK: dasar
+     yang terlalu pekat menyatu dengan latar, dan batangnya kehilangan
+     pijakan — yang terlihat tinggal ujung atas yang mengambang. */
+  --color-chart-1-dalam: #176f87;
+  --color-chart-2-dalam: #3f9c8a;
+  --color-chart-3-dalam: #1f7a57;
+  --color-chart-4-dalam: #9a6a2b;
+
+  /*
+   * Kedalaman pada malam hari.
+   *
+   * Bayangan hampir berhenti bekerja di atas latar gelap: hitam di atas
+   * hitam tidak terlihat. Yang memisahkan benda dari latarnya di sini bukan
+   * bayangannya, melainkan TEPI ATAS YANG MENYALA — sisi yang memantulkan
+   * sisa cahaya langit. Karena itu bayangannya dipekatkan (supaya tetap ada
+   * kontak) sementara kilau tepi dinaikkan jauh dan menjadi penanda utama.
+   *
+   * Nilai tema terang dipakai apa adanya di sini akan menghasilkan kartu
+   * yang batasnya hilang sama sekali: mengambang tanpa bentuk di atas latar
+   * yang kecerahannya hampir sama.
+   */
+  --bayang-nada: 200 80% 2%;
+
+  --kedalaman-1: 0 1px 2px hsl(var(--bayang-nada) / 0.4), 0 3px 8px -2px
+    hsl(var(--bayang-nada) / 0.3);
+  --kedalaman-2: 0 1px 2px hsl(var(--bayang-nada) / 0.5), 0 6px 16px -4px
+    hsl(var(--bayang-nada) / 0.45), 0 16px 32px -12px
+    hsl(var(--bayang-nada) / 0.4);
+  --kedalaman-3: 0 2px 4px hsl(var(--bayang-nada) / 0.55), 0 12px 24px -6px
+    hsl(var(--bayang-nada) / 0.5), 0 28px 56px -16px
+    hsl(var(--bayang-nada) / 0.5);
+  --kedalaman-4: 0 4px 8px hsl(var(--bayang-nada) / 0.6), 0 20px 40px -8px
+    hsl(var(--bayang-nada) / 0.55), 0 48px 88px -24px
+    hsl(var(--bayang-nada) / 0.6);
+
+  /* Pantulan langit di tepi atas — dingin, bukan putih. Putih murni di tema
+     gelap terbaca seperti garis bocor, bukan cahaya. */
+  --kilau-tepi: inset 0 1px 0 color-mix(in oklab, var(--color-brand-300) 34%, transparent),
+    inset 0 -1px 0 hsl(var(--bayang-nada) / 0.4);
+  --cekung-dalam: inset 0 2px 5px hsl(var(--bayang-nada) / 0.55), inset 0 1px 1px
+    hsl(var(--bayang-nada) / 0.4);
+
+  --kilap-permukaan: linear-gradient(
+    to bottom,
+    color-mix(in oklab, var(--color-brand-300) 7%, transparent) 0%,
+    transparent 46%
+  );
 }
 
 @layer base {
@@ -605,7 +733,7 @@
   /*
    * Reveal saat digulir.
    *
-   * Kelas ini DIPASANG DARI JAVASCRIPT (lihat `_bagian/muncul.tsx`), tidak
+   * Kelas ini DIPASANG DARI JAVASCRIPT (lihat `ui/muncul.tsx`), tidak
    * pernah dari HTML server: kalau skrip gagal dimuat, tidak boleh ada satu
    * seksi pun yang tertinggal tak terlihat.
    */
@@ -645,6 +773,159 @@
     transform: none;
   }
 
+  /* ── Permukaan bervolume ────────────────────────────────────────────
+   *
+   * Satu kelas menggantikan rangkaian `rounded-[3px] border border-line
+   * bg-surface shadow-xs` yang terulang 158 kali di portal. Bukan sekadar
+   * meringkas: rangkaian itu memberi SEMUA benda tingkat yang sama, dan
+   * tingkat yang sama berarti tidak ada hierarki sama sekali.
+   *
+   * Tiga tingkat, dipakai menurut arti — bukan menurut selera:
+   *   `.permukaan`      kartu biasa dan panel          (bawaan)
+   *   `.permukaan-rata` ubin statistik, baris daftar   (lebih tenang)
+   *   `.permukaan-naik` saldo, paket terpilih, struk   (satu per layar)
+   *
+   * `background-image` ditumpuk di atas `background-color` dari token, jadi
+   * kelas ini tetap bekerja di atas `bg-surface` MAUPUN `bg-brand-600`:
+   * yang ditambahkan hanya cahayanya, warnanya tetap milik pemakainya.
+   */
+  .permukaan,
+  .permukaan-rata,
+  .permukaan-naik {
+    border-radius: var(--radius-card);
+    border: 1px solid var(--color-line);
+    background-color: var(--color-surface);
+    background-image: var(--kilap-permukaan);
+  }
+
+  .permukaan-rata {
+    box-shadow: var(--kilau-tepi), var(--kedalaman-1);
+  }
+
+  .permukaan {
+    box-shadow: var(--kilau-tepi), var(--kedalaman-2);
+  }
+
+  .permukaan-naik {
+    border-radius: var(--radius-sheet);
+    box-shadow: var(--kilau-tepi), var(--kedalaman-3);
+  }
+
+  /*
+   * Cekung: benda yang masuk KE DALAM halaman, bukan keluar.
+   *
+   * Kolom isian token, alur air, tangki saldo, dasar grafik. Membedakan
+   * "tempat menaruh sesuatu" dari "sesuatu yang ditaruh" adalah separuh dari
+   * alasan antarmuka bervolume lebih mudah dibaca: bentuknya sendiri sudah
+   * memberi tahu mana yang bisa diisi.
+   */
+  .cekung {
+    border-radius: var(--radius-input);
+    border: 1px solid var(--color-line);
+    background-color: var(--color-surface-2);
+    box-shadow: var(--cekung-dalam);
+  }
+
+  /*
+   * Benda yang menanggapi sentuhan.
+   *
+   * Naik 2px DAN bayangannya tumbuh bersamaan. Keduanya harus terjadi:
+   * menaikkan benda tanpa menumbuhkan bayangannya membuatnya tampak
+   * bergeser, bukan terangkat — jarak ke halaman tidak berubah, jadi mata
+   * membacanya sebagai geseran mendatar yang aneh.
+   *
+   * Ditekan, ia turun melewati titik awal. Tombol yang hanya kembali ke 0
+   * saat ditekan terasa mati; yang masuk sedikit terasa menerima tekanan.
+   */
+  .angkat {
+    transition:
+      transform 180ms cubic-bezier(0.22, 0.72, 0.24, 1),
+      box-shadow 180ms cubic-bezier(0.22, 0.72, 0.24, 1);
+  }
+  .angkat:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--kilau-tepi), var(--kedalaman-3);
+  }
+  .angkat:active {
+    transform: translateY(1px);
+    box-shadow: var(--kilau-tepi), var(--kedalaman-1);
+  }
+
+  /*
+   * Transisi masuk saat rute berpindah (lihat `ui/transisi-halaman.tsx`).
+   *
+   * Dipakai animation, bukan transition: elemennya baru saja dipasang ke
+   * DOM, jadi tidak ada keadaan "sebelum" yang bisa ditransisikan.
+   */
+  .halaman-masuk {
+    animation: halaman-masuk 320ms cubic-bezier(0.22, 0.72, 0.24, 1) both;
+  }
+
+  /*
+   * Laci navigasi ponsel dan lembar bawah.
+   *
+   * Sebelumnya keduanya muncul mendadak: satu bingkai tidak ada, bingkai
+   * berikutnya menutupi layar penuh. Tanpa gerakan masuk, mata tidak sempat
+   * tahu benda itu datang dari mana, dan panel yang menutupi seluruh layar
+   * terasa seperti halaman yang berganti, bukan lapisan di atasnya.
+   */
+  .laci-masuk {
+    animation: laci-masuk 260ms cubic-bezier(0.22, 0.72, 0.24, 1) both;
+  }
+
+  .tirai-masuk {
+    animation: tirai-masuk 260ms ease-out both;
+  }
+
+  .lembar-masuk {
+    animation: lembar-masuk 300ms cubic-bezier(0.22, 0.72, 0.24, 1) both;
+  }
+
+  /*
+   * Isi halaman yang masuk berjenjang, bukan serentak.
+   *
+   * `.halaman-masuk` menggerakkan seluruh halaman sebagai satu balok. Itu
+   * menandai perpindahan, tetapi di halaman yang isinya beberapa kartu
+   * hasilnya tetap terasa statis: semuanya tiba pada milidetik yang sama,
+   * jadi mata tidak punya urutan untuk diikuti.
+   *
+   * Di sini tiap anak langsung diberi jeda bertambah 60 milidetik. Jenjangnya
+   * memandu pandangan dari kartu pertama ke kartu terakhir — urutan yang sama
+   * dengan urutan membaca. Berhenti di anak kedelapan: lebih dari itu, yang
+   * terakhir menunggu setengah detik dan jenjangnya berubah dari panduan
+   * menjadi penundaan.
+   *
+   * Hanya anak LANGSUNG yang digerakkan. Menganimasikan cucunya juga membuat
+   * dua transform bertumpuk dan gerakannya terbaca dua kali.
+   */
+  .berjenjang > * {
+    animation: halaman-masuk 340ms cubic-bezier(0.22, 0.72, 0.24, 1) both;
+  }
+  .berjenjang > *:nth-child(1) {
+    animation-delay: 0ms;
+  }
+  .berjenjang > *:nth-child(2) {
+    animation-delay: 60ms;
+  }
+  .berjenjang > *:nth-child(3) {
+    animation-delay: 120ms;
+  }
+  .berjenjang > *:nth-child(4) {
+    animation-delay: 180ms;
+  }
+  .berjenjang > *:nth-child(5) {
+    animation-delay: 240ms;
+  }
+  .berjenjang > *:nth-child(6) {
+    animation-delay: 300ms;
+  }
+  .berjenjang > *:nth-child(7) {
+    animation-delay: 360ms;
+  }
+  .berjenjang > *:nth-child(n + 8) {
+    animation-delay: 420ms;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .motion-aware,
     .motion-aware * {
@@ -665,6 +946,38 @@
     }
     .sorot::before {
       transition: none;
+    }
+    .halaman-masuk,
+    .laci-masuk,
+    .tirai-masuk,
+    .lembar-masuk,
+    .berjenjang > * {
+      animation: none;
+    }
+    /*
+     * Kolom air berhenti NAIK, tetapi tetap berada di tinggi yang benar.
+     * `animation: none` saja akan mengembalikannya ke tinggi bawaan 0 dan
+     * grafiknya tergambar kosong — gerakan yang dikurangi tidak boleh
+     * berarti data yang hilang.
+     */
+    .naik-air {
+      animation: none;
+      height: var(--tinggi-air);
+    }
+    .naik-angka {
+      animation: none;
+      bottom: calc(var(--tinggi-air) + 6px);
+      opacity: 1;
+    }
+    /* Kedalamannya tetap — yang dimatikan GERAKANNYA, bukan bentuknya.
+       Menghapus bayangan di sini akan meratakan halaman bagi orang yang
+       justru meminta lebih sedikit gerakan, bukan lebih sedikit bentuk. */
+    .angkat {
+      transition: none;
+    }
+    .angkat:hover,
+    .angkat:active {
+      transform: none;
     }
   }
 }
@@ -752,6 +1065,64 @@
   }
   to {
     background-position: 2rem 0;
+  }
+}
+
+/*
+ * Kilau yang menyapu permukaan air di dalam pipa (lihat `domain/live.tsx`).
+ *
+ * Mulai dan berakhir DI LUAR batang — dari -60% ke 160%, bukan dari 0% ke
+ * 100%. Kilau yang muncul tepat di tepi kiri dan lenyap tepat di tepi kanan
+ * terbaca sebagai benda yang dinyalakan lalu dipadamkan; yang masuk dari
+ * luar bingkai terbaca sebagai cahaya yang memang lewat.
+ */
+/*
+ * Air yang naik di kolom grafik (lihat `domain/grafik-air.tsx`).
+ *
+ * ── Kenapa keyframes, bukan transition ──────────────────────────────
+ *
+ * Upaya pertama memakai `transition: height` yang dipicu perubahan state:
+ * kolom dirender setinggi 0, lalu effect menaikkannya ke tinggi akhir.
+ * Transisinya TIDAK PERNAH berjalan. Direkam tiap bingkai setelah
+ * perpindahan halaman, bingkai pertama yang memuat kolomnya sudah
+ * menunjukkan tinggi akhir — 178, 168, 162 piksel — tanpa satu pun
+ * bingkai di antaranya. Keadaan nol tidak sempat tercat, jadi tidak ada
+ * "sebelum" untuk ditransisikan; bahkan dua `requestAnimationFrame`
+ * bertingkat tidak menolong.
+ *
+ * Animasi keyframes tidak punya masalah itu: ia selalu berjalan saat
+ * elemennya dipasang, apa pun yang terjadi pada bingkai pertama. Tinggi
+ * akhirnya dibawa `--tinggi-air` supaya tiap kolom punya tujuan sendiri
+ * tanpa perlu kelas atau keyframes terpisah.
+ */
+@keyframes naik-air {
+  from {
+    height: 0%;
+  }
+  to {
+    height: var(--tinggi-air);
+  }
+}
+
+/* Angka di atas kolom naik bersama airnya, dengan jeda yang sama, supaya
+   ia terbaca MILIK kolom itu — bukan teks yang kebetulan berdekatan. */
+@keyframes naik-angka {
+  from {
+    bottom: 6px;
+    opacity: 0;
+  }
+  to {
+    bottom: calc(var(--tinggi-air) + 6px);
+    opacity: 1;
+  }
+}
+
+@keyframes sapu-aliran {
+  from {
+    background-position: -60% 0;
+  }
+  to {
+    background-position: 160% 0;
   }
 }
 
@@ -886,5 +1257,47 @@
 
   @page {
     margin: 14mm;
+  }
+}
+
+@keyframes halaman-masuk {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes laci-masuk {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes tirai-masuk {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes lembar-masuk {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
   }
 }

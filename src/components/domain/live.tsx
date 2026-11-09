@@ -23,33 +23,100 @@ export function LivePill({ teks = "Live" }: { teks?: string }) {
 }
 
 /**
- * Visual aliran air.
+ * Debit puncak yang dipakai sebagai acuan panjang batang.
+ *
+ * Keran rumah tangga terbuka penuh berada di sekitar 12 L/mnt. Dipakai
+ * sebagai pembagi supaya panjang batang punya ARTI — sebelumnya batangnya
+ * selalu penuh berapa pun debitnya, jadi 0,4 L/mnt dan 9 L/mnt tergambar
+ * persis sama dan satu-satunya informasi ada pada angkanya.
+ */
+const DEBIT_PUNCAK_LPM = 12;
+
+/**
+ * Visual aliran air: air di dalam pipa, dilihat dari samping.
+ *
+ * ── Kenapa bukan garis miring berjalan ────────────────────────────────
+ *
+ * Bentuk sebelumnya adalah pita bergaris miring yang bergeser — pola yang
+ * sama persis dengan tiang pangkas rambut, dan terbaca begitu. Dua hal yang
+ * membuatnya gagal: garis miring berjalan tidak pernah menyerupai air, dan
+ * kontras antar garisnya begitu tinggi sampai batang itu merebut perhatian
+ * dari angka di sebelahnya — padahal angkanya yang penting.
+ *
+ * Yang menggantikannya meniru bagaimana air sungguhan terlihat di dalam
+ * pipa bening: satu bidang yang NYARIS rata, dengan kilau menyapu pelan di
+ * atasnya. Air yang mengalir cepat tidak terlihat sebagai pola yang
+ * bergerak — terlihat sebagai cahaya yang berubah pada permukaan yang diam.
+ *
+ * ── Saluran selalu digambar, airnya tidak ─────────────────────────────
+ *
+ * Pipa kosong tetap terlihat sebagai pipa. Sebelumnya debit nol membuat
+ * seluruh batang menghilang, dan ruang kosong terbaca sebagai komponen yang
+ * gagal dimuat, bukan sebagai "tidak ada aliran".
  *
  * Animasinya HANYA jalan saat `lpm > 0`. Batang yang terus bergerak padahal
  * debitnya nol adalah kebohongan kecil yang langsung terbaca saat demo:
  * penonton melihat air "mengalir" sementara angkanya 0,0.
  */
-export function FlowVis({ lpm, className }: { lpm: number; className?: string }) {
+export function FlowVis({
+  lpm,
+  className,
+}: {
+  lpm: number;
+  className?: string;
+}) {
   const mengalir = lpm > 0;
+  /* Minimal 7%: aliran kecil harus tetap TERLIHAT sebagai aliran. Batang
+     setipis satu piksel tidak bisa dibedakan dari pipa kosong. */
+  const isi = mengalir
+    ? Math.max(7, Math.min(100, (lpm / DEBIT_PUNCAK_LPM) * 100))
+    : 0;
+
   return (
     <div
       className={cn(
-        "motion-aware h-2 w-full overflow-hidden rounded-full bg-soft",
+        "motion-aware relative h-3 w-full overflow-hidden rounded-full",
         className,
       )}
+      style={{
+        backgroundColor: "var(--color-surface-2)",
+        boxShadow: "var(--cekung-dalam)",
+      }}
       role="img"
-      aria-label={mengalir ? `Air mengalir ${lpm} liter per menit` : "Tidak ada aliran"}
+      aria-label={
+        mengalir
+          ? `Air mengalir ${lpm} liter per menit`
+          : "Tidak ada aliran air"
+      }
     >
       {mengalir ? (
         <div
-          className="h-full w-full"
+          className="relative h-full overflow-hidden rounded-full transition-[width] duration-700 ease-out"
           style={{
+            width: `${isi}%`,
             backgroundImage:
-              "repeating-linear-gradient(115deg, var(--color-brand-400) 0 0.5rem, var(--color-brand-200) 0.5rem 1rem)",
-            backgroundSize: "2rem 100%",
-            animation: "aliran 0.9s linear infinite",
+              "linear-gradient(to bottom, var(--color-brand-400), var(--color-brand-600))",
           }}
-        />
+        >
+          {/* Kilau yang menyapu. Lebarnya 45% dan padam di kedua ujung,
+              jadi yang terlihat cahaya lewat — bukan balok terang berjalan. */}
+          <span
+            aria-hidden
+            className="absolute inset-0"
+            style={{
+              backgroundImage:
+                "linear-gradient(100deg, transparent 0%, rgb(255 255 255 / 0.55) 45%, transparent 90%)",
+              backgroundSize: "45% 100%",
+              backgroundRepeat: "no-repeat",
+              animation: "sapu-aliran 2.4s linear infinite",
+            }}
+          />
+          {/* Garis terang di tepi atas: permukaan air yang menghadap cahaya. */}
+          <span
+            aria-hidden
+            className="absolute inset-x-0 top-0 h-px bg-white/45"
+          />
+        </div>
       ) : null}
     </div>
   );

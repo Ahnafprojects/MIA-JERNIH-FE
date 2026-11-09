@@ -23,8 +23,16 @@
  * sini: dua halaman yang menyebut angka berbeda untuk hal yang sama adalah
  * cacat yang paling cepat ditemukan orang.
  */
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Check, Search } from "lucide-react";
 import { Card, Panel } from "@/components/ui/card";
 import { Badge, type Nada } from "@/components/ui/badge";
@@ -67,8 +75,43 @@ function sisaSla(jatuhTempo: string, terlampaui: boolean): string {
     : `Sisa ${durasi}`;
 }
 
+/**
+ * Pembungkus Suspense untuk `useSearchParams()`.
+ *
+ * Hook itu membaca keadaan navigasi, dan keadaan itu belum ada saat Next.js
+ * memprarender halaman di waktu bangun. Tanpa batas Suspense, `next build`
+ * BERHENTI dengan `CLIENT_HOOK_DYNAMIC` — dan itu bukan kekhawatiran
+ * teoretis: build repo ini pernah gagal persis karena hal yang sama pada
+ * `TransisiHalaman`, sampai batasnya ditaruh di dalam komponennya sendiri
+ * (lihat `components/ui/transisi-halaman.tsx`).
+ *
+ * Cadangannya menggambar halaman yang sama dengan kolom kosong — yaitu
+ * keadaan yang benar bagi orang yang membuka /lacak tanpa parameter.
+ */
 export default function HalamanLacak() {
-  const [nomor, setNomor] = useState("");
+  return (
+    <Suspense fallback={<IsiLacak nomorAwal="" />}>
+      <LacakDenganParameter />
+    </Suspense>
+  );
+}
+
+function LacakDenganParameter() {
+  const parameter = useSearchParams();
+  /*
+   * `key` memaksa pemasangan ulang saat nomornya berganti.
+   *
+   * Tanpa itu, berpindah dari /lacak?nomor=A ke /lacak?nomor=B lewat
+   * navigasi sisi klien hanya mengubah prop — sementara pencarian otomatis
+   * dijalankan sekali saat dipasang, jadi hasil tiket A tetap terpampang di
+   * bawah kolom yang sudah berisi B.
+   */
+  const nomorAwal = parameter.get("nomor")?.trim() ?? "";
+  return <IsiLacak key={nomorAwal} nomorAwal={nomorAwal} />;
+}
+
+function IsiLacak({ nomorAwal }: { nomorAwal: string }) {
+  const [nomor, setNomor] = useState(nomorAwal);
   const [tiket, setTiket] = useState<LacakTiket | null>(null);
   const [galat, setGalat] = useState<string | null>(null);
   const [sibuk, setSibuk] = useState(false);
@@ -113,9 +156,10 @@ export default function HalamanLacak() {
     });
   }, [tiket]);
 
-  /** Satu jalur pencarian untuk form dan untuk nomor contoh — supaya tombol
-   *  contoh tidak bisa diam-diam berperilaku lain dari tombol Lacak. */
-  async function jalankanCari(teks: string) {
+  /** Satu jalur pencarian untuk form, nomor contoh, DAN pencarian otomatis
+   *  dari parameter URL — supaya ketiganya tidak bisa diam-diam berperilaku
+   *  berbeda satu sama lain. */
+  const jalankanCari = useCallback(async (teks: string) => {
     const bersih = teks.trim();
     if (!bersih) return;
 
@@ -138,7 +182,47 @@ export default function HalamanLacak() {
     } finally {
       setSibuk(false);
     }
-  }
+  }, []);
+
+  /*
+   * Nomor dari URL langsung dicari, tanpa menunggu ditekan.
+   *
+   * Warga sampai di sini lewat tautan "Lacak publik" pada tiketnya sendiri —
+   * nomornya baru saja ia lihat satu ketukan sebelumnya. Mendaratkannya di
+   * kolom kosong berarti memintanya mengetik ulang nomor yang sudah dipegang
+   * sistem; itu pekerjaan yang dibuat-buat.
+   *
+   * Tautan di `/bantuan` SUDAH lama mengirim `?nomor=`, tetapi halaman ini
+   * tidak pernah membacanya — jadi parameternya menempel di alamat tanpa
+   * pernah berakibat apa pun.
+   *
+   * Dijalankan sekali per pemasangan: `nomorAwal` tidak berubah selama
+   * komponen ini hidup karena pembungkusnya memakai `key`.
+   */
+  useEffect(() => {
+    if (!nomorAwal) return;
+
+    /*
+     * Dijalankan lewat microtask, bukan langsung di badan effect.
+     *
+     * `jalankanCari` menyetel `sibuk` secara serentak pada baris pertamanya.
+     * Dipanggil langsung di sini, setState itu terjadi di dalam fase commit
+     * dan memicu render berantai — persis yang dilarang aturan lint proyek
+     * ini, dan alasannya sah. Menunda satu microtask menaruhnya sesudah
+     * commit selesai, tanpa penundaan yang bisa dirasakan siapa pun.
+     *
+     * `batal` menjaga agar pencarian tidak jalan bila komponennya dilepas
+     * dalam sela sempit itu — nyata di mode ketat React, yang memasang lalu
+     * melepas tiap komponen sekali saat pengembangan.
+     */
+    let batal = false;
+    queueMicrotask(() => {
+      if (!batal) void jalankanCari(nomorAwal);
+    });
+    return () => {
+      batal = true;
+    };
+  }, [nomorAwal, jalankanCari]);
 
   function cari(e: FormEvent) {
     e.preventDefault();
@@ -337,13 +421,13 @@ export default function HalamanLacak() {
         <div className="mt-3 flex flex-wrap gap-2">
           <Link
             href="/kinerja"
-            className="inline-flex min-h-11 items-center rounded-[3px] border border-line-strong px-3.5 text-[13px] font-semibold text-brand-600 transition-colors hover:bg-soft"
+            className="inline-flex min-h-11 items-center rounded-[8px] border border-line-strong px-3.5 text-[13px] font-semibold text-brand-600 transition-colors hover:bg-soft"
           >
             Lihat rapor kinerja
           </Link>
           <Link
             href="/status"
-            className="inline-flex min-h-11 items-center rounded-[3px] border border-line-strong px-3.5 text-[13px] font-semibold text-brand-600 transition-colors hover:bg-soft"
+            className="inline-flex min-h-11 items-center rounded-[8px] border border-line-strong px-3.5 text-[13px] font-semibold text-brand-600 transition-colors hover:bg-soft"
           >
             Periksa status layanan
           </Link>

@@ -1,6 +1,6 @@
 export default function LoadingBeranda() {
   return (
-    <div className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6">
+    <div className="space-y-6 px-4 py-8 sm:px-6 lg:px-8">
       {/* Header skeleton */}
       <div className="flex flex-col justify-between gap-4 border-b border-line pb-4 sm:flex-row sm:items-baseline">
         <div className="space-y-2">

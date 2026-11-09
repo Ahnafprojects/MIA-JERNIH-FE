@@ -11,10 +11,11 @@ import {
   ArrowRight,
   ShieldCheck,
   AlertCircle,
+  RefreshCw,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { api, ApiError } from "@/lib/api";
-import { liter, rupiah } from "@/lib/format";
+import { liter, rupiah, meterKubik } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 
 interface PaketOpsi {
@@ -30,6 +31,26 @@ interface DataPaketResponse {
   maksimalLiter?: number;
   paket: PaketOpsi[];
 }
+
+/** Bentuk jawaban `GET/PUT /api/isi-otomatis`. */
+interface PengaturanIsiOtomatis {
+  meterId: string;
+  aktif: boolean;
+  ambangL: number;
+  volumeL: number;
+  metode: string;
+  terakhirPada: string | null;
+}
+
+/*
+ * Ambang bawaan isi otomatis, dalam liter.
+ *
+ * Seratus liter, bukan angka di dekat alarm meter. Alarm firmware baru
+ * berbunyi pada ≤5 L, dan membeli di titik itu sudah terlambat: tokennya
+ * masih harus diterbitkan, sampai ke warga, lalu ditukarkan ke meter —
+ * sementara relay menutup begitu saldo menyentuh nol.
+ */
+const AMBANG_BAWAAN_L = 100;
 
 const METODE_BAYAR = [
   { id: "QRIS", nama: "QRIS", sub: "GoPay, OVO, Dana, ShopeePay", Ikon: QrCode },
@@ -67,6 +88,14 @@ export default function HalamanBeliToken() {
   const [tahapBayar, setTahapBayar] = useState<string | null>(null);
   const [pesanGalat, setPesanGalat] = useState<string | null>(null);
 
+  // Isi otomatis — disimpan per meter di server.
+  const [isiOtomatis, setIsiOtomatis] = useState<PengaturanIsiOtomatis | null>(
+    null,
+  );
+  const [ambangInput, setAmbangInput] = useState<string>(String(AMBANG_BAWAAN_L));
+  const [menyimpanOtomatis, setMenyimpanOtomatis] = useState(false);
+  const [galatOtomatis, setGalatOtomatis] = useState<string | null>(null);
+
   useEffect(() => {
     (async () => {
       try {
@@ -90,6 +119,75 @@ export default function HalamanBeliToken() {
       }
     })();
   }, []);
+
+  /*
+   * Pengaturan isi otomatis dimuat ULANG tiap kali meter aktif berganti.
+   *
+   * Disimpan per meter, bukan per akun: satu warga bisa memegang rumah dan
+   * kos sekaligus, dan ambang yang masuk akal untuk satu sambungan tidak
+   * pernah otomatis masuk akal untuk sambungan lain.
+   */
+  useEffect(() => {
+    if (!meterAktif) return;
+    let hidup = true;
+
+    (async () => {
+      try {
+        const res = await api<PengaturanIsiOtomatis>(
+          `/api/isi-otomatis?meterId=${encodeURIComponent(meterAktif.id)}`,
+        );
+        if (!hidup) return;
+        setIsiOtomatis(res);
+        setAmbangInput(String(res.ambangL));
+      } catch {
+        // Gagal memuat bukan alasan menghalangi pembelian biasa.
+        if (hidup) setIsiOtomatis(null);
+      }
+    })();
+
+    return () => {
+      hidup = false;
+    };
+  }, [meterAktif]);
+
+  /**
+   * Menyimpan pengaturan isi otomatis.
+   *
+   * Paket yang diikat adalah paket yang SEDANG dipilih di halaman ini, dan
+   * metodenya metode yang sedang dipilih — itulah arti "beli paket ini
+   * otomatis". Mengirim keduanya tiap kali menyimpan membuat tombolnya
+   * punya makna yang sama dengan yang terlihat di layar.
+   */
+  const simpanIsiOtomatis = async (aktif: boolean) => {
+    if (!meterAktif) return;
+
+    const ambangL = Math.max(10, Math.min(50_000, Number(ambangInput) || AMBANG_BAWAAN_L));
+
+    setMenyimpanOtomatis(true);
+    setGalatOtomatis(null);
+    try {
+      const res = await api<PengaturanIsiOtomatis>("/api/isi-otomatis", {
+        method: "PUT",
+        body: JSON.stringify({
+          meterId: meterAktif.id,
+          aktif,
+          ambangL,
+          volumeL: volumeFinalL >= 500 ? volumeFinalL : undefined,
+          metode,
+        }),
+      });
+      setIsiOtomatis(res);
+      setAmbangInput(String(res.ambangL));
+    } catch (err) {
+      setGalatOtomatis(
+        err instanceof ApiError
+          ? err.message
+          : "Gagal menyimpan pengaturan isi otomatis.",
+      );
+    } finally {
+      setMenyimpanOtomatis(false);
+    }
+  };
 
   // Sinkronisasi dua arah untuk nominal bebas
   const handleUbahLiterBebas = (val: string) => {
@@ -157,11 +255,10 @@ export default function HalamanBeliToken() {
 
       setTahapBayar("Menerbitkan tagihan dan token air...");
 
-      // Simpan ringkasan transaksi & token ke sessionStorage agar halaman invoice langsung tampil tanpa blank
+      // Ringkasan transaksi disimpan agar halaman invoice langsung tampil
+      // tanpa berkedip kosong. Kode tokennya sendiri TIDAK lagi dititipkan ke
+      // peramban — ia diambil dari server lewat `/api/token/:id/kode`.
       if (typeof window !== "undefined") {
-        if (res.kode) {
-          sessionStorage.setItem(`jernih_token_${res.invoiceId}`, res.kode);
-        }
         sessionStorage.setItem(
           `jernih_tx_${res.invoiceId}`,
           JSON.stringify({
@@ -191,7 +288,7 @@ export default function HalamanBeliToken() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8 px-4 py-8 sm:px-6">
+    <div className="space-y-8 px-4 py-8 sm:px-6 lg:px-8">
       {/* ── Header ── */}
       <div className="border-b border-line pb-4">
         <span className="font-mono text-xs font-semibold tracking-wider text-brand-700 uppercase dark:text-accent">
@@ -208,7 +305,7 @@ export default function HalamanBeliToken() {
       {pesanGalat ? (
         <aside
           role="alert"
-          className="rounded-[3px] border border-danger/40 bg-danger/10 p-3.5 text-xs font-medium text-danger"
+          className="rounded-[10px] border border-danger/40 bg-danger/10 p-3.5 text-xs font-medium text-danger"
         >
           <div className="flex gap-2">
             <AlertCircle size={16} className="shrink-0" />
@@ -221,7 +318,7 @@ export default function HalamanBeliToken() {
         {/* Kolom 1 & 2: Pilihan Paket & Metode Pembayaran */}
         <div className="space-y-6 lg:col-span-2">
           {/* Pemilih Meter Tujuan */}
-          <div className="rounded-[4px] border border-line bg-surface p-5 shadow-xs">
+          <div className="permukaan p-5">
             <label className="text-xs font-bold text-ink">Meter Tujuan</label>
             <div className="mt-2 flex flex-wrap gap-2">
               {meter.map((m) => (
@@ -229,10 +326,18 @@ export default function HalamanBeliToken() {
                   key={m.id}
                   type="button"
                   onClick={() => pilihMeter(m.id)}
-                  className={`flex items-center gap-2 rounded-[3px] border px-3 py-2 text-xs transition-colors ${
+                  /*
+                   * Yang terpilih TIMBUL, yang tidak terpilih CEKUNG.
+                   * Sebelumnya keduanya dibedakan hanya oleh warna garis dan
+                   * latar tipis — perbedaan yang hilang sama sekali bagi mata
+                   * yang sedang bergerak cepat, dan bagi siapa pun yang sulit
+                   * membedakan biru dari abu-abu. Bentuk tidak punya masalah
+                   * itu: menonjol dan masuk ke dalam terbaca tanpa warna.
+                   */
+                  className={`angkat flex items-center gap-2 rounded-[10px] border px-3 py-2 text-xs ${
                     m.id === meterAktif?.id
-                      ? "border-brand-500 bg-brand-500/10 font-bold text-brand-700 dark:text-accent"
-                      : "border-line bg-soft text-muted hover:text-ink"
+                      ? "border-brand-500 bg-brand-50 font-bold text-brand-700 shadow-[var(--kilau-tepi),var(--kedalaman-2)] dark:text-accent"
+                      : "border-line bg-surface-2 text-muted shadow-[var(--cekung-dalam)] hover:text-ink"
                   }`}
                 >
                   <Droplets size={14} />
@@ -246,8 +351,8 @@ export default function HalamanBeliToken() {
           </div>
 
           {/* Pilihan Paket Liter / Nominal Bebas */}
-          <div className="rounded-[4px] border border-line bg-surface p-5 shadow-xs">
-            <div className="mb-4 flex items-center justify-between">
+          <div className="permukaan p-5">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="text-sm font-bold text-ink">Nominal Air</h2>
                 <p className="text-[11px] text-muted">
@@ -255,13 +360,17 @@ export default function HalamanBeliToken() {
                 </p>
               </div>
 
-              {/* Toggle Mode */}
-              <div className="flex rounded-[3px] border border-line bg-soft p-0.5">
+              {/* Toggle Mode — alurnya CEKUNG, bidak yang aktif TIMBUL di
+                  dalamnya. Itu bentuk sakelar sungguhan, dan satu-satunya
+                  bentuk yang langsung memberi tahu mana sisi yang menyala. */}
+              <div className="cekung flex p-1">
                 <button
                   type="button"
                   onClick={() => setModePilihan("paket")}
-                  className={`rounded-[2px] px-2.5 py-1 text-xs font-semibold ${
-                    modePilihan === "paket" ? "bg-surface text-ink shadow-xs" : "text-muted"
+                  className={`rounded-[7px] px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
+                    modePilihan === "paket"
+                      ? "bg-surface text-ink shadow-[var(--kilau-tepi),var(--kedalaman-1)]"
+                      : "text-muted hover:text-ink"
                   }`}
                 >
                   Paket Pilihan
@@ -269,8 +378,10 @@ export default function HalamanBeliToken() {
                 <button
                   type="button"
                   onClick={() => setModePilihan("bebas")}
-                  className={`rounded-[2px] px-2.5 py-1 text-xs font-semibold ${
-                    modePilihan === "bebas" ? "bg-surface text-ink shadow-xs" : "text-muted"
+                  className={`rounded-[7px] px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
+                    modePilihan === "bebas"
+                      ? "bg-surface text-ink shadow-[var(--kilau-tepi),var(--kedalaman-1)]"
+                      : "text-muted hover:text-ink"
                   }`}
                 >
                   Nominal Bebas
@@ -287,10 +398,18 @@ export default function HalamanBeliToken() {
                       key={p.volumeL}
                       type="button"
                       onClick={() => setLiterTerpilih(p.volumeL)}
-                      className={`flex flex-col items-start rounded-[3px] border p-3 text-left transition-colors ${
+                      /*
+                       * Yang terpilih duduk LEBIH TINGGI, bukan sekadar
+                       * bergaris biru. Pada layar yang dilihat sekilas — dan
+                       * halaman beli selalu dilihat sekilas — perbedaan
+                       * tinggi terbaca lebih cepat daripada perbedaan warna
+                       * garis setebal satu piksel, dan tetap terbaca oleh
+                       * orang yang sulit membedakan biru dari abu-abu.
+                       */
+                      className={`angkat flex flex-col items-start rounded-card border p-3.5 text-left ${
                         aktif
-                          ? "border-brand-500 bg-brand-500/5 ring-1 ring-brand-500"
-                          : "border-line bg-surface hover:border-line-strong hover:bg-soft"
+                          ? "border-brand-500 bg-brand-50 shadow-[var(--kilau-tepi),var(--kedalaman-3)] ring-1 ring-brand-500"
+                          : "border-line bg-surface shadow-[var(--kilau-tepi),var(--kedalaman-1)] hover:border-line-strong"
                       }`}
                     >
                       <span className="font-mono text-sm font-bold text-ink">
@@ -300,14 +419,14 @@ export default function HalamanBeliToken() {
                         {rupiah(p.hargaRp)}
                       </span>
                       <span className="mt-1 text-[10px] text-muted">
-                        {(p.volumeL / 1000).toFixed(1)} m³
+                        {meterKubik(p.volumeL, 1)}
                       </span>
                     </button>
                   );
                 })}
               </div>
             ) : (
-              <div className="space-y-3 rounded-[3px] border border-line bg-soft p-4">
+              <div className="space-y-3 cekung border-line bg-soft p-4">
                 <p className="text-xs font-medium text-ink">
                   Masukkan jumlah liter atau nominal rupiah (minimal 500 liter):
                 </p>
@@ -322,7 +441,7 @@ export default function HalamanBeliToken() {
                         inputMode="numeric"
                         value={inputLiterBebas}
                         onChange={(e) => handleUbahLiterBebas(e.target.value)}
-                        className="tabular h-10 w-full rounded-[3px] border border-line bg-surface px-3 font-mono text-sm font-bold text-ink outline-none focus:border-brand-500"
+                        className="tabular h-10 w-full permukaan-rata px-3 font-mono text-sm font-bold text-ink outline-none focus:border-brand-500"
                       />
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 font-mono text-xs text-muted">
                         L
@@ -343,7 +462,7 @@ export default function HalamanBeliToken() {
                         inputMode="numeric"
                         value={inputRupiahBebas}
                         onChange={(e) => handleUbahRupiahBebas(e.target.value)}
-                        className="tabular h-10 w-full rounded-[3px] border border-line bg-surface pl-9 pr-3 font-mono text-sm font-bold text-ink outline-none focus:border-brand-500"
+                        className="tabular h-10 w-full permukaan-rata pl-9 pr-3 font-mono text-sm font-bold text-ink outline-none focus:border-brand-500"
                       />
                     </div>
                   </div>
@@ -356,7 +475,7 @@ export default function HalamanBeliToken() {
           </div>
 
           {/* Pilihan Metode Pembayaran */}
-          <div className="rounded-[4px] border border-line bg-surface p-5 shadow-xs">
+          <div className="permukaan p-5 shadow-xs">
             <h2 className="mb-3 text-sm font-bold text-ink">Metode Pembayaran</h2>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {METODE_BAYAR.map(({ id, nama, sub, Ikon }) => {
@@ -366,13 +485,13 @@ export default function HalamanBeliToken() {
                     key={id}
                     type="button"
                     onClick={() => setMetode(id)}
-                    className={`flex items-start gap-3 rounded-[3px] border p-3 text-left transition-colors ${
+                    className={`angkat flex items-start gap-3 rounded-card border p-3.5 text-left ${
                       terpilih
-                        ? "border-brand-500 bg-brand-500/5 ring-1 ring-brand-500"
-                        : "border-line bg-surface hover:bg-soft"
+                        ? "border-brand-500 bg-brand-50 shadow-[var(--kilau-tepi),var(--kedalaman-3)] ring-1 ring-brand-500"
+                        : "border-line bg-surface shadow-[var(--kilau-tepi),var(--kedalaman-1)]"
                     }`}
                   >
-                    <span className="grid size-8 shrink-0 place-items-center rounded-[2px] bg-soft text-brand-600 dark:text-accent">
+                    <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-brand-50 text-brand-700 shadow-[var(--kedalaman-1)] ring-1 ring-white/60 ring-inset dark:bg-brand-100 dark:text-accent">
                       <Ikon size={16} />
                     </span>
                     <div>
@@ -384,11 +503,128 @@ export default function HalamanBeliToken() {
               })}
             </div>
           </div>
+
+          {/* ── Isi otomatis ──────────────────────────────────────────────
+           *
+           * Diletakkan SETELAH paket dan metode, bukan sebelumnya, karena
+           * yang diikat sakelar ini adalah paket dan metode yang sedang
+           * dipilih di atasnya. Ditaruh lebih dulu, warga diminta menyetujui
+           * sesuatu yang belum mereka tentukan.
+           */}
+          <div className="permukaan p-5">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex min-w-0 items-start gap-3">
+                <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-brand-50 text-brand-700 shadow-[var(--kedalaman-1)] ring-1 ring-white/60 ring-inset dark:bg-brand-100 dark:text-accent">
+                  <RefreshCw size={16} />
+                </span>
+                <div className="min-w-0">
+                  <h2 className="text-sm font-bold text-ink">Isi otomatis</h2>
+                  <p className="mt-0.5 text-[11px] leading-relaxed text-muted">
+                    Beli paket ini otomatis saat saldo turun di bawah ambang,
+                    sebelum alarm meter berbunyi. Bisa dimatikan kapan saja.
+                  </p>
+                </div>
+              </div>
+
+              {/*
+                Sakelar digambar sebagai alur CEKUNG dengan bidak TIMBUL di
+                dalamnya — bentuk sakelar sungguhan. Warnanya saja tidak
+                cukup: keadaan nyala dan mati harus bisa dibedakan tanpa
+                bergantung pada kemampuan membedakan biru dari abu-abu.
+              */}
+              <button
+                type="button"
+                role="switch"
+                aria-checked={isiOtomatis?.aktif ?? false}
+                aria-label="Aktifkan isi otomatis"
+                disabled={menyimpanOtomatis || !meterAktif}
+                onClick={() => simpanIsiOtomatis(!(isiOtomatis?.aktif ?? false))}
+                className={`cekung relative h-7 w-12 shrink-0 rounded-full p-0 transition-colors disabled:opacity-50 ${
+                  isiOtomatis?.aktif ? "bg-brand-500" : "bg-surface-2"
+                }`}
+              >
+                <span
+                  aria-hidden
+                  className={`absolute top-1 size-5 rounded-full bg-surface shadow-[var(--kilau-tepi),var(--kedalaman-2)] transition-[left] duration-200 ${
+                    isiOtomatis?.aktif ? "left-6" : "left-1"
+                  }`}
+                />
+              </button>
+            </div>
+
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <label
+                  htmlFor="ambang-isi-otomatis"
+                  className="text-[11px] font-semibold text-muted"
+                >
+                  Belikan saat saldo di bawah
+                </label>
+                <div className="relative mt-1">
+                  <input
+                    id="ambang-isi-otomatis"
+                    type="text"
+                    inputMode="numeric"
+                    value={ambangInput}
+                    onChange={(e) =>
+                      setAmbangInput(e.target.value.replace(/\D/g, "").slice(0, 5))
+                    }
+                    onBlur={() => {
+                      if (isiOtomatis?.aktif) void simpanIsiOtomatis(true);
+                    }}
+                    className="cekung tabular h-10 w-full px-3 font-mono text-sm font-bold text-ink outline-none focus:border-brand-500"
+                  />
+                  <span className="absolute top-1/2 right-3 -translate-y-1/2 font-mono text-xs text-muted">
+                    L
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <span className="text-[11px] font-semibold text-muted">
+                  Paket yang dibelikan
+                </span>
+                <div className="cekung mt-1 flex h-10 items-center px-3">
+                  <span className="tabular font-mono text-sm font-bold text-ink">
+                    {volumeFinalL >= 500 ? liter(volumeFinalL, 0) : "—"}
+                  </span>
+                  <span className="ml-auto font-mono text-[11px] text-muted">
+                    {metode}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {galatOtomatis ? (
+              <p role="alert" className="mt-3 text-[11px] font-medium text-danger">
+                {galatOtomatis}
+              </p>
+            ) : null}
+
+            <p className="mt-3 text-[11px] leading-relaxed text-muted">
+              {isiOtomatis?.aktif ? (
+                <>
+                  Aktif untuk meter{" "}
+                  <strong className="font-mono text-ink">
+                    {meterAktif?.nomorSeri}
+                  </strong>
+                  . Tagihan dan kode token dikirim ke email Anda setiap kali
+                  pembelian otomatis terbit.
+                </>
+              ) : (
+                <>
+                  Alarm meter baru berbunyi pada saldo 5 liter — terlalu dekat
+                  untuk sempat membeli dan menukarkan token. Ambang di atas
+                  memberi jeda beberapa hari sebelum itu terjadi.
+                </>
+              )}
+            </p>
+          </div>
         </div>
 
         {/* Kolom 3: Ringkasan Lengket di Samping */}
         <div>
-          <div className="sticky top-24 rounded-[4px] border border-line bg-surface p-6 shadow-xs">
+          <div className="sticky top-24 permukaan p-6 shadow-xs">
             <h2 className="font-display text-base font-bold text-ink">
               Ringkasan Pembelian
             </h2>
@@ -454,7 +690,7 @@ export default function HalamanBeliToken() {
               </div>
             ) : null}
 
-            <div className="mt-4 flex items-start gap-2 rounded-[2px] bg-soft p-3 text-[11px] leading-relaxed text-muted">
+            <div className="mt-4 flex items-start gap-2 rounded-[8px] bg-soft p-3 text-[11px] leading-relaxed text-muted">
               <ShieldCheck size={16} className="shrink-0 text-success" />
               <span>
                 Pembelian ini menerbitkan kode token sekali pakai. Saldo fisik meter baru akan bertambah setelah token ditukarkan ke meter.

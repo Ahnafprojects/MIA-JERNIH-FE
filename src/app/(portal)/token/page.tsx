@@ -171,7 +171,7 @@ export default function HalamanToken() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8 px-4 py-8 sm:px-6">
+    <div className="space-y-8 px-4 py-8 sm:px-6 lg:px-8">
       {/* ── Header Halaman ── */}
       <div className="border-b border-line pb-4">
         <span className="font-mono text-xs font-semibold tracking-wider text-brand-700 uppercase dark:text-accent">
@@ -187,7 +187,7 @@ export default function HalamanToken() {
 
       {/* Pemilih meter jika punya lebih dari 1 */}
       {meter.length > 1 ? (
-        <div className="flex flex-wrap items-center gap-3 rounded-[3px] border border-line bg-surface p-3">
+        <div className="flex flex-wrap items-center gap-3 permukaan-rata p-3">
           <span className="text-xs font-semibold text-ink">Pilih Meter Tujuan:</span>
           <div className="flex flex-wrap gap-2">
             {meter.map((m) => (
@@ -195,7 +195,7 @@ export default function HalamanToken() {
                 key={m.id}
                 type="button"
                 onClick={() => pilihMeter(m.id)}
-                className={`rounded-[2px] px-3 py-1 font-mono text-xs font-bold transition-colors ${
+                className={`rounded-[8px] px-3 py-1 font-mono text-xs font-bold transition-colors ${
                   m.id === meterAktif?.id
                     ? "bg-brand-600 text-white"
                     : "border border-line bg-soft text-muted hover:text-ink"
@@ -212,7 +212,7 @@ export default function HalamanToken() {
       {terkunciSampai ? (
         <aside
           role="alert"
-          className="rounded-[3px] border border-danger/40 bg-danger/10 p-4 text-xs font-medium text-danger"
+          className="rounded-[10px] border border-danger/40 bg-danger/10 p-4 text-xs font-medium text-danger"
         >
           <div className="flex items-center gap-2 font-bold text-sm">
             <Clock size={16} />
@@ -229,7 +229,7 @@ export default function HalamanToken() {
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
         {/* Kolom Kiri: Form Input Token & Demo Chips */}
         <div className="space-y-6">
-          <div className="rounded-[4px] border border-line bg-surface p-6 shadow-xs">
+          <div className="permukaan p-6 shadow-xs">
             <h2 className="font-display text-base font-bold text-ink">
               Masukkan Kode Token
             </h2>
@@ -247,7 +247,7 @@ export default function HalamanToken() {
                   setKodeToken("1111");
                   handleTukarToken("1111");
                 }}
-                className="rounded-[2px] border border-line bg-soft px-2.5 py-1 font-mono text-xs font-bold text-brand-700 hover:bg-brand-500/10 dark:text-accent"
+                className="rounded-[8px] border border-line bg-soft px-2.5 py-1 font-mono text-xs font-bold text-brand-700 hover:bg-brand-500/10 dark:text-accent"
               >
                 1111 (+5 L)
               </button>
@@ -258,7 +258,7 @@ export default function HalamanToken() {
                   setKodeToken("2222");
                   handleTukarToken("2222");
                 }}
-                className="rounded-[2px] border border-line bg-soft px-2.5 py-1 font-mono text-xs font-bold text-brand-700 hover:bg-brand-500/10 dark:text-accent"
+                className="rounded-[8px] border border-line bg-soft px-2.5 py-1 font-mono text-xs font-bold text-brand-700 hover:bg-brand-500/10 dark:text-accent"
               >
                 2222 (+10 L)
               </button>
@@ -280,6 +280,7 @@ export default function HalamanToken() {
                 memuat={memuat}
                 disabled={Boolean(terkunciSampai) || kodeToken.length < 4}
                 onClick={() => handleTukarToken()}
+                className="whitespace-nowrap"
               >
                 Tukarkan ke Meter
               </Button>
@@ -287,7 +288,7 @@ export default function HalamanToken() {
 
             {/* Layar Hasil Sukses */}
             {hasilSukses ? (
-              <div className="mt-6 rounded-[3px] border border-success/40 bg-success/10 p-4">
+              <div className="mt-6 rounded-[10px] border border-success/40 bg-success/10 p-4">
                 <div className="flex items-center gap-2 text-sm font-bold text-success">
                   <CheckCircle2 size={16} />
                   <span>TOKEN VALID (+{liter(hasilSukses.nilaiL, 0)})</span>
@@ -309,7 +310,7 @@ export default function HalamanToken() {
 
             {/* Layar Hasil Gagal */}
             {hasilGalat ? (
-              <div className="mt-6 rounded-[3px] border border-danger/40 bg-danger/10 p-4">
+              <div className="mt-6 rounded-[10px] border border-danger/40 bg-danger/10 p-4">
                 <div className="flex items-center gap-2 text-sm font-bold text-danger">
                   <AlertCircle size={16} />
                   <span>TOKEN SALAH</span>
@@ -328,7 +329,7 @@ export default function HalamanToken() {
           </div>
 
           {/* Daftar Token Belum Dipakai (Tampil Bertopeng) */}
-          <div className="rounded-[4px] border border-line bg-surface p-5 shadow-xs">
+          <div className="permukaan p-5 shadow-xs">
             <div className="flex items-center justify-between border-b border-line pb-3">
               <div>
                 <h3 className="font-display text-sm font-bold text-ink">
@@ -376,7 +377,7 @@ export default function HalamanToken() {
               </ul>
             )}
 
-            <div className="mt-3 flex items-start gap-1.5 rounded-[2px] bg-soft p-2.5 text-[11px] text-muted">
+            <div className="mt-3 flex items-start gap-1.5 rounded-[8px] bg-soft p-2.5 text-[11px] text-muted">
               <Info size={14} className="shrink-0 text-brand-600 dark:text-accent" />
               <span>
                 Server tidak pernah menyimpan kode utuh demi keamanan. Kode token lengkap hanya dikirim sekali pada email konfirmasi pembelian.
@@ -387,7 +388,7 @@ export default function HalamanToken() {
 
         {/* Kolom Kanan: Panduan Keypad Fisik & Perangkat Meter */}
         <div className="space-y-6">
-          <div className="rounded-[4px] border border-line bg-surface p-6 shadow-xs">
+          <div className="permukaan p-6 shadow-xs">
             <h2 className="font-display text-base font-bold text-ink">
               Simulasi Meter Fisik
             </h2>
@@ -412,7 +413,7 @@ export default function HalamanToken() {
               />
             </div>
 
-            <div className="mt-6 rounded-[3px] border border-line bg-soft p-3 text-xs text-muted">
+            <div className="mt-6 cekung border-line bg-soft p-3 text-xs text-muted">
               <div className="flex items-center gap-1.5 font-semibold text-ink">
                 <HelpCircle size={14} />
                 <span>Petunjuk Keypad 4×4 ESP32:</span>
