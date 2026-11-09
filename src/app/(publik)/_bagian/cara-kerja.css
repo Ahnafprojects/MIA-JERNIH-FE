@@ -1,0 +1,93 @@
+/*
+ * Gerakan masuk untuk seksi "Cara kerja".
+ *
+ * ── Kenapa berkas terpisah ────────────────────────────────────────────
+ *
+ * Mengikuti pola `bilah-atas.css`: aturan yang hanya dipakai satu seksi
+ * tinggal di sebelah seksinya, bukan menumpuk di globals.css.
+ *
+ * ── Kenapa tidak cukup mengandalkan `Muncul` ──────────────────────────
+ *
+ * Keempat langkah sudah mendapat kelas `gulir` dari `Muncul`, jadi gerakan
+ * masuknya sebenarnya berjalan. Masalahnya gerakan itu sama persis dengan
+ * yang dipakai SETIAP seksi lain di halaman ini: naik 16px lalu memudar.
+ * Pada daftar yang berurutan, gerakan seragam itu tidak menyampaikan apa
+ * pun — keempat langkah datang dengan cara yang sama seperti kartu fitur
+ * yang justru sengaja dibuat setara.
+ *
+ * Yang ditambahkan di sini menyatakan URUTAN: relnya menggambar dirinya
+ * sendiri dari langkah pertama ke langkah terakhir, dan nomornya muncul
+ * tepat sebelum rel yang keluar darinya mulai memanjang. Arah gambarnya
+ * mengikuti arah baca, jadi mata ditarik menyusuri jalur yang memang harus
+ * ditempuh warga.
+ *
+ * ── Kegagalan harus berakhir pada keadaan TERLIHAT ────────────────────
+ *
+ * Semua aturan di bawah disyaratkan `.gulir`, kelas yang hanya dipasang
+ * oleh JavaScript. Tanpa JavaScript, tanpa IntersectionObserver, atau saat
+ * `prefers-reduced-motion` menyala, `Muncul` keluar lebih awal dan kelas
+ * itu tidak pernah ada — sehingga rel dan nomornya tergambar penuh apa
+ * adanya. Kalau disyaratkan sebaliknya, satu skrip yang gagal dimuat akan
+ * menyembunyikan seluruh rel secara permanen.
+ */
+
+/* Rel penghubung: digambar dari pangkalnya. Di ponsel relnya tegak, jadi
+   yang tumbuh tingginya; mulai 1024px relnya mendatar dan yang tumbuh
+   lebarnya. Titik tumpunya ikut berpindah supaya ia tumbuh menjauh dari
+   nomor, bukan menyusut ke arahnya. */
+.gulir [data-rel-aliran] {
+  transform: scaleY(0);
+  transform-origin: top center;
+  /* `--jenjang` ditulis per langkah dari komponennya. Jeda tidak bisa
+     diambil dari `Muncul`: ia menulis `transition-delay` pada <li>, dan
+     sifat itu tidak diwariskan ke anak. Tambahan 180ms menahan rel sampai
+     nomor di pangkalnya selesai mendarat. */
+  transition: transform 560ms cubic-bezier(0.22, 0.72, 0.24, 1)
+    calc(var(--jenjang, 0ms) + 180ms);
+}
+
+.gulir.gulir-tampil [data-rel-aliran] {
+  transform: scaleY(1);
+}
+
+@media (min-width: 1024px) {
+  .gulir [data-rel-aliran] {
+    transform: scaleX(0);
+    transform-origin: left center;
+  }
+
+  .gulir.gulir-tampil [data-rel-aliran] {
+    transform: scaleX(1);
+  }
+}
+
+/* Nomor langkah mendarat lebih dulu, relnya menyusul 180ms kemudian.
+   Urutannya penting: rel yang memanjang dari lingkaran yang belum ada
+   terbaca seperti garis yang menggantung tanpa pangkal. */
+.gulir [data-nomor-langkah] {
+  transform: scale(0.72);
+  opacity: 0;
+  transition:
+    transform 420ms cubic-bezier(0.34, 1.32, 0.64, 1) var(--jenjang, 0ms),
+    opacity 300ms ease-out var(--jenjang, 0ms);
+}
+
+.gulir.gulir-tampil [data-nomor-langkah] {
+  transform: scale(1);
+  opacity: 1;
+}
+
+/*
+ * Cadangan berlapis. `Muncul` memang sudah berhenti lebih awal saat
+ * gerakan dikurangi, jadi blok ini seharusnya tidak pernah terpakai —
+ * tetapi kalau suatu saat kelas `gulir` dipasang dari tempat lain, yang
+ * hilang harus gerakannya saja, bukan rel dan nomornya.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .gulir [data-rel-aliran],
+  .gulir [data-nomor-langkah] {
+    transform: none;
+    opacity: 1;
+    transition: none;
+  }
+}

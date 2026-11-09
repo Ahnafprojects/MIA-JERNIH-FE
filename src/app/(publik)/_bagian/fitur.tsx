@@ -91,7 +91,7 @@ const FITUR = [
 
 export function FiturJernih() {
   return (
-    <section className="mx-auto max-w-6xl px-5 py-24">
+    <section className="mx-auto max-w-7xl px-5 py-24">
       <Muncul className="max-w-2xl">
         <p className="eyebrow text-muted">Fitur</p>
         <h2 className="mt-3 font-display text-[clamp(1.9rem,3.6vw,2.8rem)] leading-tight font-semibold tracking-[-0.02em]">
@@ -104,7 +104,7 @@ export function FiturJernih() {
       </Muncul>
 
       {/*
-        Tiga kolom di layar lebar, dua di tablet, satu di ponsel.
+        Empat kolom di layar lebar, dua di tablet, satu di ponsel.
 
         Seksi lain di halaman ini sengaja memakai daftar bergaris — kartu
         seragam memang pola yang paling cepat terlupa. Di sini kartu tetap
@@ -113,24 +113,26 @@ export function FiturJernih() {
         menyarankan hierarki yang tidak ada. Yang membedakannya dari petak
         generik adalah nomor besar dan ikonnya, bukan bingkainya.
 
-        Grid tiga kolom juga yang membuat lebar halaman akhirnya terpakai.
-        Satu kolom pada lebar 1152px menyisakan dua pita kosong di kiri dan
-        kanan, dan itu yang membuat halaman terbaca melompong meski isinya
-        sebenarnya cukup.
+        KOLOMNYA EMPAT, bukan tiga, dan itu ditentukan jumlah butirnya.
+        Delapan kartu di tiga kolom pecah jadi 3+3+2: baris terakhirnya
+        menggantung tidak rata, dan grid yang tidak rata terbaca seperti
+        daftar yang terpotong, bukan daftar yang selesai. Empat kolom
+        membaginya rata menjadi 4+4.
 
-        JUMLAHNYA delapan, bukan tujuh, dan itu alasan tata letak. Dengan
-        tiga kolom, tujuh kartu meninggalkan satu kartu berdiri sendirian di
-        baris terakhir — terbaca seperti daftar yang terpotong di tengah,
-        bukan daftar yang selesai. Delapan menutup baris terakhir dengan dua
-        kartu berdampingan. Yang ditambahkan tetap harus benar-benar ada di
-        kode; kalau suatu saat tinggal tujuh lagi, perbaiki kolomnya, jangan
-        mengarang butir kedelapan.
+        Konsekuensinya kartu menyempit, dan itu sebabnya seksi ini memakai
+        max-w-7xl sementara seksi lain max-w-6xl. Pada 1152px, empat kolom
+        hanya menyisakan sekitar 263px per kartu dan judulnya mulai pecah
+        tiga baris. Lebar halaman dinaikkan khusus di sini supaya empat
+        kolom tidak dibayar dengan keterbacaan.
+
+        Kalau suatu saat butirnya berubah jumlah, sesuaikan KOLOMNYA supaya
+        tetap habis dibagi — jangan mengarang butir tambahan demi grid.
 
         Yang berjenjang ARTIKELNYA, bukan wadahnya: dua transform bertumpuk
         terbaca ramai.
       */}
       <Muncul
-        className="mt-14 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
+        className="mt-14 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4"
         pilih="article"
         langkah={70}
       >
