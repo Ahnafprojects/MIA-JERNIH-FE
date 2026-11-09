@@ -357,7 +357,19 @@ export default function HalamanAkun() {
               <p className="text-xs text-muted">
                 Tema tersimpan antar kunjungan.
               </p>
-              <TombolTema />
+              {/*
+                Dulu dipanggil tanpa `className` sama sekali, jadi yang
+                tergambar hanya ikon 18px telanjang: tanpa ukuran, tanpa
+                label, tanpa petak yang bisa dikenali sebagai tombol. Di
+                halaman pengaturan yang seluruh isinya baris berlabel, ikon
+                sendirian tidak memberi tahu apa pun tentang apa yang terjadi
+                kalau ia ditekan.
+              */}
+              <TombolTema
+                label="Tema terang / gelap"
+                ukuranIkon={16}
+                className="angkat flex items-center gap-2 rounded-[8px] border border-line bg-surface px-3 py-2 text-sm text-ink hover:bg-soft"
+              />
             </div>
           )}
         </section>

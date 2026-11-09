@@ -108,6 +108,27 @@ export function Muncul({
     return () => {
       pengamat.disconnect();
       if (bersihkan) window.clearTimeout(bersihkan);
+
+      /*
+       * Kelas yang dipasang effect ini WAJIB dilepas lagi di sini.
+       *
+       * Kelasnya ditulis langsung ke DOM lewat `classList`, jadi React tidak
+       * mengetahuinya dan tidak akan pernah mengembalikannya sendiri. Begitu
+       * effect ini dijalankan ulang sementara elemennya sudah berada di dalam
+       * layar, pemeriksaan ambang di atas membuatnya keluar lebih awal — dan
+       * tanpa pelepasan ini, `gulir` tertinggal menempel tanpa ada pengamat
+       * yang akan menambahkan `gulir-tampil`. Hasilnya seksi itu berhenti di
+       * opacity 0 SELAMANYA.
+       *
+       * Terbukti di peramban: setelah satu pembaruan panas, keempat langkah
+       * "Cara kerja" terukur berkelas `gulir` saja dengan opacity 0, dan
+       * seksinya hilang sama sekali dari layar. Kegagalan animasi hanya
+       * membuat sesuatu terasa datar; kegagalan ini membuang isinya.
+       */
+      for (const s of sasaran) {
+        s.classList.remove(...KELAS[arah], "gulir-tampil");
+        s.style.transitionDelay = "";
+      }
     };
   }, [pilih, arah, langkah, tunda]);
 

@@ -29,7 +29,33 @@ const toko = {
   bacaServer: () => false,
 };
 
-export function TombolTema({ className }: { className?: string }) {
+export function TombolTema({
+  className,
+  label,
+  ukuranIkon = 18,
+}: {
+  className?: string;
+  /**
+   * Teks yang tergambar DI DALAM tombol, untuk dipakai sebagai baris menu.
+   *
+   * Sebelumnya tombol ini tidak bisa membawa label, dan pemanggil yang
+   * membutuhkannya memakai jalan pintas: tombolnya direntangkan
+   * `absolute inset-0 z-10 w-full` menutupi seluruh baris, lalu teksnya
+   * digambar di lapisan TERPISAH di bawahnya dengan `pointer-events-none`.
+   *
+   * Susunan itu rapuh pada satu titik yang tidak terlihat saat ditulis:
+   * tombolnya berada di atas, jadi latar apa pun yang ia cat akan menutupi
+   * teks yang seharusnya ia beri nama. `hover:bg-soft` melakukan persis itu,
+   * menyapukan #e3edf0 selebar baris dan menyisakan ikon di tepi kiri dengan
+   * kapsul kosong memanjang ke kanan.
+   *
+   * Karena itu labelnya sekarang masuk ke DALAM tombol. Tidak ada lagi dua
+   * lapisan yang bisa saling menutup, dan seluruh lebar baris tetap bisa
+   * ditekan karena tombolnya memang baris itu sendiri.
+   */
+  label?: string;
+  ukuranIkon?: number;
+}) {
   const gelap = useSyncExternalStore(
     toko.langganan,
     toko.bacaKlien,
@@ -51,7 +77,22 @@ export function TombolTema({ className }: { className?: string }) {
     <button
       type="button"
       onClick={ganti}
-      aria-label={gelap ? "Ganti ke tema terang" : "Ganti ke tema gelap"}
+      /*
+       * Nama yang dibacakan pembaca layar mengikuti apa yang TERLIHAT.
+       *
+       * Saat labelnya tergambar, `aria-label` tidak dipasang: menimpanya
+       * dengan kalimat lain membuat nama yang terdengar berbeda dari tulisan
+       * yang terbaca, sehingga perintah suara "klik Tema terang / gelap"
+       * tidak menemukan sasarannya. Keadaan nyala/mati disampaikan lewat
+       * `aria-pressed`, yang memang disediakan untuk tombol dwi-keadaan.
+       *
+       * Tanpa label, ikonnya sendirian dan tidak menyisakan teks apa pun
+       * untuk dibacakan, jadi di situ `aria-label` tetap wajib.
+       */
+      aria-label={
+        label ? undefined : gelap ? "Ganti ke tema terang" : "Ganti ke tema gelap"
+      }
+      aria-pressed={label ? gelap : undefined}
       /*
        * Cincin fokus dibawa KOMPONENNYA, bukan dititipkan ke pemanggil.
        *
@@ -69,7 +110,26 @@ export function TombolTema({ className }: { className?: string }) {
         className,
       )}
     >
-      {gelap ? <Sun size={18} /> : <Moon size={18} />}
+      {label ? (
+        <>
+          {/* Ikon diredupkan dan teksnya penuh, mengikuti baris menu
+              sebelahnya: di sana ikon adalah penanda, teks adalah isinya. */}
+          {gelap ? (
+            <Sun size={ukuranIkon} aria-hidden className="shrink-0 text-muted" />
+          ) : (
+            <Moon
+              size={ukuranIkon}
+              aria-hidden
+              className="shrink-0 text-muted"
+            />
+          )}
+          <span>{label}</span>
+        </>
+      ) : gelap ? (
+        <Sun size={ukuranIkon} aria-hidden />
+      ) : (
+        <Moon size={ukuranIkon} aria-hidden />
+      )}
     </button>
   );
 }
