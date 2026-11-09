@@ -5,11 +5,39 @@ import { useAuth } from "@/lib/auth-context";
 import { api, ApiError } from "@/lib/api";
 import type { DataMeterDetail, LogMeter, ModalRelay, PesanAksi } from "../_tipe";
 
+/**
+ * Jendela pengamatan kebocoran: tengah malam sampai menjelang subuh.
+ *
+ * Rumah yang semua kerannya tertutup seharusnya mencatat mendekati nol di
+ * jam-jam ini. Angka yang bertahan di atas ambang malam demi malam berarti
+ * ada yang mengalir tanpa ada yang memakainya.
+ */
+const JAM_MALAM_MULAI = 0;
+const JAM_MALAM_SELESAI = 5.5;
+
+/**
+ * Ambang dugaan kebocoran, liter per JAM.
+ *
+ * Dua liter per jam kira-kira rembesan kloset yang paling ringan — cukup di
+ * atas derau pengukuran, tetapi masih di bawah sumber kebocoran rumah yang
+ * sebenarnya. Satuannya mengikuti ember yang dikirim server, bukan L/mnt.
+ */
+const AMBANG_BOCOR_L_JAM = 2;
+
 export function useMeter() {
   const { meterAktif, muatUlangData } = useAuth();
 
   const [meterDetail, setMeterDetail] = useState<DataMeterDetail | null>(null);
   const [logList, setLogList] = useState<LogMeter[]>([]);
+  /*
+   * Ember pemakaian per jam, sumber SATU-SATUNYA deteksi kebocoran.
+   *
+   * `/log` TIDAK bisa dipakai: ia hanya menyimpan 20 cuplikan telemetri
+   * terakhir, dan pada akun mana pun ia menjawab kosong — fiturnya tidak
+   * akan pernah menyala. `pemakaian?rentang=bulan` mengirim ember volume
+   * per jam, dan itu yang benar-benar bisa diperiksa.
+   */
+  const [emberBulan, setEmberBulan] = useState<{ waktu: string; volumeL: number }[]>([]);
 
   const [modalRelay, setModalRelay] = useState<ModalRelay>(null);
   const [alasanRelay, setAlasanRelay] = useState("");
@@ -18,15 +46,20 @@ export function useMeter() {
 
   const ambilDetailMeter = useCallback(async (meterId: string) => {
     try {
-      const [resMeter, resLog] = await Promise.all([
+      const [resMeter, resLog, resEmber] = await Promise.all([
         api<{ meter: DataMeterDetail; lcd: { baris1: string; baris2: string } }>(
           `/api/meter/${meterId}`,
         ),
         api<{ log: LogMeter[] }>(`/api/meter/${meterId}/log`).catch(() => ({ log: [] })),
+        api<{ deret: { waktu: string; volumeL: number }[] }>(
+          `/api/meter/${meterId}/pemakaian?rentang=bulan`,
+        ).catch(() => ({ deret: [] })),
       ]);
 
       setMeterDetail(resMeter.meter);
       setLogList(resLog.log || []);
+      setEmberBulan(resEmber.deret || []);
+
     } catch {
       // Abaikan bila ada kendala fetch
     }
@@ -38,15 +71,19 @@ export function useMeter() {
 
     (async () => {
       try {
-        const [resMeter, resLog] = await Promise.all([
+        const [resMeter, resLog, resEmber] = await Promise.all([
           api<{ meter: DataMeterDetail; lcd: { baris1: string; baris2: string } }>(
             `/api/meter/${meterAktif.id}`,
           ),
           api<{ log: LogMeter[] }>(`/api/meter/${meterAktif.id}/log`).catch(() => ({ log: [] })),
+          api<{ deret: { waktu: string; volumeL: number }[] }>(
+            `/api/meter/${meterAktif.id}/pemakaian?rentang=bulan`,
+          ).catch(() => ({ deret: [] })),
         ]);
         if (aktif) {
           setMeterDetail(resMeter.meter);
           setLogList(resLog.log || []);
+          setEmberBulan(resEmber.deret || []);
         }
       } catch {
         // Abaikan
@@ -128,19 +165,68 @@ export function useMeter() {
     };
   }, [meterDetail?.saldoL]);
 
+  /**
+   * Pola pemakaian dini hari — dasar deteksi kebocoran.
+   *
+   * Versi sebelumnya mengembalikan TUJUH ANGKA NOL yang ditulis mati, di
+   * dalam `useMemo` tanpa satu pun kebergantungan, pada hook yang bahkan
+   * tidak pernah memanggil endpoint pemakaian. Jadi grafiknya menggambar
+   * garis datar nol untuk setiap warga, selamanya — dan garis nol di bagian
+   * deteksi kebocoran adalah hal paling berbahaya yang bisa ditampilkan
+   * halaman ini. Ia tidak berkata "belum diperiksa"; ia berkata "sudah
+   * diperiksa, aman", tepat ketika tidak ada yang diukur.
+   *
+   * Dikelompokkan PER MALAM, bukan per jam. Satu titik per jam selama
+   * sembilan malam menghasilkan 54 titik yang naik-turun mengikuti kebiasaan
+   * tidur, dan pola kebocoran tenggelam di dalamnya. Yang menandai kebocoran
+   * bukan satu jam yang tinggi, melainkan DASAR yang tidak pernah menyentuh
+   * nol malam demi malam — dan itu baru terbaca kalau tiap malam diringkas
+   * jadi satu angka.
+   *
+   * Satuannya liter per JAM, mengikuti satuan ember yang dikirim server.
+   * Membaginya 60 supaya terbaca sebagai L/mnt hanya memalsukan ketelitian.
+   */
   const dataDeteksiKebocoran = useMemo(() => {
+    const perMalam = new Map<string, { total: number; jam: number }>();
+
+    emberBulan.forEach((e) => {
+      const t = new Date(e.waktu);
+      const jam = t.getHours() + t.getMinutes() / 60;
+      if (jam < JAM_MALAM_MULAI || jam > JAM_MALAM_SELESAI) return;
+
+      const kunci = t.toDateString();
+      const lama = perMalam.get(kunci) ?? { total: 0, jam: 0 };
+      perMalam.set(kunci, { total: lama.total + e.volumeL, jam: lama.jam + 1 });
+    });
+
+    /* Dibatasi 14 malam terakhir: lebih dari itu label tanggalnya berdesakan
+       dan sumbunya berhenti bisa dibaca. */
+    const urut = Array.from(perMalam.entries())
+      .sort((a, b) => Date.parse(a[0]) - Date.parse(b[0]))
+      .slice(-14);
+
+    const titik = urut.map(([, v]) => Math.round((v.total / v.jam) * 100) / 100);
+
     return {
-      labels: ["01:00", "01:30", "02:00", "02:30", "03:00", "03:30", "04:00"],
-      deret: [
-        {
-          name: "Debit Malam",
-          unit: "L/mnt",
-          points: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-        },
-      ],
-      ambangBocor: 0.2, // Ambang deteksi kebocoran
+      /* Dua malam adalah jumlah terkecil yang masih bisa menunjukkan pola.
+         Satu malam hanya sebuah angka, dan satu angka tidak pernah bisa
+         membedakan kebocoran dari mandi tengah malam sekali. */
+      ada: titik.length >= 2,
+      labels: urut.map(([k]) =>
+        new Date(k).toLocaleDateString("id-ID", {
+          day: "numeric",
+          month: "short",
+        }),
+      ),
+      deret: [{ name: "Rata-rata malam", unit: "L/jam", points: titik }],
+      ambangBocor: AMBANG_BOCOR_L_JAM,
+      /* Dasar terendah — angka yang sebenarnya menuduh. Malam paling sepi pun
+         tetap di atas ambang berarti ada yang mengalir terus. */
+      dasar: titik.length > 0 ? Math.min(...titik) : 0,
+      puncak: titik.reduce((a, v) => Math.max(a, v), 0),
+      jumlahMalam: titik.length,
     };
-  }, []);
+  }, [emberBulan]);
 
   return {
     meterAktif,

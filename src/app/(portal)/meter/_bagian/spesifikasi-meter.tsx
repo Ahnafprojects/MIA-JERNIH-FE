@@ -1,30 +1,41 @@
 import { liter } from "@/lib/format";
 
-export function SpesifikasiMeter({
-  versiFirmware,
-  volumeTotalL,
-}: {
-  versiFirmware?: string | null;
-  volumeTotalL?: number;
-}) {
+/**
+ * Angka meter: volume total yang pernah tercatat.
+ *
+ * ── Kenapa tinggal satu angka ─────────────────────────────────────────
+ *
+ * Kartu ini dulu memuat empat baris: versi firmware, volume, kalibrasi
+ * sensor, dan kekuatan sinyal. Tiga di antaranya dibuang, dan alasannya
+ * bukan kerapian.
+ *
+ * Jernih adalah karya bertema TRANSPARANSI LAYANAN AIR, dan yang
+ * dipertanggungjawabkannya kepada warga adalah air dan uang — bukan
+ * perangkat kerasnya. Versi firmware, kalibrasi pulsa, dan RSSI tidak
+ * pernah menjawab satu pun pertanyaan yang dibawa warga ke halaman ini:
+ * berapa sisa air saya, kenapa tidak mengalir, ke mana perginya. Ketiganya
+ * urusan teknisi, dan menaruhnya di layar warga hanya menambah angka yang
+ * terlihat penting tanpa bisa ditindaklanjuti siapa pun yang membacanya.
+ *
+ * Volume total bertahan karena ia justru paling bisa diperiksa: angka yang
+ * sama tertera di badan meter fisik, jadi warga bisa mencocokkannya sendiri.
+ * Itulah bentuk transparansi yang dijanjikan nama produk ini.
+ *
+ * Layar LCD dan simulasi keypad TETAP ADA dan itu disengaja — keduanya yang
+ * benar-benar disentuh warga saat mengisi token, jadi menampilkannya
+ * membantu orang mengenali alat di rumahnya. Batasnya di situ: yang dipakai
+ * warga ditampilkan, yang hanya dipakai teknisi tidak.
+ */
+export function SpesifikasiMeter({ volumeTotalL }: { volumeTotalL?: number }) {
   return (
-    <div className="grid grid-cols-2 gap-3 border-t border-line pt-4 font-mono text-xs text-muted">
-      <div>
-        <span>Versi Firmware:</span>
-        <p className="font-bold text-ink">{versiFirmware ?? "2.1.4"}</p>
-      </div>
-      <div>
-        <span>Volume Total Terukur:</span>
-        <p className="font-bold text-ink">{liter(volumeTotalL ?? 8420.4, 1)}</p>
-      </div>
-      <div>
-        <span>Kalibrasi Sensor:</span>
-        <p className="font-bold text-ink">450 pulsa / Liter</p>
-      </div>
-      <div>
-        <span>Kekuatan Sinyal:</span>
-        <p className="font-bold text-success">-68 dBm (Kuat)</p>
-      </div>
+    <div className="border-t border-line pt-4 font-mono text-xs text-muted">
+      <span>Volume total terukur:</span>
+      <p className="font-bold text-ink">
+        {typeof volumeTotalL === "number" ? liter(volumeTotalL, 1) : "—"}
+      </p>
+      <p className="mt-1 font-sans text-[11px] text-muted">
+        Angka ini sama dengan yang tertera di badan meter Anda.
+      </p>
     </div>
   );
 }

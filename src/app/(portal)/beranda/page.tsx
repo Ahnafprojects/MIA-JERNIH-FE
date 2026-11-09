@@ -103,7 +103,6 @@ function KontenBeranda() {
             ts={beranda.dataLive?.ts}
             labelMeter={beranda.labelMeter}
             serialMeter={beranda.serialMeter}
-            firmwareMeter={beranda.firmwareMeter}
             luring={beranda.luring}
           />
 

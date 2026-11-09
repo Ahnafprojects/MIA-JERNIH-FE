@@ -16,7 +16,7 @@ export function PerangkatLcd({
   return (
     <div className="rounded-[4px] border border-line bg-surface p-6 shadow-xs">
       <h2 className="font-display text-base font-bold text-ink">
-        Layar Firmware Perangkat ESP32
+        Layar Meter Air
       </h2>
       <p className="mt-1 text-xs text-muted">
         Cermin status sensor fisik real-time langsung dari lokasi meter air rumah Anda.

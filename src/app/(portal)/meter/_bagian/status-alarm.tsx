@@ -8,7 +8,7 @@ export function StatusAlarm({
   return (
     <div className="rounded-[4px] border border-line bg-surface p-5 shadow-xs">
       <div className="flex items-center justify-between">
-        <h3 className="text-xs font-bold text-ink">Status Alarm Suara Firmware</h3>
+        <h3 className="text-xs font-bold text-ink">Status Alarm Suara Meter</h3>
         <Badge nada={statusAlarm.nada} titik>
           {statusAlarm.level}
         </Badge>

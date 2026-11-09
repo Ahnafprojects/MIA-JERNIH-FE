@@ -18,7 +18,6 @@ export function LcdLive({
   ts,
   labelMeter,
   serialMeter,
-  firmwareMeter,
   luring,
 }: {
   saldo: number;
@@ -29,7 +28,6 @@ export function LcdLive({
   ts: string | undefined;
   labelMeter: string | null;
   serialMeter: string;
-  firmwareMeter: string | null;
   luring: boolean;
 }) {
   return (
@@ -39,9 +37,11 @@ export function LcdLive({
           <p className="truncate text-sm font-bold text-ink">
             {labelMeter ?? "Meter air Anda"}
           </p>
+          {/* Versi firmware sengaja TIDAK ditampilkan: ia tidak menjawab satu
+              pun pertanyaan yang dibawa warga ke halaman ini, dan nomor
+              seri sudah cukup untuk menyebut meter yang mana. */}
           <p className="truncate font-mono text-[10px] text-muted">
             {serialMeter}
-            {firmwareMeter ? ` · FW ${firmwareMeter}` : null}
           </p>
         </div>
         {luring ? (

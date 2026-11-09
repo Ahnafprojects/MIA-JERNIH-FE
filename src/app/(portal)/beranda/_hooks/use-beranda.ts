@@ -381,7 +381,6 @@ export function useBeranda() {
     alamatMeter: isi(detailMeter?.alamat),
     zonaMeter: isi(detailMeter?.zona),
     serialMeter: isi(detailMeter?.serial) ?? meterAktif?.nomorSeri ?? "",
-    firmwareMeter: isi(detailMeter?.versiFirmware),
 
     sapaanSekarang: sapaan(sekarang.getHours()),
     tanggalPanjang: sekarang.toLocaleDateString("id-ID", {

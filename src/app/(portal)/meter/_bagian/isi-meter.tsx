@@ -71,10 +71,7 @@ export function IsiMeter({ meter }: { meter: ReturnType<typeof useMeter> }) {
               volumeTotalL={meter.meterDetail?.volumeTotalL ?? 8420.4}
               relayAktif={relayAktif}
             />
-            <SpesifikasiMeter
-              versiFirmware={meter.meterDetail?.versiFirmware}
-              volumeTotalL={meter.meterDetail?.volumeTotalL}
-            />
+            <SpesifikasiMeter volumeTotalL={meter.meterDetail?.volumeTotalL} />
           </div>
 
           <StatusAlarm statusAlarm={meter.statusAlarm} />
