@@ -14,6 +14,8 @@ import { ArrowRight } from "lucide-react";
 import { KolomAir } from "./_bagian/kolom-air";
 import { VideoHero } from "./_bagian/video-hero";
 import { PitaStatistik } from "./_bagian/pita-statistik";
+import { FiturJernih } from "./_bagian/fitur";
+import { CaraKerja } from "./_bagian/cara-kerja";
 import { MeterPeraga } from "./_bagian/meter-peraga";
 import { VideoPenjelasan } from "./_bagian/video-penjelasan";
 import { Faq } from "./_bagian/faq";
@@ -44,31 +46,37 @@ const TRANSPARANSI = [
   },
 ];
 
-/* Urutan di sini memang sebuah proses: tiap langkah syarat langkah sesudahnya. */
-const LANGKAH = [
-  {
-    judul: "Hubungkan meter",
-    teks: "Ketik ID pelanggan atau pindai QR di stiker meter.",
-  },
-  {
-    judul: "Beli liter",
-    teks: "Pilih paket atau isi nominal bebas. Kode token terbit saat itu juga.",
-  },
-  {
-    judul: "Ketik di keypad",
-    teks: "Tekan bintang, masukkan kode, tekan A. Keran hidup kembali.",
-  },
-  {
-    judul: "Lihat tiap liter",
-    teks: "Saldo dan debit berubah di layar seketika, tanpa menunggu akhir bulan.",
-  },
-];
+/*
+ * Langkah-langkahnya PINDAH ke `_bagian/cara-kerja.tsx`.
+ *
+ * Yang dulu berdiri di sini keliru, bukan sekadar lebih ringkas: langkah
+ * pertamanya menyuruh warga "ketik ID pelanggan atau pindai QR di stiker
+ * meter", padahal alur itu sudah dihapus dari portal. Menuntut nomor meter
+ * saat mendaftar membuat pendaftaran berhasil tanpa membawa ke mana-mana —
+ * nomornya harus sudah ada di basis data dan belum dimiliki siapa pun,
+ * sesuatu yang justru tidak dipunyai orang yang baru membuka aplikasi.
+ * Sekarang meter melekat sendiri begitu email terverifikasi.
+ *
+ * Halaman depan yang menjanjikan langkah yang tidak ada adalah kegagalan
+ * yang lebih mahal daripada halaman depan yang kurang isi: orang mencari
+ * stiker QR yang tidak pernah dibutuhkan, lalu menyimpulkan aplikasinya
+ * rusak.
+ */
 
 export default function Landing() {
   return (
     <>
       {/* ── Hero: klip pembuka sebagai LATAR ─────────────────────────── */}
-      <section className="relative isolate overflow-hidden">
+      {/*
+        Margin negatif membatalkan ruang bilah dari tata letak, jadi latar
+        hero naik sampai tepi atas layar dan terbaca MENEMBUS bilah kaca —
+        bukan berhenti di bawahnya sebagai pita berwarna lain.
+
+        Isi herony sendiri tetap aman: `pt-20 sm:pt-28 lg:pt-36` di dalamnya
+        sudah lebih tinggi daripada kapsulnya, jadi tidak ada teks yang
+        tertutup.
+      */}
+      <section className="relative isolate -mt-20 overflow-hidden sm:-mt-24">
         <VideoHero />
 
         <div className="mx-auto max-w-6xl px-5 pt-20 pb-24 sm:pt-28 sm:pb-32 lg:pt-36 lg:pb-40">
@@ -123,6 +131,17 @@ export default function Landing() {
       <Muncul>
         <PitaStatistik />
       </Muncul>
+
+      {/*
+        ── Apa yang bisa dilakukan ───────────────────────────────────────
+
+        Letaknya SEBELUM "yang biasanya tertutup" dan jauh sebelum "cara
+        kerja", dan urutan itu disengaja: orang yang baru mendarat bertanya
+        "ini apa" lebih dulu, bukan "bagaimana cara mendaftarnya". Menaruh
+        langkah pendaftaran di atas daftar kemampuan berarti menjelaskan cara
+        memakai sesuatu yang belum diketahui gunanya.
+      */}
+      <FiturJernih />
 
       {/* ── Empat pintu transparansi ─────────────────────────────────── */}
       <section className="mx-auto max-w-6xl px-5 py-24">
@@ -282,36 +301,7 @@ export default function Landing() {
       </section>
 
       {/* ── Cara kerja ───────────────────────────────────────────────── */}
-      <section className="mx-auto max-w-6xl px-5 py-24">
-        <Muncul>
-          <h2 className="max-w-xl font-display text-[clamp(1.9rem,3.6vw,2.8rem)] leading-tight font-semibold tracking-[-0.02em]">
-            Dari kode jadi air, empat langkah
-          </h2>
-        </Muncul>
-
-        {/* Jenjangnya mengikuti urutan bacanya, karena di sini urutan itu
-            memang syarat: tiap langkah baru mungkin setelah yang sebelumnya. */}
-        <Muncul className="mt-12" pilih="li" langkah={90}>
-          <ol className="grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
-            {LANGKAH.map((l, i) => (
-              <li key={l.judul} className="border-t-2 border-brand-200 pt-5">
-                {/* brand-500 adalah aksen untuk data hidup, bukan untuk teks
-                    12px di atas latar terang: di sana ia hanya 2,6:1. Label
-                    ini memakai brand-600 yang lulus di kedua tema. */}
-                <span className="tabular font-mono text-[12px] font-semibold text-brand-600">
-                  Langkah {i + 1}
-                </span>
-                <h3 className="mt-2 font-display text-[1.3rem] font-semibold tracking-[-0.01em]">
-                  {l.judul}
-                </h3>
-                <p className="mt-2 text-[14.5px] leading-relaxed text-muted">
-                  {l.teks}
-                </p>
-              </li>
-            ))}
-          </ol>
-        </Muncul>
-      </section>
+      <CaraKerja />
 
       {/* ── Paket ────────────────────────────────────────────────────── */}
       <section className="lapis-permukaan border-t border-line">
