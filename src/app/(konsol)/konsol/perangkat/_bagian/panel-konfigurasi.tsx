@@ -3,11 +3,43 @@ import { TextField } from "@/components/ui/field";
 import { LcdDisplay } from "@/components/domain/lcd";
 import type { FormKonfigurasi } from "../_tipe";
 
-const FIELD: { kunci: keyof Omit<FormKonfigurasi, "alasan">; label: string }[] = [
-  { kunci: "ambangPeringatanL", label: "ambangPeringatanL" },
-  { kunci: "ambangKritisL", label: "ambangKritisL" },
-  { kunci: "kalibrasi", label: "kalibrasi" },
-  { kunci: "panjangToken", label: "panjangToken" },
+/*
+ * Label dibaca PETUGAS, jadi bukan nama variabelnya.
+ *
+ * Sebelum ini keempat label berisi identifier mentah — `ambangPeringatanL`,
+ * `panjangToken`, dan seterusnya — karena kuncinya dipakai langsung sebagai
+ * teks. Yang membaca layar ini petugas PDAM, bukan yang menulis kodenya, dan
+ * "ambangPeringatanL" tidak memberi tahu satuannya maupun apa yang diubahnya.
+ *
+ * Satuan ikut ditulis karena ketiganya berbeda: dua dalam liter, satu dalam
+ * pulsa per liter, satu dalam jumlah digit. Tanpa satuan, angka 10 di kolom
+ * terakhir sama masuk akalnya dibaca sebagai liter.
+ */
+const FIELD: {
+  kunci: keyof Omit<FormKonfigurasi, "alasan">;
+  label: string;
+  bantuan: string;
+}[] = [
+  {
+    kunci: "ambangPeringatanL",
+    label: "Ambang peringatan (liter)",
+    bantuan: "Meter mulai berbunyi saat saldo menyentuh angka ini.",
+  },
+  {
+    kunci: "ambangKritisL",
+    label: "Ambang kritis (liter)",
+    bantuan: "Bunyi dipercepat saat saldo menyentuh angka ini.",
+  },
+  {
+    kunci: "kalibrasi",
+    label: "Kalibrasi (pulsa per liter)",
+    bantuan: "Jumlah pulsa sensor yang dihitung sebagai satu liter.",
+  },
+  {
+    kunci: "panjangToken",
+    label: "Panjang token (digit)",
+    bantuan: "Banyak digit kode token yang diterima meter.",
+  },
 ];
 
 export function PanelKonfigurasi({
@@ -30,10 +62,11 @@ export function PanelKonfigurasi({
       </p>
 
       <div className="space-y-3">
-        {FIELD.map(({ kunci, label }) => (
+        {FIELD.map(({ kunci, label, bantuan }) => (
           <TextField
             key={kunci}
             label={label}
+            hint={bantuan}
             type="number"
             className="[&_input]:font-mono"
             value={form[kunci]}

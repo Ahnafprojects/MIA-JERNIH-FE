@@ -103,6 +103,24 @@ export default function HalamanPengaturan() {
     { id: "keamanan", label: "Keamanan" },
     { id: "notifikasi", label: "Notifikasi operator" },
   ];
+
+  /*
+   * Tab aktif DITURUNKAN, bukan dipercaya apa adanya dari state.
+   *
+   * Keadaan awalnya `"tim"`, sementara tab "Tim & akses" hanya ada untuk
+   * SUPERVISOR. Akibatnya petugas berperan OPERATOR atau TEKNISI membuka
+   * halaman ini dengan `tab === "tim"` yang tidak cocok dengan satu pun tab
+   * yang tampil: tidak ada tab yang tersorot, dan panel di bawahnya tetap
+   * menggambar daftar tim lengkap dengan nama, surel, dan peran seluruh
+   * petugas. Gerbang `supervisor` dipasang pada TOMBOL tab-nya, tidak pada
+   * panelnya.
+   *
+   * Menurunkannya juga menangani pemuatan yang belum selesai: saat `pengguna`
+   * masih null, `supervisor` bernilai false dan tab jatuh ke yang pertama
+   * tersedia; begitu datanya tiba dan tabnya bertambah, pilihan supervisor
+   * kembali sah tanpa perlu effect apa pun.
+   */
+  const tabAktif = tabs.some((t) => t.id === tab) ? tab : (tabs[0]?.id ?? "sandi");
   return (
     <main className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6">
       <header className="border-b border-line pb-4">
@@ -117,10 +135,10 @@ export default function HalamanPengaturan() {
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            aria-current={tab === t.id ? "page" : undefined}
+            aria-current={tabAktif === t.id ? "page" : undefined}
             className={cn(
               "-mb-px border-b-2 px-3 py-2 text-xs font-semibold transition-colors",
-              tab === t.id
+              tabAktif === t.id
                 ? "border-brand-600 text-brand-700 dark:text-accent"
                 : "border-transparent text-muted hover:text-ink",
             )}
@@ -130,7 +148,7 @@ export default function HalamanPengaturan() {
         ))}
       </div>
 
-      {tab === "tim" && (
+      {supervisor && tabAktif === "tim" && (
         <Panel isiClassName="p-0">
           <div className="divide-y divide-line">
             {members.map((m) => (
@@ -146,7 +164,7 @@ export default function HalamanPengaturan() {
         </Panel>
       )}
 
-      {tab === "tarif" && (
+      {supervisor && tabAktif === "tarif" && (
         <Panel>
           <div className="space-y-1">
             {golongan.map((g) => (
@@ -164,7 +182,7 @@ export default function HalamanPengaturan() {
         </Panel>
       )}
 
-      {tab === "sandi" && (
+      {tabAktif === "sandi" && (
         <Panel judul="Ganti Kata Sandi" sub="Sesi lain akan dikeluarkan setelah berhasil">
           <form onSubmit={gantiSandi} className="max-w-md space-y-4">
             <TextField
@@ -212,7 +230,7 @@ export default function HalamanPengaturan() {
         </Panel>
       )}
 
-      {tab === "keamanan" && (
+      {tabAktif === "keamanan" && (
         <Panel>
           <div className="space-y-4">
             {Object.entries(security).map(([k, v]) => (
@@ -235,7 +253,7 @@ export default function HalamanPengaturan() {
         </Panel>
       )}
 
-      {tab === "notifikasi" && (
+      {tabAktif === "notifikasi" && (
         <Panel>
           <div className="space-y-4">
             {Object.entries(notif).map(([k, v]) => (

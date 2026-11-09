@@ -133,7 +133,7 @@ export default function HalamanBroadcast() {
               <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
-                  className="size-4 rounded-[2px] border-line text-brand-600 focus:ring-brand-500"
+                  className="cincin-fokus size-4 accent-brand-600"
                   checked={push}
                   onChange={(e) => setPush(e.target.checked)}
                 />{" "}
@@ -142,7 +142,7 @@ export default function HalamanBroadcast() {
               <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
-                  className="size-4 rounded-[2px] border-line text-brand-600 focus:ring-brand-500"
+                  className="cincin-fokus size-4 accent-brand-600"
                   checked={email}
                   onChange={(e) => setEmail(e.target.checked)}
                 />{" "}

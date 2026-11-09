@@ -45,6 +45,23 @@ export const MENU = [
 ];
 
 /**
+ * Rute konsol yang TIDAK tampil di menu samping.
+ *
+ * Pengaturan sengaja dikeluarkan dari `MENU` dan dipindah ke ikon gerigi di
+ * bilah atas, karena ia tujuan sekunder yang tidak pantas menempati satu baris
+ * tetap di navigasi utama.
+ *
+ * Tetapi `JudulKonsol` menurunkan judul bilah atas dari `MENU`, jadi begitu
+ * Pengaturan dikeluarkan judulnya jatuh ke cadangan "Konsol" — layarnya
+ * berkepala "Pengaturan" sementara bilah atasnya menulis "Konsol". Daftar ini
+ * yang menutup celah itu, dan tempat menambahkan rute lain yang kelak
+ * dijangkau dari luar menu samping.
+ */
+const RUTE_LUAR_MENU = [
+  { href: "/konsol/pengaturan", label: "Pengaturan" },
+];
+
+/**
  * `/konsol` dicocokkan PERSIS, sisanya boleh berawalan.
  *
  * Tanpa pengecualian itu Dashboard tampak aktif di seluruh konsol, karena
@@ -147,5 +164,16 @@ export function NavKonsol({ onPilih }: { onPilih: () => void }) {
 
 export function JudulKonsol() {
   const path = usePathname();
-  return <>{MENU.find((m) => aktifkah(m.href, path))?.label ?? "Konsol"}</>;
+  /*
+   * `RUTE_LUAR_MENU` diperiksa LEBIH DULU, dan urutannya mengikat.
+   *
+   * `/konsol` dalam `MENU` memang dicocokkan persis, tetapi rute di luar menu
+   * tetap harus menang lebih dulu supaya penambahan berikutnya tidak diam-diam
+   * tertelan pencocokan berawalan milik butir `MENU` mana pun.
+   */
+  const judul =
+    RUTE_LUAR_MENU.find((r) => aktifkah(r.href, path))?.label ??
+    MENU.find((m) => aktifkah(m.href, path))?.label ??
+    "Konsol";
+  return <>{judul}</>;
 }

@@ -99,9 +99,22 @@ export default function LayoutKonsol({
           id="sidebar-konsol"
           className={cn(
             "bg-console text-on-console",
-            // Tanpa `overflow-y-auto`: menu konsol muat tanpa perlu digulir,
-            // dan scrollbar di dalam panel gelap terbaca sebagai cacat.
-            "fixed inset-y-0 left-0 z-50 flex flex-col overflow-hidden",
+            // `overflow-x-hidden` saja, JANGAN `overflow-hidden` penuh.
+            //
+            // Scrollbar di dalam panel gelap memang terbaca sebagai cacat, dan
+            // pada tinggi layar biasa menunya memang muat tanpa digulir. Tetapi
+            // mematikan gulir pada KEDUA sumbu membuat butir terakhir hilang
+            // tanpa jalan apa pun untuk menjangkaunya begitu layarnya pendek.
+            //
+            // Terukur pada tinggi layar 480px: `scrollHeight` nav 496 melawan
+            // `clientHeight` 396, dan "Analitik" serta "Audit" tidak bisa
+            // dicapai sama sekali. Tinggi segitu bukan kasus aneh — jendela
+            // yang dikecilkan, layar 1366x768 dengan bilah markah, atau
+            // perbesaran sistem 125% sudah sampai ke sana.
+            //
+            // Gulir tegaknya dipasang di `<nav>` di bawah, sehingga scrollbar
+            // hanya muncul ketika memang tidak muat.
+            "fixed inset-y-0 left-0 z-50 flex flex-col overflow-x-hidden",
             ringkas ? "w-[15.5rem] lg:w-[4.75rem]" : "w-[15.5rem]",
             "transition-[translate] duration-200 motion-reduce:transition-none",
             "lg:sticky lg:top-0 lg:h-dvh lg:translate-x-0!",
@@ -145,7 +158,12 @@ export default function LayoutKonsol({
           {/* Menu tetap tampil saat dilipat — hanya ikonnya yang tersisa. */}
           <nav
             className={cn(
-              "min-h-0 flex-1 overflow-hidden pb-4",
+              // `overflow-y-auto`: scrollbar hanya lahir saat menunya tidak
+              // muat. Pada tinggi layar biasa `scrollHeight === clientHeight`
+              // sehingga tidak ada scrollbar sama sekali, jadi keberatan soal
+              // "scrollbar di panel gelap" tetap terjawab — yang hilang hanya
+              // kemungkinan butir menu menjadi tidak terjangkau.
+              "min-h-0 flex-1 overflow-x-hidden overflow-y-auto pb-4",
               ringkas ? "px-2" : "px-3",
             )}
           >
