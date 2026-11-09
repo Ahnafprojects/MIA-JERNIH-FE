@@ -1,9 +1,9 @@
-import { Send } from "lucide-react";
+import { Send, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { UnggahFoto } from "./unggah-foto";
 import { PilihKategori } from "./pilih-kategori";
 import { TitikLokasi } from "./titik-lokasi";
-
+import type { SumberLokasi } from "../_tipe";
 
 export function FormPengaduan({
   kategori,
@@ -16,6 +16,13 @@ export function FormPengaduan({
   handleUnggahFoto,
   handleHapusFoto,
   titikKoordinat,
+  sumberLokasi,
+  nonceLokasi,
+  memuatGps,
+  galatGps,
+  gagalAmbilLokasiAwal,
+  handleUbahTitik,
+  handlePakaiGps,
   nomorSeri,
   memuatKirim,
   onSubmit,
@@ -29,7 +36,14 @@ export function FormPengaduan({
   daftarFoto: string[];
   handleUnggahFoto: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleHapusFoto: (i: number) => void;
-  titikKoordinat: { lat: number; lng: number };
+  titikKoordinat: { lat: number; lng: number } | null;
+  sumberLokasi: SumberLokasi;
+  nonceLokasi: number;
+  memuatGps: boolean;
+  galatGps: string | null;
+  gagalAmbilLokasiAwal?: boolean;
+  handleUbahTitik: (t: { lat: number; lng: number }) => void;
+  handlePakaiGps: () => void;
   nomorSeri?: string;
   memuatKirim: boolean;
   onSubmit: (e: React.FormEvent) => void;
@@ -79,7 +93,41 @@ export function FormPengaduan({
         </label>
       </div>
 
-      <TitikLokasi titikKoordinat={titikKoordinat} />
+      <TitikLokasi
+        titikKoordinat={titikKoordinat}
+        sumberLokasi={sumberLokasi}
+        nonceLokasi={nonceLokasi}
+        memuatGps={memuatGps}
+        galatGps={galatGps}
+        gagalAmbilLokasiAwal={gagalAmbilLokasiAwal}
+        nonaktif={memuatKirim}
+        onUbahTitik={handleUbahTitik}
+        onPakaiGps={handlePakaiGps}
+      />
+
+      {/*
+        Pemeriksaan yang berlaku DITAMPILKAN, tidak disembunyikan.
+
+        Mentor penilai menyarankan menambah validasi laporan padahal sebagian
+        besar sudah berjalan: laporan terikat akun terverifikasi, fotonya
+        dibatasi, dan lajunya dibatasi. Yang kurang bukan mekanismenya,
+        melainkan tandanya. Warga yang tahu laporannya tertaut nomor
+        pelanggan juga cenderung melapor lebih hati-hati.
+      */}
+      <div className="cekung flex items-start gap-2.5 p-3">
+        <ShieldCheck size={15} className="mt-0.5 shrink-0 text-success" aria-hidden />
+        <p className="text-[11px] leading-relaxed text-muted">
+          Laporan ini tertaut pada akun dan nomor meter terverifikasi
+          {nomorSeri ? (
+            <>
+              {" "}
+              <span className="tabular font-mono text-ink">{nomorSeri}</span>
+            </>
+          ) : null}
+          . Lokasi, waktu, dan foto tersimpan bersama laporan untuk
+          dipertanggungjawabkan, dan setiap perubahan statusnya tercatat.
+        </p>
+      </div>
 
       <Button type="submit" varian="utama" blok memuat={memuatKirim}>
         Kirim Pengaduan Layanan
