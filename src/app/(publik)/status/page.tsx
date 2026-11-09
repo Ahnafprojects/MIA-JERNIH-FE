@@ -42,6 +42,7 @@ import { Button } from "@/components/ui/button";
 import { KeadaanGalat, KeadaanKosong, Skeleton } from "@/components/ui/keadaan";
 import PetaZonaDinamis from "@/components/peta/peta-zona-dinamis";
 import { STATUS, URUTAN_STATUS } from "@/components/peta/status-zona";
+import type { SebaranKebocoran } from "@/components/peta/titik-kebocoran";
 import useApi from "@/lib/use-api";
 import { angka, tanggalJam } from "@/lib/format";
 import type { StatusLayanan, ZonaStatus } from "@/types/publik";
@@ -101,6 +102,18 @@ export default function HalamanStatus() {
     galat: galatRiwayat,
     muatUlang: muatUlangRiwayat,
   } = useApi<RiwayatZona>("/api/publik/riwayat-zona");
+
+  /*
+   * Sebaran kebocoran diambil TERPISAH dan kegagalannya tidak dirambatkan.
+   *
+   * Peta zona adalah isi pokok halaman ini; lapisan kebocoran tambahan di
+   * atasnya. Kalau endpoint ini gagal atau belum ada di server, yang hilang
+   * cukup penandanya — peta, daftar zona, dan riwayatnya tetap utuh. Karena
+   * itu `galat`-nya sengaja tidak dibaca di sini.
+   */
+  const { data: kebocoran } = useApi<SebaranKebocoran>(
+    "/api/publik/titik-kebocoran",
+  );
 
   const [dipilih, setDipilih] = useState<string | null>(null);
 
@@ -181,7 +194,12 @@ export default function HalamanStatus() {
                 <p className="text-[13px] text-muted">Memuat data zona…</p>
               </div>
             ) : (
-              <PetaZonaDinamis zona={zona} dipilih={dipilih} onPilih={pilih} />
+              <PetaZonaDinamis
+                zona={zona}
+                dipilih={dipilih}
+                onPilih={pilih}
+                kebocoran={kebocoran?.petak}
+              />
             )}
           </section>
 

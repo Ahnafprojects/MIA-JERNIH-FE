@@ -30,6 +30,13 @@ export function IsiBantuan({ bantuan }: { bantuan: ReturnType<typeof useBantuan>
               handleUnggahFoto={bantuan.handleUnggahFoto}
               handleHapusFoto={bantuan.handleHapusFoto}
               titikKoordinat={bantuan.titikKoordinat}
+              sumberLokasi={bantuan.sumberLokasi}
+              nonceLokasi={bantuan.nonceLokasi}
+              memuatGps={bantuan.memuatGps}
+              galatGps={bantuan.galatGps}
+              gagalAmbilLokasiAwal={bantuan.gagalAmbilLokasiAwal}
+              handleUbahTitik={bantuan.handleUbahTitik}
+              handlePakaiGps={bantuan.handlePakaiGps}
               nomorSeri={bantuan.meterAktif?.nomorSeri}
               memuatKirim={bantuan.memuatKirim}
               onSubmit={bantuan.handleKirimLaporan}
@@ -88,6 +95,7 @@ export function IsiBantuan({ bantuan }: { bantuan: ReturnType<typeof useBantuan>
       {bantuan.tiketBerhasil ? (
         <ModalNomorTiket
           nomor={bantuan.tiketBerhasil.nomor}
+          validasi={bantuan.tiketBerhasil.validasi}
           sudahSalin={bantuan.sudahSalin}
           onSalin={bantuan.handleSalinNomorTiket}
           onTutup={() => bantuan.setTiketBerhasil(null)}
