@@ -4,42 +4,72 @@
  */
 
 /*
- * Bilah atas menempel setinggi 4rem. Tanpa ini, menekan tautan dalam
- * halaman membawa judul tujuannya tepat KE BALIK bilah: peramban
- * menggulirnya ke tepi atas viewport, bukan ke tepi atas ruang yang
- * tersisa. Ditulis sebagai `scroll-padding` pada akar — satu-satunya
- * tempat yang dibaca peramban untuk penggeseran fragmen, dan juga
- * dipakai oleh `scrollIntoView({ block: "start" })`.
+ * Bilah atas mengambang: tinggi kapsul 3,5rem ditambah jarak atas-bawahnya.
+ * Tanpa ini, menekan tautan dalam halaman membawa judul tujuannya tepat KE
+ * BALIK bilah — peramban menggulirnya ke tepi atas viewport, bukan ke tepi
+ * atas ruang yang tersisa. Ditulis sebagai `scroll-padding` pada akar:
+ * satu-satunya tempat yang dibaca peramban untuk penggeseran fragmen, dan
+ * juga dipakai `scrollIntoView({ block: "start" })`.
+ *
+ * Angkanya naik dari 5rem ke 5,75rem mengikuti bentuk barunya — kapsul
+ * punya jarak 1rem di atas dan di bawahnya, sementara pita lama menempel
+ * langsung ke tepi.
  */
 html {
-  scroll-padding-top: 5rem;
+  scroll-padding-top: 5.75rem;
 }
 
 /*
- * Tanpa JavaScript lacinya tidak akan pernah bisa dibuka. Kalau dibiarkan
- * apa adanya, seluruh navigasi situs lenyap begitu skripnya gagal dimuat.
+ * Tanpa JavaScript panelnya tidak akan pernah bisa dibuka. Kalau dibiarkan
+ * apa adanya, seluruh navigasi situs lenyap begitu skripnya gagal dimuat —
+ * dan pada situs yang menjanjikan transparansi, itu kegagalan yang paling
+ * tidak pantas.
  *
- * Penandanya dipasang oleh satu baris skrip sebaris di kerangka publik yang
- * jalan SEBELUM bilahnya diurai, jadi tidak ada kedip bagi pengunjung yang
- * JavaScript-nya hidup. Begitu penanda itu tidak ada, isi laci dialirkan
- * kembali ke bawah bilah sebagai daftar biasa dan tombol pembukanya — yang
- * tidak akan menanggapi apa pun — disembunyikan. Tidak ada tombol mati.
+ * Penandanya dipasang satu baris skrip sebaris di kerangka akar yang jalan
+ * SEBELUM bilahnya diurai, jadi tidak ada kedip bagi pengunjung yang
+ * JavaScript-nya hidup. Begitu penanda itu tidak ada, panel layar penuhnya
+ * dialirkan kembali ke bawah bilah sebagai daftar biasa dan tombol
+ * pembukanya — yang tidak akan menanggapi apa pun — disembunyikan. Tidak
+ * ada tombol mati.
  *
- * Bilahnya sekalian dilepas dari `sticky`: sebagai daftar mengalir tingginya
- * bisa melebihi separuh layar ponsel, dan bilah tempel setinggi itu menutupi
- * halaman yang seharusnya dibacanya.
+ * Bilahnya sekalian dilepas dari `sticky`: begitu panelnya mengalir,
+ * halaman jadi jauh lebih panjang dan bilah tempel di atasnya tidak lagi
+ * membantu apa pun.
  */
 html:not([data-js]) [data-bilah-atas] {
   position: static;
 }
 
+/*
+ * Kabutnya ikut dimatikan. Ia hanya berguna untuk menutup celah di belakang
+ * kapsul yang melayang di atas isi halaman yang tergulir; pada bilah statis
+ * ia justru menjadi lapisan kabur yang menumpuk tanpa sebab.
+ */
+html:not([data-js]) [data-kabut-bilah] {
+  display: none;
+}
+
+/*
+ * Panel dikembalikan ke aliran dokumen. `position: static` saja tidak
+ * cukup — `inset-0` dan `overflow-y-auto` ikut terbawa, dan keduanya
+ * menghasilkan blok setinggi nol yang isinya tergulir di dalam dirinya
+ * sendiri.
+ */
 html:not([data-js]) #laci-navigasi {
   position: static;
-  max-height: none;
+  inset: auto;
+  overflow: visible;
   visibility: visible;
   opacity: 1;
-  transform: none;
-  box-shadow: none;
+}
+
+/*
+ * Kepala panel — tanda merek dan tombol × — disembunyikan di jalur tanpa
+ * skrip. Mereknya sudah ada di bilah tepat di atasnya, dan tombol tutupnya
+ * tidak punya apa pun untuk ditutup.
+ */
+html:not([data-js]) #laci-navigasi > div:first-child {
+  display: none;
 }
 
 html:not([data-js]) [data-pembuka-laci] {

@@ -6,9 +6,9 @@ export function KartuProyeksi({
   sisaHariProyeksi: number | null;
 }) {
   return (
-    <div className="rounded-[4px] border border-line bg-surface p-5 shadow-xs">
+    <div className="permukaan p-5">
       <div className="flex items-center gap-2">
-        <span className="grid size-7 place-items-center rounded-[2px] bg-brand-500/10 text-brand-600 dark:text-accent">
+        <span className="grid size-7 place-items-center rounded-[8px] bg-brand-500/10 text-brand-600 dark:text-accent">
           <Clock size={16} />
         </span>
         <h2 className="text-sm font-bold text-ink">Perkiraan Saldo Habis</h2>

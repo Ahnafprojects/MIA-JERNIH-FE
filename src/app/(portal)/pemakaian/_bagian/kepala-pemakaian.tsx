@@ -10,23 +10,43 @@ export function KepalaPemakaian() {
           Analisis Konsumsi
         </span>
         <h1 className="font-display text-2xl font-bold tracking-tight text-ink sm:text-3xl">
-          Pemakaian & Peta Panas
+          Pemakaian &amp; Peta Panas
         </h1>
-        <p className="mt-1 text-xs text-muted text-balance">
-          Jawaban transparan untuk satu pertanyaan penting: ke mana saja air Anda
-          digunakan?
+        <p className="mt-1 text-xs text-balance text-muted">
+          Jawaban transparan untuk satu pertanyaan penting: ke mana saja air
+          Anda digunakan?
         </p>
       </div>
 
-      <div className="flex items-center gap-2">
-        <Link href="/beli">
-          <Button varian="utama" ukuran="sm">
+      {/*
+        `shrink-0` pada wadahnya dan `whitespace-nowrap` pada tiap labelnya.
+
+        Tanpa keduanya, "Isi Saldo" dan "Kontrol Meter" adalah bagian paling
+        lentur di baris ini: begitu judul halaman memakan lebar, merekalah
+        yang mengalah, dan labelnya pecah menjadi "Isi" / "Saldo" dua baris
+        di dalam tombol setinggi satu baris. Tombol yang teksnya terbelah
+        terbaca rusak, bukan sempit.
+
+        Pada ponsel keduanya melebar penuh dan berbagi baris rata — lebih
+        mudah disentuh daripada dua tombol kecil yang berdempetan di tepi.
+      */}
+      <div className="flex shrink-0 items-center gap-2">
+        <Link href="/beli" className="flex-1 sm:flex-none">
+          <Button
+            varian="utama"
+            ukuran="sm"
+            className="w-full whitespace-nowrap"
+          >
             <Droplet size={14} />
             Isi Saldo
           </Button>
         </Link>
-        <Link href="/meter">
-          <Button varian="sekunder" ukuran="sm">
+        <Link href="/meter" className="flex-1 sm:flex-none">
+          <Button
+            varian="sekunder"
+            ukuran="sm"
+            className="w-full whitespace-nowrap"
+          >
             Kontrol Meter
           </Button>
         </Link>

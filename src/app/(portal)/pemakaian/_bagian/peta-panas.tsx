@@ -1,7 +1,20 @@
 import { HARI_LABEL, JAM_LABEL, warnaSelPetaPanas } from "./_skala-warna";
 
-export function PetaPanas({ gridPetaPanas }: { gridPetaPanas: (number | null)[][] }) {
+/**
+ * Peta panas 7 hari × 24 jam, digambar sebagai SEL DATAR berwarna.
+ *
+ * Sempat diganti 168 tabung air agar seragam dengan grafik riwayat, dan
+ * pemilik repo menolaknya. Jangan diganti lagi.
+ */
+export function PetaPanas({
+  gridPetaPanas,
+}: {
+  gridPetaPanas: (number | null)[][];
+}) {
   return (
+    /* Penggulir mandiri: pada 390px, 24 kolom hanya kebagian ~13px per sel
+       dan label jamnya saling menindih. Lebih baik pembacanya menggeser
+       daripada menyipitkan mata. */
     <div className="overflow-x-auto pb-2">
       <div className="min-w-[48rem]">
         <div className="grid grid-cols-[3.5rem_repeat(24,1fr)] gap-1 text-center font-mono text-[10px] text-muted">
@@ -33,7 +46,7 @@ export function PetaPanas({ gridPetaPanas }: { gridPetaPanas: (number | null)[][
                   <div
                     key={idxJam}
                     title={tooltipTeks}
-                    className={`aspect-square w-full rounded-[2px] border transition-transform hover:scale-110 ${warnaSelPetaPanas(
+                    className={`aspect-square w-full rounded-[8px] border transition-transform hover:scale-110 ${warnaSelPetaPanas(
                       vol,
                     )}`}
                   />

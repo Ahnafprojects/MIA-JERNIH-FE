@@ -18,7 +18,7 @@ export function TokenCepat({
   onTukar: () => void;
 }) {
   return (
-    <div className="rounded-[4px] border border-line bg-surface p-5 shadow-xs">
+    <div className="permukaan p-5">
       <h2 className="font-display text-base font-bold text-ink">
         Isi Token Cepat
       </h2>
@@ -29,10 +29,10 @@ export function TokenCepat({
       {pesanTukar ? (
         <div
           role="alert"
-          className={`my-3 rounded-[3px] border p-2.5 text-xs font-medium ${
+          className={`my-3 rounded-[10px] border p-2.5 text-xs font-medium shadow-[var(--kedalaman-1)] ${
             pesanTukar.tipe === "sukses"
-              ? "border-success/40 bg-success/10 text-success"
-              : "border-danger/40 bg-danger/10 text-danger"
+              ? "border-success/40 bg-success-soft text-success"
+              : "border-danger/40 bg-danger-soft text-danger"
           }`}
         >
           {pesanTukar.teks}
@@ -55,16 +55,27 @@ export function TokenCepat({
           disabled={tokenInput.length < 4}
           onClick={onTukar}
         >
-          Tukarkan Token
+          <span className="whitespace-nowrap">Tukarkan Token</span>
           {!memuatTukar ? <ArrowRight size={16} /> : null}
         </Button>
 
-        <div className="pt-2 text-center">
+        {/*
+          Aturan jeda ditulis DI DEPAN, bukan muncul sebagai pesan galat
+          setelah percobaan kelima. Orang yang sudah terkunci sepuluh menit
+          tidak bisa berbuat apa-apa dengan keterangan itu; orang yang sedang
+          mengetik ulang kode masih bisa.
+        */}
+        <p className="text-[11px] leading-relaxed text-muted">
+          Salah 5 kali berturut-turut, pengisian token dijeda 10 menit demi
+          keamanan.
+        </p>
+
+        <div className="pt-1 text-center">
           <Link
             href="/token"
             className="text-xs text-brand-700 hover:underline dark:text-accent"
           >
-            Buka simulasi keypad & daftar token tersimpan &rarr;
+            Buka simulasi keypad &amp; daftar token tersimpan &rarr;
           </Link>
         </div>
       </div>

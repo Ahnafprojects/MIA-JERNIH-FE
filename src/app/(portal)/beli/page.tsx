@@ -255,10 +255,25 @@ export default function HalamanBeliToken() {
 
       setTahapBayar("Menerbitkan tagihan dan token air...");
 
-      // Ringkasan transaksi disimpan agar halaman invoice langsung tampil
-      // tanpa berkedip kosong. Kode tokennya sendiri TIDAK lagi dititipkan ke
-      // peramban — ia diambil dari server lewat `/api/token/:id/kode`.
+      /*
+       * Ringkasan transaksi disimpan agar halaman invoice langsung tampil
+       * tanpa berkedip kosong.
+       *
+       * Kode tokennya IKUT dititipkan, dan itu disengaja walaupun server
+       * sudah punya `GET /api/token/:id/kode`. Penitipan ini sempat dibuang
+       * dengan alasan servernya yang menyediakan — dan akibatnya halaman
+       * sukses menampilkan bintang-bintang tepat setelah pembelian berhasil,
+       * karena endpoint itu belum dideploy. Dua jalur yang saling menutup
+       * jauh lebih murah daripada satu jalur yang bergantung pada urutan
+       * rilis: yang satu bekerja di tab ini sejak detik pertama, yang lain
+       * bekerja dari perangkat mana pun.
+       *
+       * Dibuang sendiri saat tokennya ditukarkan — lihat `/riwayat`.
+       */
       if (typeof window !== "undefined") {
+        if (res.kode) {
+          sessionStorage.setItem(`jernih_token_${res.invoiceId}`, res.kode);
+        }
         sessionStorage.setItem(
           `jernih_tx_${res.invoiceId}`,
           JSON.stringify({

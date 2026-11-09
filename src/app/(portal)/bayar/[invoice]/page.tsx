@@ -192,28 +192,56 @@ export default function HalamanBayarInvoice({
               <span className="font-mono text-[11px] font-semibold tracking-wider text-muted uppercase">
                 Kode Token Meter (Sekali Pakai)
               </span>
-              <div className="my-2 select-all font-mono text-2xl font-black tracking-[0.2em] text-ink sm:text-3xl">
-                {kodeToken ? token(kodeToken) : "55120 •••••"}
-              </div>
-
+              {/*
+                Tanpa kode, yang digambar adalah KETERANGAN — bukan angka.
+                Sebelumnya di sini ada `"55120 •••••"` yang ditulis mati:
+                lima digit karangan yang sama untuk setiap orang, tergambar
+                dengan huruf sebesar kode sungguhan, di halaman yang
+                judulnya "Token Air Diterbitkan". Warga yang mencatatnya
+                akan mengetikkannya ke keypad meter dan gagal — dan gagalnya
+                terjadi di depan meter, bukan di layar ini.
+              */}
               {kodeToken ? (
-                /*
-                 * Spasinya DIBUANG sebelum disalin. Kode ditampilkan per
-                 * lima digit (`48217 73015`) tetapi disimpan tanpa spasi,
-                 * dan keypad meter hanya menerima angka — menempelkan versi
-                 * berspasi membuat warga mengetik ulang, atau mengira
-                 * tokennya rusak.
-                 */
-                <SalinKode
-                  nilai={kodeToken.replace(/\s/g, "")}
-                  label="Salin kode token"
-                  teks="Salin kode token"
-                />
-              ) : null}
-
-              <p className="mt-3 text-[11px] text-muted">
-                Catat kodenya sekarang — kode utuh hanya ditampilkan sekali di layar ini dan dikirim ke email terdaftar Anda.
-              </p>
+                <>
+                  <div className="my-2 font-mono text-2xl font-black tracking-[0.2em] text-ink select-all sm:text-3xl">
+                    {token(kodeToken)}
+                  </div>
+                  {/*
+                   * Spasinya DIBUANG sebelum disalin. Kode ditampilkan per
+                   * lima digit (`48217 73015`) tetapi disimpan tanpa spasi,
+                   * dan keypad meter hanya menerima angka — menempelkan
+                   * versi berspasi membuat warga mengetik ulang, atau
+                   * mengira tokennya rusak.
+                   */}
+                  <SalinKode
+                    nilai={kodeToken.replace(/\s/g, "")}
+                    label="Salin kode token"
+                    teks="Salin kode token"
+                  />
+                  <p className="mt-3 text-[11px] text-muted">
+                    Simpan kodenya sekarang. Kode yang sama juga dikirim ke
+                    email terdaftar Anda.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div className="my-2 font-mono text-lg font-bold text-muted">
+                    Kode belum tersedia di layar ini
+                  </div>
+                  <p className="mt-1 text-[11px] leading-relaxed text-muted">
+                    Pembayaran Anda berhasil dan tokennya sudah terbit. Kode
+                    utuhnya dikirim ke email terdaftar Anda — buka strukya di
+                    sana, atau cek halaman{" "}
+                    <Link
+                      href="/riwayat"
+                      className="font-semibold text-brand-700 hover:underline dark:text-accent"
+                    >
+                      Riwayat
+                    </Link>
+                    .
+                  </p>
+                </>
+              )}
             </div>
 
             {/* Peringatan: Pembelian tidak langsung menambah saldo meter */}
