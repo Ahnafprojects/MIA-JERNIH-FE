@@ -223,104 +223,66 @@
  * menerima apa-apa.
  */
 /*
- * ISI LATARNYA — riak air dan kisi ukur.
+ * ISI LATARNYA — kabut cahaya, tanpa satu garis pun.
  *
- * Gradasi saja tidak menjawab keluhan "putihnya kosong melompong". Gradasi
- * mengubah WARNA latar; yang hilang di sini BENDA di dalamnya. Bidang putih
- * tanpa apa pun terbaca sebagai dokumen yang belum selesai, bukan halaman
- * yang dirancang.
+ * ── Dua keluhan pusing, dan kenapa yang pertama salah dijawab ──────────
  *
- * Dua motif, keduanya diambil dari dunia subjeknya — bukan hiasan yang bisa
- * ditempel di produk mana pun:
+ * Latar ini sudah dua kali dikeluhkan bikin pusing, oleh dua orang berbeda.
  *
- * - RIAK: lingkaran sepusat, bentuk tetesan jatuh di permukaan air. Diletakkan
- *   di dua titik saja, besar dan tidak beraturan jaraknya, supaya terbaca
- *   sebagai riak — bukan sebagai pola berulang.
- * - KISI UKUR: garis halus seperti kertas milimeter. Ini motif yang SAMA
- *   dengan garis takar di sisi kolom air dan pembatas seksi. Halaman ini
- *   tentang MENGUKUR air; kisinya mengatakan itu tanpa satu kata pun.
+ * Versi pertama menumpuk dua pola berulang: kisi silang 36px dan
+ * `repeating-radial-gradient` cincin tanpa batas. Garis lurus yang dipotong
+ * lengkung pada sudut landai menghasilkan moiré, pola ketiga yang tidak
+ * digambar siapa pun tetapi muncul sendiri dari tumpukan keduanya.
  *
- * Nilainya sengaja sangat rendah (4–6%). Pola latar yang terbaca jelas akan
- * berebut perhatian dengan angka, dan angka yang kalah adalah kegagalan
- * untuk situs seperti ini. Yang dicari: mata tahu ada sesuatu di sana,
- * tapi tidak berhenti untuk melihatnya.
+ * Jawaban pertama atas keluhan itu kurang jauh: kisinya dikurangi jadi satu
+ * arah dengan jarak 120px, cincinnya dibuat berhingga, opasitasnya
+ * diturunkan. Moirénya memang hilang, tetapi GARISNYA tetap ada — dan garis
+ * itulah yang dikeluhkan lagi pada putaran kedua. Pelajarannya: memperhalus
+ * pola yang salah tetap menyisakan pola yang salah. Yang perlu diganti
+ * pendekatannya, bukan takarannya.
  *
- * ── Kenapa bentuknya diubah: polanya bikin pusing ─────────────────────
+ * ── Pendekatan sekarang ───────────────────────────────────────────────
  *
- * Versi pertama menumpuk DUA pola berulang sekaligus, dan keduanya bergetar
- * saat dilihat:
+ * Tidak ada garis, tidak ada cincin, tidak ada pengulangan apa pun. Yang
+ * tersisa hanya tiga bidang cahaya yang sangat luas dan memudar ke
+ * transparan tanpa pernah membentuk tepi.
  *
- * 1. Kisi silang 36px — `repeating-linear-gradient` 0deg DAN 90deg. Pada
- *    satu layar 1440×900 itu berarti ±40 garis mendatar menyilang ±25 garis
- *    tegak: seribu perpotongan sekaligus. Kisi serapat itu memaksa mata
- *    terus mencoba memfokuskan sesuatu yang tidak pernah berhenti berulang.
+ * Syarat yang dipegang: TIDAK BOLEH ADA TEPI DI MANA PUN. Setiap perubahan
+ * warna harus terjadi sepanjang ratusan piksel. Tepi tajam sekecil 1px yang
+ * berulang di seluruh layar adalah justru yang dibaca mata sebagai garis,
+ * dan mata yang terus mencoba memfokuskan garis samar itulah yang lelah.
  *
- * 2. `repeating-radial-gradient` — cincin sepusat tanpa batas. Cincin
- *    sepusat adalah pola getar klasik dengan sendirinya, dan di sini ia
- *    MENYILANG kisi lurus pada sudut yang berubah terus-menerus. Garis
- *    lurus yang dipotong lengkung pada sudut landai menghasilkan moiré —
- *    pola ketiga yang tidak digambar siapa pun tetapi muncul sendiri dari
- *    tumpukan keduanya. Itulah yang terasa sebagai pusing, dan ia paling
- *    parah di seksi bawah yang latarnya paling pekat.
- *
- * Yang diubah BUKAN sekadar opasitasnya — pola yang bergetar tetap bergetar
- * walau dipudarkan; ia cuma jadi getaran yang samar. Yang dibuang adalah
- * sumber getarannya:
- *
- * - Kisi tinggal SATU ARAH (tegak) dan jaraknya 120px, bukan 36px. Garis
- *   sejajar satu arah tidak bisa bermoiré dengan dirinya sendiri, dan pada
- *   jarak selebar itu ia terbaca sebagai garis takar — motif yang memang
- *   dimaksud — bukan kertas milimeter.
- * - Riaknya jadi cincin BERHINGGA: empat lingkaran di dua titik, digambar
- *   satu per satu dengan `radial-gradient` biasa. Motif tetesan jatuhnya
- *   bertahan; pengulangannya yang hilang, dan dengan itu moirénya ikut
- *   hilang.
+ * Motif "mengukur air" tidak hilang dari produk ini — ia tetap ada di garis
+ * takar pembatas seksi (`.takar`) dan di sisi kolom air, tempat motif itu
+ * punya arti karena menempel pada benda yang memang mengukur. Yang dibuang
+ * cuma penggunaannya sebagai lapisan selebar layar, tempat ia tidak
+ * mengukur apa-apa dan hanya menjadi kertas milimeter.
  */
 :root {
-  --kisi-ukur: color-mix(in oklab, var(--color-brand-700) 6%, transparent);
-  --riak-air: color-mix(in oklab, var(--color-brand-500) 7%, transparent);
+  /*
+   * Kabut: tiga bidang cahaya yang sangat luas, TANPA tepi.
+   *
+   * Nilai alfanya terlihat tinggi untuk sebuah latar (22%/12%/10%), dan itu
+   * memang disengaja. Warnanya tidak pernah tampil sekuat itu di mana pun:
+   * tiap bidang memudar ke transparan sepanjang 70% dari ukurannya sendiri,
+   * jadi yang sampai ke mata hanya ekor gradiennya. Yang membuat latar ini
+   * tenang bukan warnanya yang pucat, melainkan tidak adanya tempat di mana
+   * warnanya berubah mendadak.
+   */
+  --kabut-1: color-mix(in oklab, var(--color-brand-300) 22%, transparent);
+  --kabut-2: color-mix(in oklab, var(--color-accent) 12%, transparent);
+  --kabut-3: color-mix(in oklab, var(--color-brand-500) 10%, transparent);
 
   /*
-   * Garis takar. Satu arah, jarak lebar — lihat alasannya di atas.
-   * Dipisahkan dari riaknya karena yang ini DIAM: garis ukur yang ikut
-   * hanyut berhenti berfungsi sebagai garis ukur.
+   * Ukurannya PERSEN, bukan piksel, dan itu yang menghapus iramanya. Tiga
+   * bidang selebar 55-70% layar tidak pernah berulang di dalam satu layar,
+   * jadi tidak ada jarak yang bisa ditebak mata dan tidak ada frekuensi yang
+   * bisa bermoiré dengan apa pun.
    */
-  --pola-latar: repeating-linear-gradient(
-    90deg,
-    var(--kisi-ukur) 0 1px,
-    transparent 1px 120px
-  );
-
-  /*
-   * Riak: empat cincin di dua titik jatuh, bukan cincin tak berhingga.
-   * Jari-jarinya sengaja tidak berkelipatan (260/400 dan 210/330) supaya
-   * jaraknya tidak terbaca sebagai irama yang bisa ditebak.
-   */
-  --riak-latar:
-    radial-gradient(
-      circle at 84% 12%,
-      transparent 0 260px,
-      var(--riak-air) 260px 262px,
-      transparent 262px
-    ),
-    radial-gradient(
-      circle at 84% 12%,
-      transparent 0 400px,
-      var(--riak-air) 400px 402px,
-      transparent 402px
-    ),
-    radial-gradient(
-      circle at 10% 66%,
-      transparent 0 210px,
-      var(--riak-air) 210px 212px,
-      transparent 212px
-    ),
-    radial-gradient(
-      circle at 10% 66%,
-      transparent 0 330px,
-      var(--riak-air) 330px 332px,
-      transparent 332px
-    );
+  --kabut-latar:
+    radial-gradient(60% 50% at 78% 8%, var(--kabut-1) 0%, transparent 70%),
+    radial-gradient(55% 45% at 12% 42%, var(--kabut-2) 0%, transparent 72%),
+    radial-gradient(70% 55% at 55% 92%, var(--kabut-3) 0%, transparent 75%);
 
   --air-dangkal: #ffffff;
   --air-tengah: #f4f8f9;
@@ -443,18 +405,19 @@
    * bilah tempel dan tabir hero tidak pernah menyisakan sambungan.
    */
   /*
-   * Di tema gelap polanya dinaikkan sedikit. Garis terang di atas latar
-   * gelap selalu terbaca lebih lemah daripada garis gelap di atas latar
-   * terang pada persentase yang sama — memakai angka tema terang di sini
-   * membuat polanya hilang sama sekali.
+   * Kabut tema gelap. Alfanya JAUH lebih rendah daripada tema terang
+   * (22/12/10 → 10/7/6), kebalikan dari aturan lama yang justru
+   * menaikkannya.
    *
-   * Tetap dinaikkan, tetapi tidak sejauh dulu (11%/13% → 9%/10%). Keluhan
-   * pusing datang dari tema terang, dan di tema gelap getarannya justru
-   * LEBIH kuat: garis terang di atas bidang nyaris hitam punya kontras
-   * tepi yang lebih tajam daripada garis gelap di atas bidang terang.
+   * Alasannya: di sini kabutnya MENAMBAH cahaya ke bidang yang nyaris
+   * hitam, sedangkan di tema terang ia menambah warna ke bidang yang sudah
+   * terang. Selisih terang yang sama terbaca jauh lebih kuat ketika
+   * dimulai dari gelap, jadi angka tema terang di sini akan tampil sebagai
+   * tiga lampu yang menyala di dalam air.
    */
-  --kisi-ukur: color-mix(in oklab, var(--color-brand-300) 9%, transparent);
-  --riak-air: color-mix(in oklab, var(--color-brand-400) 10%, transparent);
+  --kabut-1: color-mix(in oklab, var(--color-brand-300) 10%, transparent);
+  --kabut-2: color-mix(in oklab, var(--color-accent) 7%, transparent);
+  --kabut-3: color-mix(in oklab, var(--color-brand-400) 6%, transparent);
 
   --air-dangkal: #0e3847;
   --air-tengah: #05161c;
@@ -583,37 +546,18 @@
   }
 
   /*
-   * Lembar garis takar.
+   * `body::before` SENGAJA TIDAK ADA LAGI.
    *
-   * Dipasang sebagai pseudo-elemen TERSENDIRI, bukan lapisan tambahan di
-   * `background-image` body, karena body memakai `background-size: 100% 100%`
-   * untuk gradasinya. Satu ukuran itu berlaku ke SEMUA lapisan: pola
-   * berulangnya akan ditarik setinggi dokumen dan kisinya berubah jadi
-   * beberapa garis raksasa. Memisahkannya juga berarti jarak garisnya tetap
-   * 120px di halaman pendek maupun panjang.
-   *
-   * `fixed` supaya garisnya diam saat digulir. Isi halaman bergerak di atas
-   * permukaan yang tenang — dan itu pembacaan yang benar untuk air.
-   *
-   * `z-index: -1` menaruhnya di belakang seluruh isi tapi di depan warna
-   * latar body. `pointer-events: none` wajib: tanpa itu lembar ini menutup
-   * seluruh halaman dan tidak ada satu tautan pun yang bisa diklik.
+   * Dulu ia memegang lembar garis takar selebar layar. Garis itulah yang
+   * dikeluhkan dua kali, dan sekarang latar hanya punya satu lapisan:
+   * kabut di `body::after`. Catatan ini ditinggalkan supaya pembaca
+   * berikutnya tahu lapisan keduanya dihapus dengan sengaja, bukan tercecer
+   * saat menggabung cabang.
    */
-  body::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    z-index: -1;
-    pointer-events: none;
-    background-image: var(--pola-latar);
-  }
 
   /*
-   * Lembar riak — satu-satunya bagian latar yang BERGERAK.
-   *
-   * Dipisahkan dari garis takar karena keduanya harus berbeda perilaku:
-   * garis ukur yang ikut hanyut berhenti terbaca sebagai alat ukur,
-   * sementara air yang benar-benar diam terbaca sebagai gambar, bukan air.
+   * Lembar kabut — satu-satunya lapisan latar, dan satu-satunya yang
+   * BERGERAK.
    *
    * ── Kenapa `transform`, bukan `background-position` ──────────────────
    *
@@ -624,29 +568,35 @@
    * menentukan — cat ulang selebar layar tiap bingkai terasa sebagai
    * halaman yang berat, bukan sebagai gerakan yang halus.
    *
-   * `inset: -12%` membuat lembarnya lebih besar daripada layar. Tanpa itu,
-   * menggesernya akan menyingkap tepi kosong di sisi yang ditinggalkan.
+   * `inset: -22%` membuat lembarnya jauh lebih besar daripada layar. Tanpa
+   * itu, menggeser DAN menskalakannya akan menyingkap tepi kosong di sisi
+   * yang ditinggalkan.
    *
-   * ── Kenapa 32 detik ──────────────────────────────────────────────────
+   * ── Kenapa 48 detik, dan kenapa jaraknya boleh lebih jauh sekarang ────
    *
-   * Satu arah 32 detik, bolak-balik 64 detik, dengan jarak total 20px. Itu
-   * sekitar 0,6 piksel per detik: terlalu lambat untuk ditangkap mata yang
-   * sedang membaca, tetapi cukup untuk membuat halaman tidak terasa sebagai
-   * gambar diam saat dipandang beberapa puluh detik. `ease-in-out` membuat
-   * titik baliknya mengendap, bukan berbalik mendadak — pembalikan tajam
-   * pada gerakan selambat ini justru yang akan terlihat.
+   * Versi bergaris hanya berani bergeser 20px total. Harus begitu: menggeser
+   * garis lebih jauh membuat garisnya terlihat BERJALAN, dan garis berjalan
+   * di belakang teks jauh lebih mengganggu daripada garis diam.
+   *
+   * Kabut tidak punya tepi, jadi batasan itu tidak berlaku lagi. Yang
+   * bergerak di sini cuma tempat cahaya paling terang, dan perpindahan
+   * beberapa persen dari layar terbaca sebagai cahaya yang bernapas, bukan
+   * sebagai benda yang pindah. Satu arah 48 detik, bolak-balik 96 detik:
+   * cukup lambat untuk tidak pernah menarik mata yang sedang membaca satu
+   * paragraf, cukup hidup untuk halaman tidak terasa sebagai gambar diam.
    *
    * `prefers-reduced-motion` ditangani jaring pengaman global di akhir
-   * berkas ini, yang mencakup `*::after`.
+   * berkas ini, yang mencakup `*::after`. Yang berhenti hanya GERAKANNYA;
+   * kabutnya tetap tergambar, jadi halaman tidak berubah bentuk.
    */
   body::after {
     content: "";
     position: fixed;
-    inset: -12%;
+    inset: -22%;
     z-index: -1;
     pointer-events: none;
-    background-image: var(--riak-latar);
-    animation: arus-latar 32s ease-in-out infinite alternate;
+    background-image: var(--kabut-latar);
+    animation: arus-latar 48s ease-in-out infinite alternate;
     will-change: transform;
   }
 
@@ -1210,23 +1160,28 @@
 }
 
 /*
- * Hanyutnya riak latar (lihat `body::after`).
+ * Hanyutnya kabut latar (lihat `body::after`).
  *
- * Hanya `translate3d`, tanpa perubahan opasitas maupun skala. Kecerahan
- * yang naik-turun di latar seluruh layar terbaca sebagai halaman yang
- * berkedip — persis yang harus dihindari di halaman yang dibaca. Yang
- * bergeser pun cuma 20px total, dibagi ke dua sumbu supaya arahnya miring
- * dan tidak terbaca sebagai geseran mendatar yang kaku.
+ * Geseran dalam PERSEN, bukan piksel: lembarnya seukuran layar, jadi persen
+ * membuat jarak tempuhnya sebanding di ponsel maupun di monitor lebar.
+ * Dengan piksel tetap, gerakan yang pas di 1440px nyaris tidak ada di 390px.
+ *
+ * Skalanya ikut berubah, tetapi hanya 4%. Menggeser saja membuat kabutnya
+ * terbaca sebagai lembar yang melintas; menggeser sambil sedikit mengembang
+ * membuatnya terbaca sebagai cahaya yang berubah. Opasitasnya TIDAK ikut
+ * dianimasikan: kecerahan yang naik-turun di latar seluruh layar terbaca
+ * sebagai halaman yang berkedip, dan itu persis yang harus dihindari di
+ * halaman yang sedang dibaca.
  *
  * `translate3d`, bukan `translate`: sumbu Z memaksa lapisannya naik ke
  * compositor, jadi pergeserannya tidak memicu cat ulang.
  */
 @keyframes arus-latar {
   from {
-    transform: translate3d(-10px, -6px, 0);
+    transform: translate3d(-2.5%, -1.5%, 0) scale(1);
   }
   to {
-    transform: translate3d(10px, 6px, 0);
+    transform: translate3d(2.5%, 1.5%, 0) scale(1.04);
   }
 }
 
