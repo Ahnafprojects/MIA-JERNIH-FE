@@ -4,7 +4,9 @@ import React, { useEffect, useState } from "react";
 import { Download } from "lucide-react";
 import { api } from "@/lib/api";
 import { meterKubik, rupiah } from "@/lib/format";
+import { Card, Panel } from "@/components/ui/card";
 import { GrafikGaris, GrafikBatang } from "@/components/domain/grafik";
+import { AngkaBergerak } from "@/components/domain/angka-bergerak";
 
 interface Series {
   name: string;
@@ -59,18 +61,16 @@ export default function HalamanAnalitik() {
   const series = data?.series || [];
   return (
     <main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+      <header className="flex flex-wrap items-end justify-between gap-4 border-b border-line pb-4">
         <div>
-          <span className="eyebrow text-brand-700 dark:text-accent">
-            Data Operasional
-          </span>
-          <h1 className="font-display text-3xl font-bold">
-            Analitik & Laporan
+          <p className="eyebrow text-brand-600">Data Operasional</p>
+          <h1 className="mt-1.5 font-display text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+            Analitik &amp; Laporan
           </h1>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <select
-            className="h-9 border border-line bg-surface px-2 text-xs"
+            className="h-9 rounded-input border border-line bg-surface px-2 text-xs text-ink outline-none focus:border-brand-600"
             value={rentang}
             onChange={(e) => setRentang(Number(e.target.value))}
           >
@@ -80,7 +80,7 @@ export default function HalamanAnalitik() {
             <option value={365}>365 hari</option>
           </select>
           <select
-            className="h-9 border border-line bg-surface px-2 text-xs"
+            className="h-9 rounded-input border border-line bg-surface px-2 text-xs text-ink outline-none focus:border-brand-600"
             value={zona}
             onChange={(e) => setZona(e.target.value)}
           >
@@ -93,30 +93,33 @@ export default function HalamanAnalitik() {
           </select>
           <button
             onClick={() => download("csv")}
-            className="inline-flex items-center gap-1 border border-line px-3 text-xs"
+            className="inline-flex items-center gap-1 rounded-input border border-line bg-surface px-3 text-xs text-ink outline-none hover:border-brand-500/60 focus-visible:ring-2 focus-visible:ring-brand-600"
           >
             <Download size={14} /> CSV
           </button>
         </div>
-      </div>
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+      </header>
+
+      <div className="berjenjang grid grid-cols-2 gap-px overflow-hidden rounded-card border border-line bg-line lg:grid-cols-5">
         {data?.kpi.map((k) => (
-          <div className="border border-line bg-surface p-4" key={k.key}>
-            <span className="eyebrow text-muted">{k.label}</span>
-            <p className="mt-2 font-mono text-xl font-bold">
-              {k.value}
-              {k.unit && ` ${k.unit}`}
+          <Card className="rounded-none border-0 px-4 py-3.5" key={k.key}>
+            <span className="eyebrow truncate text-muted">{k.label}</span>
+            <p className="tabular mt-2 flex items-baseline gap-1.5 font-mono text-[clamp(1.25rem,1.7vw,1.6rem)] leading-none font-bold">
+              <AngkaBergerak nilai={Number.isFinite(k.value) ? k.value : null} />
+              {k.unit ? (
+                <span className="font-mono text-[12.5px] font-semibold text-muted">{k.unit}</span>
+              ) : null}
             </p>
-          </div>
+          </Card>
         )) || (
-          <div className="col-span-full p-8 text-xs text-muted">
+          <div className="col-span-full bg-surface p-8 text-xs text-muted">
             Memuat analitik...
           </div>
         )}
       </div>
+
       <div className="grid gap-6 lg:grid-cols-2">
-        <section className="border border-line bg-surface p-5">
-          <h2 className="font-display font-bold">Pendapatan & Volume</h2>
+        <Panel judul="Pendapatan & Volume">
           {data && (
             <GrafikGaris
               labels={data.labels}
@@ -125,9 +128,8 @@ export default function HalamanAnalitik() {
               format={(n) => rupiah(n)}
             />
           )}
-        </section>
-        <section className="border border-line bg-surface p-5">
-          <h2 className="font-display font-bold">Konsumsi per Periode</h2>
+        </Panel>
+        <Panel judul="Konsumsi per Periode">
           {data && (
             <GrafikBatang
               labels={data.labels}
@@ -136,10 +138,10 @@ export default function HalamanAnalitik() {
               format={(n) => meterKubik(n)}
             />
           )}
-        </section>
+        </Panel>
       </div>
-      <section className="border border-line bg-surface p-5">
-        <h2 className="font-display font-bold">NRW dan Efisiensi Jaringan</h2>
+
+      <Panel judul="NRW dan Efisiensi Jaringan">
         {data && (
           <GrafikGaris
             labels={data.labels}
@@ -148,7 +150,7 @@ export default function HalamanAnalitik() {
             format={(n) => meterKubik(n)}
           />
         )}
-      </section>
+      </Panel>
     </main>
   );
 }

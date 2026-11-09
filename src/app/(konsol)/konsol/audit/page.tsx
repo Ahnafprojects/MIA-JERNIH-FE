@@ -4,6 +4,8 @@ import React, { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { tanggalJam } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
+import { Panel } from "@/components/ui/card";
+import { Tabel, type Kolom } from "@/components/ui/tabel";
 interface Row {
   id: string;
   aktorNama: string;
@@ -38,21 +40,63 @@ export default function HalamanAudit() {
       window.clearTimeout(timer);
     };
   }, [tipe, user]);
+
+  const kolom: Kolom<Row>[] = [
+    {
+      kunci: "waktu",
+      label: "Waktu",
+      render: (r) => <span className="font-mono text-xs">{tanggalJam(r.ts)}</span>,
+    },
+    {
+      kunci: "aktor",
+      label: "Aktor",
+      render: (r) => (
+        <span className="text-xs">
+          <span className="text-ink">{r.aktorNama}</span>
+          <br />
+          <span className="text-muted">{r.aktorPeran || "—"}</span>
+        </span>
+      ),
+    },
+    {
+      kunci: "tipe",
+      label: "Tipe",
+      render: (r) => <Badge>{r.tipe}</Badge>,
+    },
+    {
+      kunci: "aksi",
+      label: "Aksi",
+      render: (r) => <span className="font-mono text-xs">{r.aksi}</span>,
+    },
+    {
+      kunci: "detail",
+      label: "Detail",
+      render: (r) => <span className="block max-w-md text-xs text-muted">{r.detail}</span>,
+    },
+    {
+      kunci: "ip",
+      label: "IP",
+      sembunyiKecil: true,
+      render: (r) => <span className="font-mono text-xs text-muted">{r.ip}</span>,
+    },
+  ];
+
   return (
     <main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6">
-      <div>
-        <span className="eyebrow text-brand-700 dark:text-accent">
-          Jejak Akuntabilitas
-        </span>
-        <h1 className="font-display text-3xl font-bold">Audit Log</h1>
-        <p className="mt-1 text-xs text-muted">
+      <header className="border-b border-line pb-4">
+        <p className="eyebrow text-brand-600">Jejak Akuntabilitas</p>
+        <h1 className="mt-1.5 font-display text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+          Audit Log
+        </h1>
+        <p className="mt-1 max-w-[56ch] text-xs text-muted">
           Catatan hanya baca. Tidak ada tindakan yang disembunyikan, diubah,
           atau dihapus.
         </p>
-      </div>
-      <div className="flex gap-2">
+      </header>
+
+      <div className="flex flex-wrap gap-2">
         <select
-          className="h-9 border border-line bg-surface px-2 text-xs"
+          className="h-9 rounded-input border border-line bg-surface px-2 text-xs text-ink outline-none focus:border-brand-600"
           value={tipe}
           onChange={(e) => setTipe(e.target.value)}
         >
@@ -62,44 +106,22 @@ export default function HalamanAudit() {
           ))}
         </select>
         <input
-          className="h-9 border border-line bg-surface px-3 text-xs"
+          className="h-9 rounded-input border border-line bg-surface px-3 text-xs text-ink outline-none focus:border-brand-600"
           placeholder="ID pengguna"
           value={user}
           onChange={(e) => setUser(e.target.value)}
         />
       </div>
-      <div className="overflow-x-auto border border-line bg-surface">
-        <table className="w-full min-w-[54rem] text-left text-xs">
-          <thead>
-            <tr className="border-b border-line text-muted">
-              <th className="p-3">Waktu</th>
-              <th>Aktor</th>
-              <th>Tipe</th>
-              <th>Aksi</th>
-              <th>Detail</th>
-              <th>IP</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr className="border-b border-line" key={r.id}>
-                <td className="p-3 font-mono">{tanggalJam(r.ts)}</td>
-                <td>
-                  {r.aktorNama}
-                  <br />
-                  <span className="text-muted">{r.aktorPeran || "—"}</span>
-                </td>
-                <td>
-                  <Badge>{r.tipe}</Badge>
-                </td>
-                <td className="font-mono">{r.aksi}</td>
-                <td className="max-w-md">{r.detail}</td>
-                <td className="font-mono">{r.ip}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+
+      <Panel isiClassName="p-0">
+        <Tabel
+          kolom={kolom}
+          data={rows}
+          kunciBaris={(r) => r.id}
+          kosong={<p className="py-10 text-center text-xs text-muted">Belum ada catatan audit.</p>}
+          lebarMin="54rem"
+        />
+      </Panel>
     </main>
   );
 }

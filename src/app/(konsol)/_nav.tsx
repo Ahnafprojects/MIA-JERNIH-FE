@@ -26,7 +26,6 @@ import {
   Map as MapIcon,
   Megaphone,
   ScrollText,
-  Settings,
   Users,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
@@ -43,7 +42,23 @@ export const MENU = [
   { href: "/konsol/broadcast", label: "Broadcast", Ikon: Megaphone },
   { href: "/konsol/analitik", label: "Analitik", Ikon: BarChart3 },
   { href: "/konsol/audit", label: "Audit", Ikon: ScrollText },
-  { href: "/konsol/pengaturan", label: "Pengaturan", Ikon: Settings },
+];
+
+/**
+ * Rute konsol yang TIDAK tampil di menu samping.
+ *
+ * Pengaturan sengaja dikeluarkan dari `MENU` dan dipindah ke ikon gerigi di
+ * bilah atas, karena ia tujuan sekunder yang tidak pantas menempati satu baris
+ * tetap di navigasi utama.
+ *
+ * Tetapi `JudulKonsol` menurunkan judul bilah atas dari `MENU`, jadi begitu
+ * Pengaturan dikeluarkan judulnya jatuh ke cadangan "Konsol" — layarnya
+ * berkepala "Pengaturan" sementara bilah atasnya menulis "Konsol". Daftar ini
+ * yang menutup celah itu, dan tempat menambahkan rute lain yang kelak
+ * dijangkau dari luar menu samping.
+ */
+const RUTE_LUAR_MENU = [
+  { href: "/konsol/pengaturan", label: "Pengaturan" },
 ];
 
 /**
@@ -92,7 +107,7 @@ function Baris({
         onClick={onPilih}
         aria-current={aktif ? "page" : undefined}
         className={cn(
-          "flex min-h-11 items-center gap-3 rounded-[3px] text-[13.5px] font-medium",
+          "flex min-h-11 items-center gap-3 rounded-input text-[13.5px] font-medium",
           ringkas ? "justify-center px-0" : "px-3",
           "transition-colors motion-reduce:transition-none",
           aktif
@@ -149,5 +164,16 @@ export function NavKonsol({ onPilih }: { onPilih: () => void }) {
 
 export function JudulKonsol() {
   const path = usePathname();
-  return <>{MENU.find((m) => aktifkah(m.href, path))?.label ?? "Konsol"}</>;
+  /*
+   * `RUTE_LUAR_MENU` diperiksa LEBIH DULU, dan urutannya mengikat.
+   *
+   * `/konsol` dalam `MENU` memang dicocokkan persis, tetapi rute di luar menu
+   * tetap harus menang lebih dulu supaya penambahan berikutnya tidak diam-diam
+   * tertelan pencocokan berawalan milik butir `MENU` mana pun.
+   */
+  const judul =
+    RUTE_LUAR_MENU.find((r) => aktifkah(r.href, path))?.label ??
+    MENU.find((m) => aktifkah(m.href, path))?.label ??
+    "Konsol";
+  return <>{judul}</>;
 }
