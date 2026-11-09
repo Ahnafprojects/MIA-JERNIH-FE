@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Copy, Download } from "lucide-react";
 import { api } from "@/lib/api";
 import { liter, tanggal } from "@/lib/format";
@@ -26,20 +26,20 @@ export default function HalamanTokenKonsol() {
   const [hasil, setHasil] = useState<{ kode: string; nilaiL: number }[]>([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState("");
-  const load = useCallback(async () => {
+  const load = async () => {
     const r = await api<{
       kpi: { key: string; value: number }[];
       rows: TokenRow[];
     }>(`/api/admin/token?perPage=30${filter ? `&status=${filter}` : ""}`);
     setRows(r.rows);
     setKpi(Object.fromEntries(r.kpi.map((x) => [x.key, x.value])));
-  }, [filter]);
+  };
   useEffect(() => {
     const timer = window.setTimeout(() => {
       load().catch(() => {});
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [load]);
+  }, [filter]);
   const generate = async () => {
     setLoading(true);
     try {

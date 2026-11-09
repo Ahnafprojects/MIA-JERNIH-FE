@@ -1,5 +1,5 @@
 "use client";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -35,7 +35,7 @@ export default function HalamanPerangkat() {
     panjangToken: 10,
     alasan: "",
   });
-  const load = useCallback(async () => {
+  const load = async () => {
     const r = await api<{
       kpi: typeof kpi;
       versiTerbaru: string;
@@ -46,13 +46,13 @@ export default function HalamanPerangkat() {
     setVersi(r.versiTerbaru);
     setRows(r.rows);
     setPerhatian(r.perluPerhatian);
-  }, []);
+  };
   useEffect(() => {
     const timer = window.setTimeout(() => {
       load().catch(() => {});
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [load]);
+  }, []);
   const kirim = async () => {
     if (!ids.length || form.alasan.length < 3) return;
     if (!confirm(`Kirim konfigurasi ke ${ids.length} meter?`)) return;
