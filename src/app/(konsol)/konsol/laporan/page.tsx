@@ -65,17 +65,20 @@ export default function HalamanLaporan() {
 
   return (
     <main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6">
-      <div>
-        <h1 className="font-display text-3xl font-bold">Laporan Pelanggan</h1>
-        <p className="mt-1 text-xs text-muted">
+      <header className="border-b border-line pb-4">
+        <p className="eyebrow text-brand-600">Antrean layanan</p>
+        <h1 className="mt-1.5 font-display text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+          Laporan Pelanggan
+        </h1>
+        <p className="mt-1 max-w-[56ch] text-xs text-muted">
           Perubahan status di sini memengaruhi rapor layanan publik.
         </p>
-      </div>
+      </header>
 
       {pesanGalat ? (
         <p
           role="alert"
-          className="border border-danger/40 bg-danger/10 p-3 text-xs text-danger"
+          className="rounded-[3px] border border-danger/40 bg-danger/10 p-3 text-xs font-medium text-danger"
         >
           {pesanGalat}
         </p>
@@ -84,15 +87,17 @@ export default function HalamanLaporan() {
       {memuat ? (
         <p className="text-xs text-muted">Memuat antrean laporan...</p>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-3">
+        <div className="berjenjang grid gap-4 lg:grid-cols-3">
           {KOLOM_STATUS.map((status) => (
             <section
               key={status}
-              className="min-h-80 border border-line bg-soft p-3"
+              className="min-h-80 rounded-card border border-line bg-silt/40 p-3"
             >
               <div className="mb-3 flex items-center justify-between">
-                <h2 className="font-display font-bold">{status}</h2>
-                <span className="font-mono text-xs text-muted">
+                <h2 className="font-display text-[13px] font-bold tracking-wider uppercase text-muted">
+                  {status}
+                </h2>
+                <span className="tabular font-mono text-xs text-muted">
                   {tiket.filter((item) => item.status === status).length}
                 </span>
               </div>
@@ -102,21 +107,21 @@ export default function HalamanLaporan() {
                   .map((item) => (
                     <article
                       key={item.id}
-                      className={`border bg-surface p-4 ${item.slaTerlampaui ? "border-danger" : "border-line"}`}
+                      className={`rounded-card border bg-surface p-4 ${item.slaTerlampaui ? "border-danger/50" : "border-line"}`}
                     >
                       <div className="flex justify-between gap-2">
-                        <span className="font-mono text-xs font-bold">
+                        <span className="font-mono text-xs font-bold text-ink">
                           {item.nomor}
                         </span>
                         <Badge nada={item.slaTerlampaui ? "bahaya" : "netral"}>
                           {item.slaTerlampaui ? "Lewat SLA" : item.status}
                         </Badge>
                       </div>
-                      <p className="mt-2 text-sm font-bold">{item.kategori}</p>
+                      <p className="mt-2 text-sm font-bold text-ink">{item.kategori}</p>
                       <p className="mt-1 text-xs text-muted">
                         {item.pelapor.nama} · {item.zona || "—"}
                       </p>
-                      <p className="mt-2 text-[11px] text-muted">
+                      <p className="mt-2 font-mono text-[11px] text-muted">
                         SLA: {tanggalJam(item.slaJatuhTempo)}
                       </p>
                       <div className="mt-3 flex gap-1">
