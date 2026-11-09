@@ -229,7 +229,14 @@ Arah visual lengkap ada di [`docs/ARAH-VISUAL.md`](docs/ARAH-VISUAL.md): palet, 
 Konvensi yang berlaku di seluruh berkas:
 
 - **Seluruh teks antarmuka berbahasa Indonesia.** Pengguna disapa dengan "Anda".
-- **Tanpa nilai hex di komponen.** Warna hanya lewat token di `globals.css`. Satu-satunya pengecualian adalah warna benda, seperti hijau layar LCD, karena itu warna perangkat keras dan tidak ikut berganti saat tema berubah.
+- **Tanpa nilai hex di komponen.** Warna hanya lewat token di `globals.css`.
+
+  Ada dua pengecualian, dan keduanya punya alasan yang sama: warnanya bukan
+  milik Jernih, sehingga tidak boleh ikut berganti saat tema berubah.
+  Pertama, hijau layar meter pada peraga perangkat. Kedua, hijau WhatsApp
+  `#25D366` dan biru Telegram `#2AABEE` pada lambang saluran di seksi kabar
+  langsung, sebab keduanya identitas pihak ketiga yang memang tetap di tema
+  mana pun.
 - **Satuan liter** untuk saldo, token, dan pemakaian. `L/mnt` untuk debit. Agregat jaringan di konsol boleh memakai m³.
 - **Angka selalu monospace** dengan kelas `font-mono` dan `tabular`, supaya digitnya tidak bergoyang saat berubah.
 - **Warna status selalu didampingi kata.** Sebagian pengguna tidak dapat membedakan warnanya, dan warna kehilangan maknanya saat dicetak hitam putih.
