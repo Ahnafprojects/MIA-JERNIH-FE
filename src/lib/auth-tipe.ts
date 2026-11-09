@@ -1,7 +1,3 @@
-/**
- * Definisi tipe data sesi dan pengguna terautentikasi.
- */
-
 export type PeranPengguna = "WARGA" | "OPERATOR" | "SUPERVISOR" | "TEKNISI";
 
 export interface Pengguna {

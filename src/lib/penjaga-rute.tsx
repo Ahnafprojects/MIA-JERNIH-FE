@@ -21,7 +21,8 @@ export function PenjagaRute({ children, peranDiizinkan }: PenjagaRuteProps) {
     }
   }, [memuat, pengguna, router]);
 
-  // Saat memuat awal sesi, tampilkan overlay pemeriksa sesi tanpa membuang (drop) children dari DOM tree
+  // Saat memuat awal sesi, jangan buang (drop) children dari DOM tree: tampilkan
+  // di balik overlay pemeriksa sesi.
   if (memuat) {
     return (
       <div className="relative min-h-[60vh]">
@@ -38,7 +39,8 @@ export function PenjagaRute({ children, peranDiizinkan }: PenjagaRuteProps) {
     );
   }
 
-  // Jika tidak ada sesi login, tampilkan fallback aman sambil menunggu pengalihan ke /masuk
+  // Tanpa sesi login, tetap render children tersembunyi sambil menunggu
+  // pengalihan ke /masuk agar tidak berkedip.
   if (!pengguna) {
     return (
       <div className="relative min-h-[60vh]">
@@ -49,7 +51,6 @@ export function PenjagaRute({ children, peranDiizinkan }: PenjagaRuteProps) {
     );
   }
 
-  // Jika peran tidak diizinkan, tampilkan halaman 403 penjelas
   if (peranDiizinkan && !peranDiizinkan.includes(pengguna.peran)) {
     return (
       <Halaman403

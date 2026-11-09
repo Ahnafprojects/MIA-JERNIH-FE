@@ -88,7 +88,6 @@ export async function api<T>(
 
   let res = await kirimPermintaan(tokenAksesMemori);
 
-  // Jika 401 di luar jalur kredensial auth dan kita punya handler refresh, lakukan refresh otomatis
   if (res.status === 401 && !jawabanKredensial(path) && penanganRefresh) {
     const tokenBaru = await penanganRefresh();
     if (tokenBaru) {
