@@ -14,6 +14,11 @@ import { Map, MapControls, MapGeoJSON, useMap } from "@/components/ui/map";
 import type { StatusZona, Titik, ZonaStatus } from "@/types/publik";
 import { STATUS, URUTAN_STATUS } from "./status-zona";
 import { useWarnaStatus } from "./token-warna";
+import {
+  LapisanKebocoran,
+  LegendaKebocoran,
+  type PetakKebocoran,
+} from "./titik-kebocoran";
 import "./peta.css";
 
 /**
@@ -109,9 +114,21 @@ export interface PetaZonaProps {
   zona: ZonaStatus[];
   dipilih: string | null;
   onPilih: (id: string) => void;
+  /**
+   * Sebaran kebocoran pipa, digambar DI ATAS poligon zona.
+   *
+   * Opsional supaya pemakai lama tidak perlu diubah, dan supaya halaman yang
+   * memang tidak membicarakan kebocoran tidak ikut memuatnya.
+   */
+  kebocoran?: PetakKebocoran[];
 }
 
-export default function PetaZona({ zona, dipilih, onPilih }: PetaZonaProps) {
+export default function PetaZona({
+  zona,
+  dipilih,
+  onPilih,
+  kebocoran,
+}: PetaZonaProps) {
   const warna = useWarnaStatus();
 
   /*
@@ -208,10 +225,17 @@ export default function PetaZona({ zona, dipilih, onPilih }: PetaZonaProps) {
               onClick={(e) => onPilih(e.feature.properties.id)}
             />
           ) : null}
+
+          {/* Dipasang SESUDAH poligon zona supaya penandanya tidak tertimbun
+              isian zona yang opasitasnya naik saat zona itu dipilih. */}
+          {kebocoran && kebocoran.length > 0 ? (
+            <LapisanKebocoran petak={kebocoran} />
+          ) : null}
         </Map>
       </div>
 
       <LegendaPeta />
+      {kebocoran && kebocoran.length > 0 ? <LegendaKebocoran /> : null}
     </div>
   );
 }
