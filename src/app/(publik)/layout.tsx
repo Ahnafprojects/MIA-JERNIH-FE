@@ -3,11 +3,33 @@ import { MerekJernih } from "@/components/layout/logo";
 import { BilahAtas, type ButirMenu } from "./_bagian/bilah-atas";
 import "./_bagian/bilah-atas.css";
 
-const MENU: readonly ButirMenu[] = [
+/**
+ * Empat halaman yang bisa dibuka tanpa akun.
+ *
+ * Dipakai DUA KALI: di bilah atas dan di kolom "Transparansi" kaki halaman.
+ * Keduanya memang harus menyebut hal yang sama, jadi lariknya satu.
+ */
+const TRANSPARANSI: readonly ButirMenu[] = [
   { href: "/status", teks: "Status Layanan" },
   { href: "/lacak", teks: "Lacak Pengaduan" },
   { href: "/kinerja", teks: "Rapor Kinerja" },
   { href: "/statistik", teks: "Statistik" },
+];
+
+/**
+ * Isi bilah atas: Fitur lebih dulu, lalu keempat halaman transparansi.
+ *
+ * TERPISAH dari `TRANSPARANSI` dengan sengaja. Kaki halaman memberi label
+ * "Transparansi" pada daftarnya, dan `/fitur` bukan halaman transparansi —
+ * ia menjelaskan produknya. Memakai satu larik untuk keduanya akan menaruh
+ * Fitur di bawah label yang salah.
+ *
+ * Urutannya juga disengaja: pengunjung baru bertanya "ini apa" sebelum
+ * "datanya mana", jadi Fitur mendahului.
+ */
+const MENU: readonly ButirMenu[] = [
+  { href: "/fitur", teks: "Fitur" },
+  ...TRANSPARANSI,
 ];
 
 /**
@@ -59,7 +81,7 @@ export default function LayoutPublik({
               tinggi minimumnya sudah menggantikan perannya.
             */}
             <ul className="text-[13.5px]">
-              {MENU.map((m) => (
+              {TRANSPARANSI.map((m) => (
                 <li key={m.href}>
                   <Link
                     href={m.href}
