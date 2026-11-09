@@ -89,7 +89,10 @@ export function MeterDevice({
       <div className="flex items-stretch">
         <Sambungan sisi="kiri" />
 
-        <div className="flex-1 rounded-[5cqw] border border-line bg-surface-2 p-[5cqw] shadow-sm">
+        {/* Badan meter: benda yang MEMEGANG tombol, jadi ia sendiri harus
+            duduk lebih tinggi daripada tombolnya. Tanpa itu keypadnya
+            terbaca mengambang di atas halaman, bukan terpasang di alat. */}
+        <div className="flex-1 rounded-[5cqw] border border-line bg-surface-2 p-[5cqw] shadow-[var(--kilau-tepi),var(--kedalaman-3)]">
           {/* ── Plat nama ───────────────────────────────────────────── */}
           <div className="flex items-baseline justify-between gap-[3cqw]">
             <span className="eyebrow text-muted">Meter Jernih</span>
@@ -139,11 +142,29 @@ export function MeterDevice({
                  * miring ke kiri walau grid-nya sendiri sudah rata. Mengisi
                  * selnya membuat jarak antar tombol benar-benar seragam.
                  */
+                /*
+                 * Tombol keypad adalah satu-satunya benda di halaman ini
+                 * yang BENAR-BENAR ditekan jari di dunia nyata, dan satu-
+                 * satunya yang dulu digambar paling datar: kotak putih
+                 * bergaris satu piksel.
+                 *
+                 * Tiga lapis membuatnya terbaca sebagai tombol:
+                 *   - kilau tepi atas → tebal plastiknya;
+                 *   - bayangan rapat di bawah → jarak ke badan meter;
+                 *   - saat ditekan, keduanya DIBALIK menjadi cekung.
+                 *
+                 * Lapis ketiga yang paling penting. Tombol yang hanya
+                 * berubah warna saat ditekan terasa seperti gambar yang
+                 * disorot; tombol yang masuk ke dalam terasa menerima
+                 * tekanan — dan itu satu-satunya umpan balik yang tersedia,
+                 * karena simulasi ini tidak punya bunyi.
+                 */
                 className={cn(
-                  "aspect-square w-full rounded-[2.4cqw] border border-line bg-surface",
-                  "font-mono text-[4.4cqw] font-semibold",
+                  "aspect-square w-full rounded-[2.4cqw] border border-line",
+                  "bg-surface font-mono text-[4.4cqw] font-semibold",
+                  "shadow-[var(--kilau-tepi),var(--kedalaman-1)]",
                   onTombol
-                    ? "transition-colors hover:bg-soft active:bg-surface-2"
+                    ? "transition-all duration-100 hover:bg-brand-50 active:translate-y-px active:bg-surface-2 active:shadow-[var(--cekung-dalam)]"
                     : "cursor-default opacity-70",
                 )}
               >

@@ -1,5 +1,20 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+# Digenerate Next.js setiap `next dev` dijalankan, dan TIDAK BOLEH masuk
+# repositori ini.
+#
+# `agentRules: false` di `next.config.ts` seharusnya mencegahnya terbit sama
+# sekali, tetapi itu baru satu lapis dan hanya ada di cabang yang belum
+# ter-merge — di `origin/main` setelannya tidak ada. Jadi siapa pun yang
+# clone lalu menjalankan `npm run dev` menghasilkan berkas ini di akar repo.
+#
+# Selama ini ia selamat hanya karena tercatat di `.git/info/exclude`, dan
+# berkas itu PER-CLONE: tidak pernah ikut terbagi, jadi tidak melindungi
+# siapa pun selain satu mesin. Satu `git add -A` dari rekan setim sudah
+# cukup memasukkannya — dan isi berkasnya sendiri justru menyuruh
+# pembacanya meng-commit.
+AGENTS.md
+
 # dependencies
 /node_modules
 /.pnp

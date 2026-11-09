@@ -17,7 +17,7 @@ import { PitaStatistik } from "./_bagian/pita-statistik";
 import { MeterPeraga } from "./_bagian/meter-peraga";
 import { VideoPenjelasan } from "./_bagian/video-penjelasan";
 import { Faq } from "./_bagian/faq";
-import { Muncul } from "./_bagian/muncul";
+import { Muncul } from "@/components/ui/muncul";
 import { angka, rupiah } from "@/lib/format";
 import { TARIF_PER_LITER, PAKET } from "@/data/paket";
 

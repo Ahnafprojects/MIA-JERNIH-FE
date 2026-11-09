@@ -3,14 +3,17 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, Mail } from "lucide-react";
+
 import { AuthShell } from "@/components/auth/auth-shell";
 import { InputDigit } from "@/components/auth/input-digit";
 import { Button } from "@/components/ui/button";
-import { TextField } from "@/components/ui/field";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import type { Pengguna } from "@/lib/auth-tipe";
+
+import { KolomSandi, KolomTeks } from "../_bagian/kolom-teks";
+import { KotakGalat } from "../_bagian/kotak-galat";
 
 export default function HalamanMasuk() {
   const router = useRouter();
@@ -19,7 +22,6 @@ export default function HalamanMasuk() {
   const [email, setEmail] = useState("");
   const [kataSandi, setKataSandi] = useState("");
   const [ingat, setIngat] = useState(false);
-  const [lihatSandi, setLihatSandi] = useState(false);
 
   const [butuhKode, setButuhKode] = useState(false);
   const [kodeDigit, setKodeDigit] = useState("");
@@ -28,15 +30,17 @@ export default function HalamanMasuk() {
   const [pesanGalat, setPesanGalat] = useState<string | null>(null);
 
   const navigasiSetelahMasuk = (peran: string, jumlahMeter: number) => {
-    if (peran === "WARGA") {
-      if (jumlahMeter > 0) {
-        router.push("/beranda");
-      } else {
-        router.push("/hubungkan-meter");
-      }
-    } else {
+    if (peran !== "WARGA") {
       router.push("/konsol");
+      return;
     }
+    /*
+     * Warga tanpa meter diarahkan ke /hubungkan-meter, tetapi itu keadaan
+     * yang seharusnya jarang: akun baru sudah menerima meter bawaan begitu
+     * verifikasi email selesai. Jalur ini tersisa sebagai jaring pengaman
+     * bila pembuatan meter bawaan gagal, bukan sebagai alur normal.
+     */
+    router.push(jumlahMeter > 0 ? "/beranda" : "/hubungkan-meter");
   };
 
   const handleMasuk = async (e: React.FormEvent) => {
@@ -90,16 +94,16 @@ export default function HalamanMasuk() {
     setMemuat(true);
 
     try {
-      const res = await api<{
-        accessToken: string;
-        pengguna: Pengguna;
-      }>("/api/auth/masuk/kode", {
-        method: "POST",
-        body: JSON.stringify({
-          email: email.trim().toLowerCase(),
-          kode: kodeDigit,
-        }),
-      });
+      const res = await api<{ accessToken: string; pengguna: Pengguna }>(
+        "/api/auth/masuk/kode",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            email: email.trim().toLowerCase(),
+            kode: kodeDigit,
+          }),
+        },
+      );
 
       if (res.accessToken && res.pengguna) {
         const meters = await masukDenganAkses(res.accessToken, res.pengguna);
@@ -118,89 +122,84 @@ export default function HalamanMasuk() {
 
   return (
     <AuthShell
-      judul={butuhKode ? "Verifikasi Perangkat Baru" : "Masuk ke Jernih"}
+      judul={butuhKode ? "Perangkat baru" : "Masuk"}
       keterangan={
         butuhKode
-          ? `Perangkat ini baru pertama kali digunakan. Masukkan 6 digit kode yang dikirim ke email ${email}.`
-          : "Satu pintu masuk untuk seluruh peran warga dan petugas."
+          ? `Perangkat ini baru pertama kali dipakai. Masukkan 6 digit kode yang kami kirim ke ${email}.`
+          : "Satu pintu masuk untuk warga dan petugas PDAM."
       }
     >
-      {pesanGalat ? (
-        <div
-          role="alert"
-          className="mb-6 rounded-[3px] border border-danger/40 bg-danger/10 px-3.5 py-2.5 text-xs font-medium text-danger"
-        >
-          {pesanGalat}
-        </div>
-      ) : null}
+      <KotakGalat pesan={pesanGalat} />
 
       {!butuhKode ? (
-        <form onSubmit={handleMasuk} className="space-y-4">
-          <TextField
+        <form onSubmit={handleMasuk} className="space-y-4" noValidate>
+          <KolomTeks
             label="Email"
             type="email"
             required
             autoComplete="email"
+            inputMode="email"
             placeholder="nama@email.com"
             value={email}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              setEmail(e.target.value)
+            }
             disabled={memuat}
           />
 
-          <TextField
-            label="Kata Sandi"
-            type={lihatSandi ? "text" : "password"}
+          <KolomSandi
+            label="Kata sandi"
             required
             autoComplete="current-password"
-            placeholder="••••••••"
+            placeholder="Kata sandi akun Anda"
             value={kataSandi}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setKataSandi(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              setKataSandi(e.target.value)
+            }
             disabled={memuat}
             kananLabel={
               <Link
                 href="/lupa-sandi"
-                className="text-xs font-medium text-brand-700 hover:underline dark:text-accent"
+                className="text-[13px] font-medium text-brand-700 hover:underline dark:text-accent"
               >
                 Lupa sandi?
               </Link>
             }
-            belakang={
-              <button
-                type="button"
-                onClick={() => setLihatSandi(!lihatSandi)}
-                className="text-muted hover:text-ink"
-                aria-label={lihatSandi ? "Sembunyikan sandi" : "Lihat sandi"}
-              >
-                {lihatSandi ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            }
           />
 
-          <div className="flex items-center gap-2 pt-1">
+          {/*
+            Keterangan "ingat perangkat" ditulis apa adanya. Tanpa itu,
+            mencentangnya terasa seperti sekadar memperpanjang sesi —
+            padahal yang dilewati adalah kode email untuk perangkat ini,
+            dan orang berhak tahu pengaman mana yang sedang dimatikan.
+          */}
+          <label
+            htmlFor="ingat"
+            className="cekung flex cursor-pointer items-start gap-3 p-3"
+          >
             <input
               id="ingat"
               type="checkbox"
               checked={ingat}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setIngat(e.target.checked)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setIngat(e.target.checked)
+              }
               disabled={memuat}
-              className="size-4 rounded-[2px] border-line text-brand-600 focus:ring-brand-500"
+              className="mt-0.5 size-4 shrink-0 rounded-[5px] border-line-strong text-brand-600 focus:ring-brand-500"
             />
-            <label htmlFor="ingat" className="text-xs text-muted">
-              Ingat perangkat ini
-            </label>
-          </div>
+            <span className="text-[13px] leading-relaxed text-muted">
+              <span className="font-semibold text-ink">Ingat perangkat ini</span>
+              <br />
+              Lain kali masuk dari perangkat ini tanpa kode email.
+            </span>
+          </label>
 
-          <Button
-            type="submit"
-            varian="utama"
-            blok
-            memuat={memuat}
-          >
-            Masuk
+          <Button type="submit" varian="utama" ukuran="lg" blok memuat={memuat}>
+            <span className="whitespace-nowrap">Masuk</span>
             {!memuat ? <ArrowRight size={16} /> : null}
           </Button>
 
-          <div className="takar-kepala mt-6 pt-4 text-center text-xs text-muted">
+          <p className="takar-kepala mt-6 pt-4 text-center text-[13px] text-muted">
             Belum punya akun warga?{" "}
             <Link
               href="/daftar"
@@ -208,10 +207,18 @@ export default function HalamanMasuk() {
             >
               Daftar sekarang
             </Link>
-          </div>
+          </p>
         </form>
       ) : (
-        <form onSubmit={handleVerifikasiKodeMasuk} className="space-y-6">
+        <form onSubmit={handleVerifikasiKodeMasuk} className="space-y-5">
+          <div className="cekung flex items-start gap-3 p-3.5">
+            <Mail size={16} className="mt-0.5 shrink-0 text-brand-700" />
+            <p className="text-[13px] leading-relaxed text-muted">
+              Kode hanya dikirim lewat email. Periksa kotak masuk, termasuk
+              folder spam.
+            </p>
+          </div>
+
           <InputDigit
             panjang={6}
             nilai={kodeDigit}
@@ -219,18 +226,15 @@ export default function HalamanMasuk() {
             disabled={memuat}
           />
 
-          <p className="text-[11px] text-muted text-center leading-relaxed">
-            Kode keamanan 6 digit telah dikirimkan ke email Anda. Cek kotak masuk atau folder spam.
-          </p>
-
           <Button
             type="submit"
             varian="utama"
+            ukuran="lg"
             blok
             memuat={memuat}
             disabled={kodeDigit.length < 6}
           >
-            Lanjutkan Masuk
+            <span className="whitespace-nowrap">Lanjutkan masuk</span>
             {!memuat ? <ArrowRight size={16} /> : null}
           </Button>
 
@@ -242,9 +246,10 @@ export default function HalamanMasuk() {
                 setKodeDigit("");
                 setPesanGalat(null);
               }}
-              className="text-xs text-muted hover:text-ink hover:underline"
+              className="inline-flex items-center gap-1.5 text-[13px] text-muted hover:text-ink hover:underline"
             >
-              Kembali ke formulir masuk
+              <ArrowLeft size={14} />
+              <span>Kembali ke formulir masuk</span>
             </button>
           </div>
         </form>

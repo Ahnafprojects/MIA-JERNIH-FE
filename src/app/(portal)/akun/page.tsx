@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { Unlink, LogOut } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
-import { api } from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
 import { liter } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { TombolTema } from "@/components/ui/tema";
@@ -23,12 +23,63 @@ const BAGIAN = [
   "Meter tertaut",
   "Tampilan",
 ];
+
+/**
+ * Satu kolom kata sandi.
+ *
+ * Dibuat `.cekung` seperti kolom isian lain di portal: di sistem ini bentuk
+ * membawa arti — yang menonjol adalah benda, yang masuk ke dalam adalah
+ * tempat menaruh sesuatu.
+ *
+ * `autoComplete` DIISI, bukan dikosongkan. Pengelola kata sandi memakainya
+ * untuk membedakan sandi lama dari sandi baru; tanpa itu ia mengisi ketiga
+ * kolom dengan nilai yang sama, dan formulirnya ditolak server tanpa
+ * pengguna tahu sebabnya.
+ */
+function KolomSandi({
+  label,
+  nilai,
+  onUbah,
+  autoComplete,
+  petunjuk,
+}: {
+  label: string;
+  nilai: string;
+  onUbah: (v: string) => void;
+  autoComplete: "current-password" | "new-password";
+  petunjuk?: string;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1.5 block text-xs font-semibold text-ink">
+        {label}
+      </span>
+      <input
+        type="password"
+        value={nilai}
+        onChange={(e) => onUbah(e.target.value)}
+        autoComplete={autoComplete}
+        className="cekung h-11 w-full px-3 text-sm text-ink outline-none focus:bg-surface focus:ring-2 focus:ring-brand-500/30"
+      />
+      {petunjuk && <span className="mt-1 block text-[11px] text-muted">{petunjuk}</span>}
+    </label>
+  );
+}
 export default function HalamanAkun() {
   const { pengguna, meter } = useAuth();
   const [bagian, setBagian] = useState("Profil");
   const [sesi, setSesi] = useState<Sesi[]>([]);
   const [ambang, setAmbang] = useState(100);
   const [pesan, setPesan] = useState<string | null>(null);
+
+  const [sandiLama, setSandiLama] = useState("");
+  const [sandiBaru, setSandiBaru] = useState("");
+  const [sandiUlang, setSandiUlang] = useState("");
+  const [kirimSedang, setKirimSedang] = useState(false);
+  const [hasilSandi, setHasilSandi] = useState<{
+    tipe: "sukses" | "galat";
+    teks: string;
+  } | null>(null);
   useEffect(() => {
     let ok = true;
     const timer = window.setTimeout(() => {
@@ -51,6 +102,70 @@ export default function HalamanAkun() {
     await api(`/api/me/sesi/${id}`, { method: "DELETE" });
     setSesi((x) => x.filter((s) => s.id !== id));
   };
+  /**
+   * Mengirim penggantian kata sandi.
+   *
+   * Kecocokan "ulangi kata sandi" diperiksa DI SINI dan tidak pernah dikirim
+   * ke server — server tidak punya urusan dengan kolom ketiga itu. Gunanya
+   * cuma satu: menangkap salah ketik sebelum sandi yang tidak pernah diniatkan
+   * tersimpan, dan setelah tersimpan tidak ada cara memulihkannya selain
+   * lewat email.
+   *
+   * Galat dari server ditampilkan apa adanya. Pesannya sudah Bahasa Indonesia
+   * dan jauh lebih berguna daripada kalimat umum — "Kata sandi lama salah"
+   * memberi tahu kolom mana yang harus diperbaiki.
+   */
+  const kirimSandi = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setHasilSandi(null);
+
+    if (sandiBaru !== sandiUlang) {
+      setHasilSandi({
+        tipe: "galat",
+        teks: "Ulangan kata sandi baru tidak sama.",
+      });
+      return;
+    }
+
+    setKirimSedang(true);
+    try {
+      await api("/api/me/kata-sandi", {
+        method: "PUT",
+        body: JSON.stringify({
+          kataSandiLama: sandiLama,
+          kataSandiBaru: sandiBaru,
+        }),
+      });
+      setHasilSandi({
+        tipe: "sukses",
+        teks: "Kata sandi berhasil diubah. Sesi lain sudah dikeluarkan.",
+      });
+      setSandiLama("");
+      setSandiBaru("");
+      setSandiUlang("");
+
+      /* Daftar sesi di bawah formulir ini baru saja berubah isinya. Tanpa
+         dimuat ulang, layar masih memperlihatkan perangkat yang sudah
+         dicabut — persis kebalikan dari yang baru saja diberitahukan. */
+      try {
+        const r = await api<{ sesi: Sesi[] }>("/api/me/sesi");
+        setSesi(r.sesi || []);
+      } catch {
+        // Daftar basi tidak sepenting pesan berhasil di atas.
+      }
+    } catch (err) {
+      setHasilSandi({
+        tipe: "galat",
+        teks:
+          err instanceof ApiError
+            ? err.message
+            : "Gagal mengubah kata sandi. Coba lagi.",
+      });
+    } finally {
+      setKirimSedang(false);
+    }
+  };
+
   const simpanAmbang = async () => {
     setPesan(
       "Ambang tersimpan di perangkat ini. Endpoint server untuk menyimpan preferensi akun belum tersedia.",
@@ -58,7 +173,7 @@ export default function HalamanAkun() {
     localStorage.setItem("jernih_ambang", String(ambang));
   };
   return (
-    <main className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6">
+    <main className="space-y-6 px-4 py-8 sm:px-6 lg:px-8">
       <div className="border-b border-line pb-4">
         <span className="eyebrow text-brand-700 dark:text-accent">
           Pengaturan Pribadi
@@ -112,11 +227,48 @@ export default function HalamanAkun() {
               <div>
                 <h2 className="font-display text-xl font-bold">Keamanan</h2>
                 <p className="mt-1 text-xs text-muted">
-                  Perubahan kata sandi membutuhkan kode email dari server.
+                  Mengganti kata sandi akan mengeluarkan sesi lain dari akun
+                  Anda. Perangkat ini tetap masuk.
                 </p>
-                <Button varian="sekunder" className="mt-4" disabled>
-                  Ubah Kata Sandi
-                </Button>
+
+                <form onSubmit={kirimSandi} className="mt-4 max-w-sm space-y-3">
+                  <KolomSandi
+                    label="Kata sandi lama"
+                    nilai={sandiLama}
+                    onUbah={setSandiLama}
+                    autoComplete="current-password"
+                  />
+                  <KolomSandi
+                    label="Kata sandi baru"
+                    nilai={sandiBaru}
+                    onUbah={setSandiBaru}
+                    autoComplete="new-password"
+                    petunjuk="Minimal 8 karakter."
+                  />
+                  <KolomSandi
+                    label="Ulangi kata sandi baru"
+                    nilai={sandiUlang}
+                    onUbah={setSandiUlang}
+                    autoComplete="new-password"
+                  />
+
+                  {hasilSandi && (
+                    <p
+                      role="alert"
+                      className={`rounded-[10px] border p-2.5 text-xs font-medium ${
+                        hasilSandi.tipe === "sukses"
+                          ? "border-success/40 bg-success-soft text-success"
+                          : "border-danger/40 bg-danger-soft text-danger"
+                      }`}
+                    >
+                      {hasilSandi.teks}
+                    </p>
+                  )}
+
+                  <Button type="submit" memuat={kirimSedang}>
+                    Ubah Kata Sandi
+                  </Button>
+                </form>
               </div>
               <div className="border-t border-line pt-5">
                 <h3 className="font-bold text-ink">Sesi Aktif</h3>
@@ -163,7 +315,7 @@ export default function HalamanAkun() {
               <select
                 value={ambang}
                 onChange={(e) => setAmbang(Number(e.target.value))}
-                className="h-11 rounded-[3px] border border-line bg-canvas px-3 text-sm"
+                className="h-11 permukaan-rata border-line bg-canvas px-3 text-sm"
               >
                 {[50, 100, 250, 500].map((x) => (
                   <option key={x} value={x}>

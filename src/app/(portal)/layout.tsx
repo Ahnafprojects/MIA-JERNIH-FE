@@ -1,116 +1,86 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useState, useEffect } from "react";
-import { Menu, X, Bell } from "lucide-react";
-import { LogoJernih, MerekJernih } from "@/components/layout/logo";
-import { TombolTema } from "@/components/ui/tema";
+import { Suspense } from "react";
+import { MerekJernih } from "@/components/layout/logo";
 import { PenjagaRute } from "@/lib/penjaga-rute";
-import { NavPortal, PemilihMeter, AvatarMenu } from "./_nav-portal";
+import { TransisiHalaman } from "@/components/ui/transisi-halaman";
+import {
+  NavPortal,
+  MenuLayarPenuh,
+  TombolNotifikasi,
+  AvatarMenu,
+} from "./_nav-portal";
 
 export default function LayoutPortal({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [menuBuka, setMenuBuka] = useState(false);
-
-  useEffect(() => {
-    if (!menuBuka) return;
-    const esc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setMenuBuka(false);
-    };
-    document.addEventListener("keydown", esc);
-    const semula = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", esc);
-      document.body.style.overflow = semula;
-    };
-  }, [menuBuka]);
-
   return (
     <PenjagaRute peranDiizinkan={["WARGA"]}>
       <div className="flex min-h-dvh flex-col bg-canvas text-ink">
-        {/* Top bar lengket */}
-        <header className="sticky top-0 z-40 border-b border-line bg-surface/90 backdrop-blur">
-          <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-            <div className="flex items-center gap-6">
-              <button
-                type="button"
-                onClick={() => setMenuBuka(true)}
-                aria-expanded={menuBuka}
-                className="grid size-10 place-items-center rounded-[3px] text-muted hover:bg-soft hover:text-ink md:hidden"
-                aria-label="Buka navigasi"
-              >
-                <Menu size={20} />
-              </button>
+        {/*
+          Bilah atas MENGAMBANG: kapsul dengan jarak merata dari keempat
+          sisinya, bukan pita yang menempel ke tepi layar.
 
-              <Link href="/beranda" className="flex items-center">
-                <MerekJernih sub="Portal warga" />
-              </Link>
+          Pembungkusnya yang lengket, bukan kapsulnya. Kalau kapsulnya
+          sendiri yang diberi `sticky`, jarak atasnya ikut tergulir dan
+          kapsul itu akhirnya menempel persis di tepi — justru kehilangan
+          sifat mengambang yang diinginkan tepat ketika halaman digulir.
 
-              <nav className="hidden md:block">
+          Lapisan kabut di belakangnya menutup celah antara tepi layar dan
+          kapsul. Tanpa itu, isi halaman terlihat tajam menyelinap di sela
+          kiri-kanan dan di bawah kapsul saat digulir — kapsulnya berhenti
+          terbaca melayang di atas halaman dan mulai terbaca seperti
+          potongan yang tertinggal.
+        */}
+        <header className="sticky top-0 z-40">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 bg-canvas/75 backdrop-blur-md"
+          />
+
+          <div className="relative px-3 py-3 sm:px-4 sm:py-4">
+            <div className="flex h-14 items-center justify-between gap-3 rounded-full border border-line bg-surface px-3 shadow-[var(--kilau-tepi),var(--kedalaman-3)] sm:px-4">
+              <div className="flex min-w-0 items-center gap-5">
+                <Link href="/beranda" className="flex items-center">
+                  <MerekJernih sub="Portal warga" />
+                </Link>
+
+                <nav aria-label="Navigasi utama" className="hidden lg:block">
+                  <Suspense fallback={null}>
+                    <NavPortal />
+                  </Suspense>
+                </nav>
+              </div>
+
+              {/*
+                Tiga kendali, masing-masing berdiri sendiri: hamburger (hanya
+                layar kecil), notifikasi, dan profil. Pemilih meter sudah
+                pindah ke kartu saldo di beranda, dan tombol tema masuk ke
+                dalam menu profil.
+              */}
+              <div className="flex shrink-0 items-center gap-2">
                 <Suspense fallback={null}>
-                  <NavPortal />
+                  <TombolNotifikasi />
                 </Suspense>
-              </nav>
-            </div>
 
-            <div className="flex items-center gap-2 sm:gap-3">
-              <Suspense fallback={null}>
-                <PemilihMeter />
-              </Suspense>
+                <Suspense fallback={null}>
+                  <AvatarMenu />
+                </Suspense>
 
-              <Link
-                href="/notifikasi"
-                className="grid size-9 place-items-center rounded-[3px] border border-line bg-soft text-muted hover:text-ink"
-                aria-label="Lihat notifikasi"
-              >
-                <Bell size={16} />
-              </Link>
-
-              <TombolTema className="grid size-9 place-items-center rounded-[3px] border border-line bg-soft text-muted hover:text-ink" />
-
-              <Suspense fallback={null}>
-                <AvatarMenu />
-              </Suspense>
+                <Suspense fallback={null}>
+                  <MenuLayarPenuh />
+                </Suspense>
+              </div>
             </div>
           </div>
         </header>
 
-        {/* Laci navigasi mobile (390px) */}
-        {menuBuka ? (
-          <div className="fixed inset-0 z-50 flex md:hidden">
-            <button
-              type="button"
-              onClick={() => setMenuBuka(false)}
-              className="fixed inset-0 bg-brand-900/40 backdrop-blur-xs"
-              aria-label="Tutup navigasi"
-            />
-            <div className="relative z-10 flex w-72 max-w-[80vw] flex-col bg-surface p-5 shadow-xl">
-              <div className="flex items-center justify-between border-b border-line pb-4">
-                <LogoJernih size={24} className="text-brand-600 dark:text-accent" />
-                <button
-                  type="button"
-                  onClick={() => setMenuBuka(false)}
-                  className="grid size-9 place-items-center rounded-[3px] text-muted hover:text-ink"
-                  aria-label="Tutup menu"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              <nav className="mt-4 flex-1">
-                <Suspense fallback={null}>
-                  <NavPortal onPilih={() => setMenuBuka(false)} />
-                </Suspense>
-              </nav>
-            </div>
-          </div>
-        ) : null}
-
-        <main className="flex-1">{children}</main>
+        <main className="flex-1">
+          <TransisiHalaman>{children}</TransisiHalaman>
+        </main>
       </div>
     </PenjagaRute>
   );

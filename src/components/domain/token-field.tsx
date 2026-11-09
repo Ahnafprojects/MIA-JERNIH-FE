@@ -50,10 +50,21 @@ export function TokenField({
         onKeyDown={(e) => {
           if (e.key === "Enter" && nilai.length >= 4) onKirim?.();
         }}
+        /*
+         * Kolom isian dibuat CEKUNG, bukan rata dengan kartunya.
+         *
+         * Di seluruh portal, bentuk sekarang membawa arti: yang menonjol
+         * adalah benda, yang masuk ke dalam adalah tempat menaruh sesuatu.
+         * Kolom token adalah tempat paling penting untuk menaruh sesuatu di
+         * aplikasi ini, dan sebelumnya ia digambar persis sedatar kartu yang
+         * memuatnya — satu-satunya petunjuk bahwa ia bisa diketik adalah
+         * teks contoh di dalamnya.
+         */
         className={cn(
-          "tabular w-full rounded-input border bg-surface px-4 font-mono",
+          "tabular w-full rounded-input border bg-surface-2 px-4 font-mono",
           "h-14 text-center text-2xl tracking-[0.2em] outline-none",
-          "focus:ring-2 focus:ring-brand-500/30 disabled:opacity-60",
+          "shadow-[var(--cekung-dalam)]",
+          "focus:bg-surface focus:ring-2 focus:ring-brand-500/30 disabled:opacity-60",
           galat ? "border-danger" : "border-line-strong",
         )}
       />

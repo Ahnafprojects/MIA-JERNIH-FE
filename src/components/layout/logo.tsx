@@ -48,14 +48,23 @@ export function MerekJernih({
   className?: string;
 }) {
   return (
-    <span className={cn("flex items-center gap-2.5", className)}>
+    <span className={cn("flex shrink-0 items-center gap-2.5", className)}>
       <LogoJernih size={30} className="text-brand-500" />
       <span className="leading-tight">
         <span className="block font-display text-[19px] font-semibold tracking-[-0.02em]">
           Jernih
         </span>
+        {/*
+          `whitespace-nowrap`: "Portal warga" punya spasi, dan begitu bilah
+          atas padat — tujuh menu, pil saldo, tiga tombol — kata keduanya
+          dilempar ke baris baru. Logo tiga baris mendorong tinggi bilah
+          melewati 64px, dan seluruh menu di sebelahnya terlihat tidak
+          sejajar dengan apa pun.
+        */}
         {sub ? (
-          <span className="eyebrow block text-[9.5px] opacity-70">{sub}</span>
+          <span className="eyebrow block text-[9.5px] whitespace-nowrap opacity-70">
+            {sub}
+          </span>
         ) : null}
       </span>
     </span>

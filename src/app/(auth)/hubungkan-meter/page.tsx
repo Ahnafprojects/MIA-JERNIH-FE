@@ -4,19 +4,23 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  QrCode,
-  Keyboard,
+  AlertCircle,
   ArrowRight,
   CheckCircle2,
-  AlertCircle,
+  Keyboard,
+  QrCode,
 } from "lucide-react";
+
 import { AuthShell } from "@/components/auth/auth-shell";
 import { StepperAuth } from "@/components/auth/stepper";
 import { Button } from "@/components/ui/button";
-import { TextField } from "@/components/ui/field";
 import { LcdDisplay } from "@/components/domain/lcd";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { cn } from "@/lib/cn";
+
+import { KolomTeks } from "../_bagian/kolom-teks";
+import { KotakGalat } from "../_bagian/kotak-galat";
 
 interface DataMeterDitemukan {
   id: string;
@@ -45,18 +49,16 @@ export default function HalamanHubungkanMeter() {
   const [memuatHubung, setMemuatHubung] = useState(false);
   const [pesanGalat, setPesanGalat] = useState<string | null>(null);
 
-  // Status izin kamera untuk scanner QR
   const [izinKamera, setIzinKamera] = useState<
     "belum" | "minta" | "diberikan" | "ditolak"
   >("belum");
 
-  // State data meter jika ditemukan
   const [meterDitemukan, setMeterDitemukan] =
     useState<DataMeterDitemukan | null>(null);
 
   const cariMeter = async (id: string) => {
     if (!id.trim()) {
-      setPesanGalat("Masukkan ID Pelanggan atau nomor seri meter.");
+      setPesanGalat("Masukkan ID pelanggan atau nomor seri meter.");
       return;
     }
 
@@ -72,7 +74,7 @@ export default function HalamanHubungkanMeter() {
       if (err instanceof ApiError) {
         if (err.code === "BUKAN_PEMILIK_METER" || err.status === 403) {
           setPesanGalat(
-            "Meter ini sudah terhubung ke akun lain. Hubungi kantor layanan PDAM bila ini adalah meter Anda.",
+            "Meter ini sudah terhubung ke akun lain. Hubungi kantor layanan PDAM bila ini memang meter Anda.",
           );
         } else {
           setPesanGalat(err.message);
@@ -91,23 +93,24 @@ export default function HalamanHubungkanMeter() {
   const handleMintaIzinKamera = async () => {
     setIzinKamera("minta");
     try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      if (!navigator.mediaDevices?.getUserMedia) {
         setIzinKamera("ditolak");
         setPesanGalat(
-          "Perangkat Anda tidak mendukung akses kamera. Silakan ketik ID secara manual.",
+          "Perangkat ini tidak mendukung akses kamera. Ketik ID meter secara manual.",
         );
         return;
       }
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "environment" },
       });
-      // Matikan stream setelah tes izin berhasil
+      // Stream dimatikan begitu izinnya terbukti ada; halaman ini hanya
+      // perlu tahu izinnya diberikan, bukan merekam apa pun.
       stream.getTracks().forEach((track) => track.stop());
       setIzinKamera("diberikan");
     } catch {
       setIzinKamera("ditolak");
       setPesanGalat(
-        "Izin kamera tidak diberikan. Anda tetap dapat melanjutkan dengan mengetik ID meter secara manual di tab Ketik ID.",
+        "Izin kamera tidak diberikan. Anda tetap bisa melanjutkan lewat tab Ketik ID.",
       );
     }
   };
@@ -130,7 +133,7 @@ export default function HalamanHubungkanMeter() {
       if (err instanceof ApiError) {
         if (err.code === "METER_SUDAH_TERHUBUNG") {
           setPesanGalat(
-            "Meter ini sudah terhubung ke akun pelanggan lain. Hubungi petugas PDAM untuk bantuan pengalihan kepemilikan.",
+            "Meter ini sudah terhubung ke akun lain. Hubungi petugas PDAM untuk pengalihan kepemilikan.",
           );
         } else {
           setPesanGalat(err.message);
@@ -143,41 +146,56 @@ export default function HalamanHubungkanMeter() {
     }
   };
 
+  const kelasTab = (aktif: boolean) =>
+    cn(
+      "flex flex-1 items-center justify-center gap-2 rounded-[7px] px-3 py-2.5",
+      "text-[13px] font-semibold whitespace-nowrap transition-all duration-200",
+      aktif
+        ? "bg-surface text-ink shadow-[var(--kilau-tepi),var(--kedalaman-1)]"
+        : "text-muted hover:text-ink",
+    );
+
   return (
     <AuthShell
-      judul="Hubungkan Meter Fisik"
-      keterangan="Langkah terakhir pendaftaran: sambungkan akun dengan meter air prabayar di rumah Anda."
+      judul="Hubungkan meter fisik"
+      keterangan="Sambungkan akun Anda dengan meter air prabayar yang terpasang di rumah."
+      langkah="Langkah 3 dari 3"
     >
       <StepperAuth langkahAktif={3} />
 
-      {pesanGalat ? (
-        <div
-          role="alert"
-          className="mb-6 rounded-[3px] border border-danger/40 bg-danger/10 p-3 text-xs leading-relaxed font-medium text-danger"
-        >
-          <div className="flex gap-2">
-            <AlertCircle size={16} className="shrink-0 text-danger" />
-            <span>{pesanGalat}</span>
-          </div>
-        </div>
-      ) : null}
+      {/*
+        Keterangan bahwa langkah ini BOLEH DILEWATI, ditaruh paling atas.
 
-      {/* Pemilih Tab Metode */}
-      <div className="mb-6 flex rounded-[3px] border border-line bg-soft p-1">
+        Akun baru sudah menerima meter bawaan begitu verifikasi email
+        selesai, jadi portalnya sudah bisa dipakai tanpa mengisi apa pun di
+        sini. Sebelumnya halaman ini berbunyi "langkah terakhir pendaftaran"
+        dan satu-satunya jalan keluarnya tertulis kecil di dasar halaman —
+        warga yang tidak hafal nomor meternya menyimpulkan pendaftarannya
+        belum selesai dan berhenti di sini. Itu jalan buntu yang sudah
+        diperbaiki di sisi server; teksnya harus ikut diperbaiki.
+      */}
+      <div className="cekung mb-5 flex items-start gap-3 p-3.5">
+        <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-success" />
+        <p className="text-[13px] leading-relaxed text-muted">
+          <strong className="text-ink">Akun Anda sudah aktif.</strong> Langkah
+          ini hanya untuk menambahkan meter fisik, dan bisa dilewati kapan saja.
+        </p>
+      </div>
+
+      <KotakGalat pesan={pesanGalat} />
+
+      <div className="cekung mb-5 flex gap-1 p-1">
         <button
           type="button"
           onClick={() => {
             setMetode("ketik");
             setPesanGalat(null);
           }}
-          className={`flex flex-1 items-center justify-center gap-2 rounded-[2px] py-2 text-xs font-semibold transition-colors ${
-            metode === "ketik"
-              ? "bg-surface text-ink shadow-xs"
-              : "text-muted hover:text-ink"
-          }`}
+          aria-pressed={metode === "ketik"}
+          className={kelasTab(metode === "ketik")}
         >
           <Keyboard size={15} />
-          <span>Ketik ID Pelanggan</span>
+          <span>Ketik ID</span>
         </button>
         <button
           type="button"
@@ -185,14 +203,11 @@ export default function HalamanHubungkanMeter() {
             setMetode("pindai");
             setPesanGalat(null);
           }}
-          className={`flex flex-1 items-center justify-center gap-2 rounded-[2px] py-2 text-xs font-semibold transition-colors ${
-            metode === "pindai"
-              ? "bg-surface text-ink shadow-xs"
-              : "text-muted hover:text-ink"
-          }`}
+          aria-pressed={metode === "pindai"}
+          className={kelasTab(metode === "pindai")}
         >
           <QrCode size={15} />
-          <span>Pindai QR Meter</span>
+          <span>Pindai QR</span>
         </button>
       </div>
 
@@ -200,12 +215,13 @@ export default function HalamanHubungkanMeter() {
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            cariMeter(targetId);
+            void cariMeter(targetId);
           }}
           className="space-y-4"
+          noValidate
         >
-          <TextField
-            label="ID Pelanggan / Nomor Seri Meter"
+          <KolomTeks
+            label="ID pelanggan atau nomor seri"
             type="text"
             required
             placeholder="Contoh: P0001 atau JRN-10000"
@@ -214,69 +230,64 @@ export default function HalamanHubungkanMeter() {
               setTargetId(e.target.value)
             }
             disabled={memuatCari || memuatHubung}
-            hint="Lihat stiker barcode atau plat kuningan di badan meter air Anda."
+            hint="Tertera pada stiker barcode atau plat di badan meter air."
           />
 
-          <Button type="submit" varian="sekunder" blok memuat={memuatCari}>
-            Cari & Periksa Meter
+          <Button type="submit" varian="sekunder" ukuran="lg" blok memuat={memuatCari}>
+            <span className="whitespace-nowrap">Cari meter</span>
           </Button>
         </form>
       ) : (
-        <div className="space-y-4 text-center">
+        <div className="space-y-4">
           {izinKamera === "belum" || izinKamera === "minta" ? (
-            <div className="rounded-[3px] border border-dashed border-line p-6">
-              <QrCode
-                size={36}
-                className="mx-auto text-brand-600 dark:text-accent"
-              />
-              <p className="mt-3 text-xs font-medium text-ink">
-                Akses Kamera untuk Pemindai QR
+            <div className="cekung p-6 text-center">
+              <QrCode size={34} className="mx-auto text-brand-700" />
+              <p className="mt-3 text-[13px] font-semibold text-ink">
+                Izinkan kamera untuk memindai
               </p>
-              <p className="mt-1 text-[11px] text-muted text-balance">
-                Kamera hanya dipakai untuk membaca kode QR pada stiker fisik
-                meter. Jernih tidak pernah merekam atau menyimpan video.
+              <p className="mt-1 text-[12.5px] leading-relaxed text-balance text-muted">
+                Kamera hanya dipakai membaca kode QR pada stiker meter. Jernih
+                tidak merekam maupun menyimpan video.
               </p>
               <div className="mt-4">
                 <Button
                   type="button"
                   varian="utama"
-                  ukuran="sm"
                   onClick={handleMintaIzinKamera}
                   memuat={izinKamera === "minta"}
                 >
-                  Izinkan Kamera & Pindai
+                  <span className="whitespace-nowrap">Izinkan kamera</span>
                 </Button>
               </div>
             </div>
           ) : izinKamera === "diberikan" ? (
-            <div className="rounded-[3px] border border-line bg-surface p-4 text-center">
-              <div className="mx-auto flex size-44 items-center justify-center rounded-[3px] border-2 border-dashed border-brand-500 bg-brand-500/5">
-                <div className="text-center p-3">
-                  <div className="inline-block animate-pulse text-xs font-semibold text-brand-700 dark:text-accent">
-                    Arahkan kamera ke stiker QR meter
-                  </div>
-                  <div className="mt-4 flex flex-wrap justify-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setTargetId("P0001");
-                        cariMeter("P0001");
-                      }}
-                      className="rounded-[2px] bg-brand-500/10 px-2 py-1 font-mono text-[11px] font-bold text-brand-700 hover:bg-brand-500/20 dark:text-accent"
-                    >
-                      Simulasi Deteksi: P0001
-                    </button>
-                  </div>
+            <div className="permukaan p-4 text-center">
+              <div className="cekung mx-auto grid size-44 place-items-center">
+                <div className="p-3">
+                  <p className="text-[13px] font-semibold text-brand-700">
+                    Arahkan ke stiker QR meter
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTargetId("P0001");
+                      void cariMeter("P0001");
+                    }}
+                    className="mt-4 rounded-[8px] bg-brand-50 px-2.5 py-1.5 font-mono text-[11px] font-bold whitespace-nowrap text-brand-700 transition-colors hover:bg-brand-100"
+                  >
+                    Simulasi deteksi: P0001
+                  </button>
                 </div>
               </div>
             </div>
           ) : (
-            <div className="rounded-[3px] border border-warn/30 bg-warn/10 p-4 text-xs text-ink text-left">
-              <p className="font-semibold text-warn">
+            <div className="rounded-card border border-warn/40 bg-warn-soft p-4 text-left">
+              <p className="flex items-center gap-2 text-[13px] font-semibold text-warn">
+                <AlertCircle size={15} className="shrink-0" />
                 Izin kamera tidak tersedia
               </p>
-              <p className="mt-1 text-muted">
-                Silakan beralih ke tab <strong>Ketik ID Pelanggan</strong> di
+              <p className="mt-1.5 text-[12.5px] leading-relaxed text-muted">
+                Beralih ke tab <strong className="text-ink">Ketik ID</strong> di
                 atas untuk memasukkan nomor meter secara manual.
               </p>
             </div>
@@ -284,38 +295,42 @@ export default function HalamanHubungkanMeter() {
         </div>
       )}
 
-      {/* Pratinjau Meter Ditemukan dengan LCD Live */}
       {meterDitemukan ? (
-        <div className="mt-6 space-y-4 rounded-[4px] border border-brand-500/30 bg-surface p-4 shadow-sm">
-          <div className="flex items-center justify-between border-b border-line pb-3">
-            <div>
-              <span className="font-mono text-[11px] font-bold text-brand-600 uppercase tracking-wider dark:text-accent">
-                Meter Ditemukan
-              </span>
-              <h3 className="font-mono text-base font-bold text-ink">
-                {meterDitemukan.serial} ({meterDitemukan.id})
+        <div className="permukaan mt-5 space-y-4 border-brand-500/40 p-4">
+          <div className="flex flex-wrap items-start justify-between gap-2 border-b border-line pb-3">
+            <div className="min-w-0">
+              <p className="eyebrow text-muted">Meter ditemukan</p>
+              <h3 className="truncate font-mono text-base font-bold text-ink">
+                {meterDitemukan.serial}
               </h3>
+              <p className="font-mono text-[11px] text-muted">
+                {meterDitemukan.id}
+              </p>
             </div>
-            <div className="flex items-center gap-1.5 rounded-[2px] bg-success/10 px-2 py-1 font-mono text-xs font-semibold text-success">
-              <CheckCircle2 size={13} />
-              <span>Daring</span>
-            </div>
+            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-[7px] border border-success/40 bg-success-soft px-2 py-1 font-mono text-[11px] font-bold text-success">
+              <CheckCircle2 size={12} />
+              Daring
+            </span>
           </div>
 
-          <div className="space-y-1 text-xs text-muted">
-            <p>
-              <strong className="text-ink">Alamat:</strong>{" "}
-              {meterDitemukan.alamat || "—"}
-            </p>
-            <p>
-              <strong className="text-ink">Zona Distribusi:</strong>{" "}
-              {meterDitemukan.zona || "—"}
-            </p>
-          </div>
+          <dl className="space-y-1.5 text-[13px]">
+            <div className="flex justify-between gap-3">
+              <dt className="shrink-0 text-muted">Alamat</dt>
+              <dd className="text-right text-ink">
+                {meterDitemukan.alamat || "—"}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="shrink-0 text-muted">Zona</dt>
+              <dd className="text-right text-ink">
+                {meterDitemukan.zona || "—"}
+              </dd>
+            </div>
+          </dl>
 
           <div>
-            <p className="mb-1 text-[11px] font-semibold text-ink">
-              Layar LCD Fisik Saat Ini (Cocokkan dengan Layar Meter):
+            <p className="mb-1.5 text-[12.5px] font-semibold text-ink">
+              Cocokkan dengan layar di meter Anda
             </p>
             <LcdDisplay
               baris1={`S=${meterDitemukan.saldoL.toFixed(2)}L  ${meterDitemukan.saklarOn ? "ON" : "OFF"}`}
@@ -326,22 +341,23 @@ export default function HalamanHubungkanMeter() {
           <Button
             type="button"
             varian="utama"
+            ukuran="lg"
             blok
             memuat={memuatHubung}
             onClick={handleHubungkan}
           >
-            Ini Meter Saya, Hubungkan Sekarang
+            <span className="whitespace-nowrap">Hubungkan meter ini</span>
             {!memuatHubung ? <ArrowRight size={16} /> : null}
           </Button>
         </div>
       ) : null}
 
-      <div className="takar-kepala mt-8 pt-4 text-center text-xs text-muted">
+      <div className="takar-kepala mt-7 pt-4 text-center">
         <Link
           href="/beranda"
-          className="text-muted hover:text-ink hover:underline"
+          className="text-[13px] font-medium text-brand-700 hover:underline dark:text-accent"
         >
-          Lewati untuk sementara (Buka Beranda)
+          Lewati, buka beranda
         </Link>
       </div>
     </AuthShell>

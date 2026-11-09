@@ -1,46 +1,47 @@
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
-import { GrafikBatang, type Deret } from "@/components/domain/grafik";
+import { GrafikAir, type KolomAir } from "@/components/domain/grafik-air";
 import { liter } from "@/lib/format";
 
 export function GrafikPemakaian({
   memuat,
-  labels,
-  deret,
+  data,
+  targetHarianL,
 }: {
   memuat: boolean;
-  labels: string[];
-  deret: Deret[];
+  data: KolomAir[];
+  targetHarianL: number;
 }) {
   return (
-    <div className="rounded-[4px] border border-line bg-surface p-6 shadow-xs">
+    <div className="permukaan p-6">
       <div className="mb-4 flex items-center justify-between">
         <div>
           <h2 className="font-display text-base font-bold text-ink">
             Grafik Pemakaian 7 Hari Terakhir
           </h2>
           <p className="text-xs text-muted">
-            Volume air terpakai harian dalam satuan liter.
+            Liter per hari &middot; garis putus = rata-rata Anda sendiri.
           </p>
         </div>
         <Link
           href="/pemakaian"
-          className="inline-flex items-center gap-1 text-xs font-semibold text-brand-700 hover:underline dark:text-accent"
+          className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold whitespace-nowrap text-brand-700 hover:underline dark:text-accent"
         >
           <span>Analisis Penuh</span>
           <ExternalLink size={12} />
         </Link>
       </div>
 
-      {!memuat ? (
-        <GrafikBatang
-          labels={labels}
-          deret={deret}
-          tinggi={200}
+      {memuat ? (
+        <div className="cekung h-48 animate-pulse" />
+      ) : (
+        <GrafikAir
+          data={data}
+          tinggi={210}
+          target={targetHarianL}
+          labelTarget={`Rata-rata ${liter(targetHarianL, 0)}`}
           format={(n) => liter(n, 0)}
         />
-      ) : (
-        <div className="h-48 animate-pulse rounded-[3px] bg-soft" />
       )}
     </div>
   );

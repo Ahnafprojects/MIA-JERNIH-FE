@@ -21,6 +21,7 @@ import { PenjagaRute } from "@/lib/penjaga-rute";
 import { useAuth } from "@/lib/auth-context";
 import { JudulKonsol, NavKonsol, NavKonsolRangka } from "./_nav";
 import { setRingkas, useRingkas } from "./_ringkas";
+import { TransisiHalaman } from "@/components/ui/transisi-halaman";
 
 export default function LayoutKonsol({
   children,
@@ -195,7 +196,9 @@ export default function LayoutKonsol({
             </div>
           </header>
 
-          <main className="min-w-0 flex-1">{children}</main>
+          <main className="min-w-0 flex-1">
+            <TransisiHalaman>{children}</TransisiHalaman>
+          </main>
         </div>
       </div>
     </PenjagaRute>

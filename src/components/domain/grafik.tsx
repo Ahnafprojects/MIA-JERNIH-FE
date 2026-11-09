@@ -14,6 +14,7 @@ import {
   CartesianGrid,
   Cell,
   ComposedChart,
+  LabelList,
   Line,
   ReferenceDot,
   ReferenceLine,
@@ -67,9 +68,34 @@ const WARNA = [
   "var(--color-chart-4)",
 ];
 
+/*
+ * Pasangan gelap tiap warna deret, untuk dasar kolom.
+ *
+ * DITULIS, bukan dihitung. Upaya pertama memakai `color-mix()` langsung di
+ * `stop-color`, dan seluruh batang hilang dari grafik: Chrome tidak mengurai
+ * `color-mix()` pada atribut penyajian SVG, jadi isiannya jatuh ke tanpa
+ * warna. Tidak ada galat, tidak ada peringatan — grafiknya hanya menggambar
+ * sumbu dan kisi di atas bidang kosong, dan geometri batangnya tetap ada di
+ * DOM dengan ukuran yang benar.
+ *
+ * `var()` sendiri bekerja di tempat yang sama, jadi yang dipakai di sini
+ * tetap token, bukan hex — hanya pencampurannya yang dipindahkan ke waktu
+ * tulis.
+ */
+const WARNA_DALAM = [
+  "var(--color-chart-1-dalam)",
+  "var(--color-chart-2-dalam)",
+  "var(--color-chart-3-dalam)",
+  "var(--color-chart-4-dalam)",
+];
+
 /** Warna deret mengikuti URUTANNYA, tetap, tidak pernah diputar ulang. */
 const warnaDeret = (i: number) =>
   WARNA[((i % WARNA.length) + WARNA.length) % WARNA.length];
+
+const warnaDalam = (i: number) =>
+  WARNA_DALAM[((i % WARNA_DALAM.length) + WARNA_DALAM.length) %
+    WARNA_DALAM.length];
 
 const WARNA_CELAH = "var(--color-warn)";
 
@@ -261,6 +287,48 @@ function Gradien({
   );
 }
 
+/**
+ * Isian batang yang punya tebal.
+ *
+ * Berbeda dari `Gradien`, yang memudarkan SATU warna ke arah atas. Memudar
+ * ke atas membuat ujung batang hampir sewarna latar, dan batang yang
+ * ujungnya larut terbaca sebagai noda, bukan sebagai kolom — persis yang
+ * membuat grafik sebelumnya terlihat kotor pada layar terang.
+ *
+ * Di sini yang berubah bukan kepekatan melainkan WARNA: terang di puncak,
+ * pekat di dasar, keduanya penuh. Itu pola pencahayaan pada benda tegak
+ * yang disinari dari atas, dan membuat tiap batang terbaca sebagai kolom
+ * padat yang berdiri di garis dasar.
+ *
+ * Miring 12° dari tegak lurus supaya sisi kirinya sedikit lebih terang
+ * daripada sisi kanannya — searah dengan cahaya di seluruh situs.
+ */
+function GradienKolom({
+  id,
+  atas,
+  bawah,
+  pekat,
+}: {
+  id: string;
+  atas: string;
+  bawah: string;
+  /**
+   * Kepekatan kolom. Yang ditegaskan penuh, yang tenang sedikit mundur.
+   *
+   * Tidak pernah di bawah 0,8. Versi sebelumnya memudar sampai 0,3 di
+   * puncak, dan pada kepekatan itu garis kisi terlihat MENEMBUS batangnya —
+   * itu yang membuat grafiknya terbaca berbintik alih-alih bersih.
+   */
+  pekat: number;
+}) {
+  return (
+    <linearGradient id={id} x1="0.12" y1="0" x2="0" y2="1">
+      <stop offset="0%" stopColor={atas} stopOpacity={pekat} />
+      <stop offset="100%" stopColor={bawah} stopOpacity={pekat} />
+    </linearGradient>
+  );
+}
+
 /* ── Tooltip ────────────────────────────────────────────────────────── */
 
 interface SpekDeret {
@@ -398,6 +466,8 @@ export function GrafikBatang({
   tinggi = 240,
   format,
   formatSumbu,
+  target,
+  labelTarget,
 }: {
   labels: string[];
   deret: Deret[];
@@ -408,6 +478,17 @@ export function GrafikBatang({
    * "1.200 m³" di tiap tombak sumbu membuat sumbunya setebal grafiknya.
    */
   formatSumbu?: (n: number) => string;
+  /**
+   * Garis acuan mendatar — ambang yang seharusnya tidak dilewati.
+   *
+   * Tanpa acuan, tinggi batang hanya bisa dibandingkan dengan batang lain:
+   * grafik memberi tahu hari mana yang paling boros, tetapi tidak pernah
+   * memberi tahu apakah salah satunya TERLALU boros. Satu garis mengubah
+   * grafik dari perbandingan antarhari menjadi penilaian.
+   */
+  target?: number;
+  /** Teks pada garis target. Tanpa ini, garisnya tidak bisa ditafsirkan. */
+  labelTarget?: string;
 }) {
   const sid = useId().replace(/[^a-zA-Z0-9]/g, "");
   const hematGerak = useHematGerak();
@@ -416,6 +497,11 @@ export function GrafikBatang({
   if (kosong(labels, deret)) return <Kosong />;
 
   const data = keRecharts(labels, deret);
+  /* Dihitung sekali: dipakai oleh margin atas DAN oleh keputusan memasang
+     `<LabelList>`. Dua syarat yang harus selalu sama — kalau berbeda,
+     marginnya tersisa saat labelnya tidak ada, atau sebaliknya. */
+  const labelNilai = deret.length === 1 && labels.length <= 12;
+
   const spek: SpekDeret[] = deret.map((d, i) => ({
     kunci: d.name,
     nama: d.name,
@@ -450,19 +536,25 @@ export function GrafikBatang({
     <div ref={wadah} className="relative">
       <DefsGradien>
         {deret.flatMap((d, i) => [
-          <Gradien
+          /*
+           * Dua tingkat, dan keduanya PENUH — yang membedakan kolom tenang
+           * dari kolom yang ditegaskan adalah jarak warnanya, bukan
+           * kepekatannya. Kolom tembus pandang memperlihatkan garis kisi
+           * menembus data, dan itu yang membuat grafik lama terbaca berbintik.
+           */
+          <GradienKolom
             key={`b${i}`}
             id={`${sid}-b${i}`}
-            warna={warnaDeret(i)}
-            atas={0.3}
-            bawah={0.8}
+            atas={warnaDeret(i)}
+            bawah={warnaDalam(i)}
+            pekat={0.82}
           />,
-          <Gradien
+          <GradienKolom
             key={`k${i}`}
             id={`${sid}-k${i}`}
-            warna={warnaDeret(i)}
-            atas={0.7}
-            bawah={1}
+            atas={warnaDeret(i)}
+            bawah={warnaDalam(i)}
+            pekat={1}
           />,
         ])}
       </DefsGradien>
@@ -477,11 +569,26 @@ export function GrafikBatang({
           // animasinya benar-benar mulai dari nol di depan pembacanya.
           key={animasi ? "gambar" : "diam"}
           data={data}
-          margin={{ left: 0, right: 6, top: 6 }}
-          barCategoryGap="24%"
-          barGap={2}
+          /*
+           * Ruang atas 24px saat label nilai dipasang.
+           *
+           * Dengan 6px, label di atas kolom TERTINGGI tergambar separuh di
+           * luar bingkai dan terpotong — dan kolom tertinggi justru yang
+           * paling sering ingin dibaca angkanya. Dibuktikan pada grafik
+           * tujuh hari: "247 L" dan "251 L" terpenggal di tepi atas.
+           */
+          margin={{ left: 0, right: 6, top: labelNilai ? 24 : 6 }}
+          barCategoryGap="18%"
+          barGap={3}
         >
-          <CartesianGrid stroke="var(--color-chart-grid)" vertical={false} />
+          {/* Kisi PUTUS-PUTUS, bukan utuh. Garis utuh di belakang kolom
+              terbaca sebagai bagian dari gambarnya; garis putus terbaca
+              sebagai alat ukur yang kebetulan ada di belakang. */}
+          <CartesianGrid
+            stroke="var(--color-chart-grid)"
+            strokeDasharray="2 5"
+            vertical={false}
+          />
           <XAxis dataKey="label" {...sumbu} interval="preserveStartEnd" />
           <YAxis
             {...sumbu}
@@ -492,15 +599,69 @@ export function GrafikBatang({
             cursor={{ fill: "var(--color-soft)", opacity: 0.55 }}
             content={buatTooltip(spek, format)}
           />
+          {/*
+           * Digambar SEBELUM batangnya, jadi batang yang melewati target
+           * menembus garisnya alih-alih tertutup. Garis yang menimpa data
+           * membuat batang tertinggi tampak terpotong di ambang — persis
+           * kebalikan dari yang sedang diberitahukan.
+           */}
+          {typeof target === "number" && target > 0 ? (
+            <ReferenceLine
+              y={target}
+              stroke="var(--color-warn)"
+              strokeDasharray="5 4"
+              strokeWidth={1.5}
+              label={
+                labelTarget
+                  ? {
+                      value: labelTarget,
+                      position: "insideTopRight",
+                      fill: "var(--color-warn)",
+                      fontSize: 10,
+                      fontWeight: 700,
+                    }
+                  : undefined
+              }
+            />
+          ) : null}
           {deret.map((d, i) => (
             <Bar
               key={d.name}
               dataKey={d.name}
               name={d.name}
-              maxBarSize={22}
-              radius={[3, 3, 0, 0]}
+              /*
+               * Lebih tebal dan puncaknya dibulatkan penuh. Batang 22px
+               * dengan sudut 3px terbaca sebagai lidi: terlalu tipis untuk
+               * menampung gradiennya sendiri, jadi volume apa pun yang
+               * diberikan padanya hilang. Pembulatan 7px pada lebar 34px
+               * memberi puncaknya bentuk tanpa membuatnya jadi kapsul.
+               */
+              maxBarSize={34}
+              radius={[7, 7, 2, 2]}
               isAnimationActive={animasi}
-              animationDuration={DURASI_GAMBAR}
+              /*
+               * Lebih lama dan melambat di akhir.
+               *
+               * 650 ms dengan pelonggaran bawaan berakhir sebelum mata
+               * sempat mengikuti kolom mana yang tumbuh paling tinggi —
+               * yang terlihat hanya grafik yang berkedip sekali lalu diam,
+               * dan itu terbaca sebagai tidak ada animasi sama sekali.
+               * `ease-out` membuat kolomnya melesat lalu mengendap, yang
+               * meniru benda berhenti karena ditahan, bukan karena waktunya
+               * habis.
+               */
+              animationDuration={DURASI_GAMBAR + 300}
+              animationEasing="ease-out"
+              /*
+               * Kolom yang disentuh menyala penuh. Tanpa ini satu-satunya
+               * tanggapan atas tetikus adalah tooltip yang muncul entah dari
+               * mana; grafiknya sendiri tidak pernah mengakui disentuh.
+               */
+              activeBar={{
+                fill: `url(#${sid}-k${i})`,
+                stroke: warnaDeret(i),
+                strokeWidth: 1.5,
+              }}
             >
               {data.map((_, j) => (
                 <Cell
@@ -508,6 +669,37 @@ export function GrafikBatang({
                   fill={`url(#${sid}-${tegas.has(j) ? "k" : "b"}${i})`}
                 />
               ))}
+
+              {/*
+               * Angka di atas kolom — hanya bila deretnya TUNGGAL.
+               *
+               * Pada deret ganda, label akan saling menindih di tiap
+               * kelompok dan grafiknya berubah menjadi kerumunan angka.
+               * Pada deret tunggal, label menghapus satu langkah kerja yang
+               * selama ini dibebankan ke pembaca: menebak tinggi kolom
+               * terhadap sumbu, lalu membulatkannya sendiri.
+               */}
+              {labelNilai ? (
+                <LabelList
+                  dataKey={d.name}
+                  position="top"
+                  offset={8}
+                  className="fill-muted font-mono text-[10px] font-bold"
+                  /*
+                   * Nilainya datang sebagai `RenderableText`, bukan `number`:
+                   * Recharts meneruskan apa pun yang ada di data, termasuk
+                   * `null` untuk periode yang tidak dikirim server. Diubah
+                   * sendiri di sini, dan yang bukan angka sah menghasilkan
+                   * teks kosong — label "NaN" di atas kolom lebih buruk
+                   * daripada tidak ada label.
+                   */
+                  formatter={(v: unknown) => {
+                    const n = typeof v === "number" ? v : Number(v);
+                    if (!sah(n)) return "";
+                    return (formatSumbu ?? format)?.(n) ?? String(n);
+                  }}
+                />
+              ) : null}
             </Bar>
           ))}
         </BarChart>

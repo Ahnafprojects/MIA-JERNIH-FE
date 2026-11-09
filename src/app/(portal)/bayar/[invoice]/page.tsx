@@ -4,7 +4,6 @@ import React, { useState, useEffect, useCallback, use, useMemo } from "react";
 import Link from "next/link";
 import {
   CheckCircle2,
-  Copy,
   Clock,
   QrCode,
   ArrowRight,
@@ -13,6 +12,7 @@ import {
 import { api } from "@/lib/api";
 import { liter, rupiah, token, tanggalJam } from "@/lib/format";
 import { Button } from "@/components/ui/button";
+import { SalinKode } from "@/components/ui/salin-kode";
 
 interface TransaksiInvoice {
   invoiceId: string;
@@ -20,11 +20,22 @@ interface TransaksiInvoice {
   volumeL: number;
   jumlahRp: number;
   metode: string;
-  status: "MENUNGGU" | "LUNAS" | "KEDALUWARSA" | "DIBATALKAN";
+  /*
+   * Persis empat nilai `StatusTransaksi` di `prisma/schema.prisma`.
+   *
+   * Sebelumnya berisi "DIBATALKAN" — yang TIDAK ADA di enum backend —
+   * sekaligus melewatkan "GAGAL" yang benar-benar dikirim. Jadi pembayaran
+   * yang gagal jatuh ke cabang yang tidak pernah diperhitungkan, sementara
+   * satu nilai yang mustahil terus dijaga. Ketidakcocokan yang sama pernah
+   * diperbaiki di halaman riwayat; ia tertinggal di sini.
+   */
+  status: "MENUNGGU" | "LUNAS" | "GAGAL" | "KEDALUWARSA";
   qrString?: string | null;
   nomorVa?: string | null;
   dibayarPada?: string | null;
   dibuatPada: string;
+  /** Id token, untuk meminta kode utuhnya saat tab ini bukan tab pembelian. */
+  tokenId?: string | null;
 }
 
 export default function HalamanBayarInvoice({
@@ -49,16 +60,60 @@ export default function HalamanBayarInvoice({
   }, [invoiceId]);
 
   const [transaksi, setTransaksi] = useState<TransaksiInvoice | null>(awalDariBeli);
-  const [sudahSalin, setSudahSalin] = useState(false);
   const [memuat, setMemuat] = useState(!awalDariBeli);
 
-  // Ambil token dari sessionStorage secara murni memoized
-  const kodeToken = useMemo(() => {
-    if (typeof window !== "undefined") {
+  /*
+   * Kode token: dari `sessionStorage` lebih dulu, lalu dari SERVER.
+   *
+   * Jalur `sessionStorage` dipertahankan karena halaman ini hampir selalu
+   * dibuka sedetik setelah pembelian, dan kodenya sudah ada di tangan —
+   * meminta ulang ke server cuma menambah satu putaran jaringan sebelum
+   * angka yang paling ditunggu muncul.
+   *
+   * Tetapi ia TIDAK boleh jadi satu-satunya jalur: membuka ulang tautan
+   * invoice dari email, atau dari perangkat lain, tidak punya tab yang sama.
+   * Di situ kodenya diminta ke `GET /api/token/:id/kode`.
+   */
+  const [kodeToken, setKodeToken] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    try {
       return sessionStorage.getItem(`jernih_token_${invoiceId}`);
+    } catch {
+      return null;
     }
-    return null;
-  }, [invoiceId]);
+  });
+
+  /*
+   * Jalur cadangan: minta kode ke server begitu `tokenId`-nya diketahui dan
+   * tab ini tidak memegang kodenya.
+   *
+   * Inilah yang membuat tautan invoice dari email tetap berguna. Tanpa ini,
+   * membuka struk dari perangkat lain menampilkan bintang-bintang pada
+   * halaman yang judulnya "Token Air Diterbitkan" — menjanjikan sesuatu yang
+   * tidak ditunjukkannya.
+   */
+  useEffect(() => {
+    if (kodeToken) return;
+    const tokenId = transaksi?.tokenId;
+    if (!tokenId) return;
+
+    let hidup = true;
+    (async () => {
+      try {
+        const res = await api<{ kode: string | null }>(
+          `/api/token/${encodeURIComponent(tokenId)}/kode`,
+        );
+        if (hidup && res.kode) setKodeToken(res.kode);
+      } catch {
+        /* Diam: halaman ini tetap berguna tanpa kodenya — statusnya,
+           nominalnya, dan tautan ke halaman isi token semuanya masih benar. */
+      }
+    })();
+
+    return () => {
+      hidup = false;
+    };
+  }, [kodeToken, transaksi?.tokenId]);
 
   const ambilStatusTagihan = useCallback(async () => {
     try {
@@ -94,17 +149,10 @@ export default function HalamanBayarInvoice({
     };
   }, [invoiceId, ambilStatusTagihan]);
 
-  const handleSalinKode = () => {
-    if (!kodeToken) return;
-    navigator.clipboard.writeText(kodeToken.replace(/\s/g, ""));
-    setSudahSalin(true);
-    setTimeout(() => setSudahSalin(false), 2000);
-  };
-
   if (memuat && !transaksi) {
     return (
-      <div className="mx-auto max-w-xl px-4 py-16 text-center">
-        <div className="rounded-[4px] border border-line bg-surface p-8 shadow-xs">
+      <div className="px-4 py-16 text-center sm:px-6 lg:px-8">
+        <div className="permukaan p-8 shadow-xs">
           <div className="mx-auto size-10 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
           <h2 className="mt-4 font-display text-base font-bold text-ink">
             Memuat Status Pembayaran
@@ -120,11 +168,11 @@ export default function HalamanBayarInvoice({
   const isLunas = transaksi?.status === "LUNAS" || Boolean(kodeToken);
 
   return (
-    <div className="mx-auto max-w-xl px-4 py-12 sm:px-6">
+    <div className="px-4 py-12 sm:px-6 lg:px-8">
       {/* ── MODE 1: Lunas Seketika / Sudah Dibayar ── */}
       {isLunas ? (
         <div className="space-y-6">
-          <div className="rounded-[4px] border border-success/40 bg-surface p-6 text-center shadow-xs">
+          <div className="rounded-card border border-success/40 bg-surface p-6 text-center shadow-xs">
             <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-success/10 text-success">
               <CheckCircle2 size={32} />
             </div>
@@ -140,33 +188,64 @@ export default function HalamanBayarInvoice({
             </p>
 
             {/* Kotak Kode Token Sekali Tampil */}
-            <div className="my-6 rounded-[3px] border-2 border-dashed border-brand-500/50 bg-brand-500/5 p-5">
+            <div className="my-6 rounded-[10px] border-2 border-dashed border-brand-500/50 bg-brand-500/5 p-5">
               <span className="font-mono text-[11px] font-semibold tracking-wider text-muted uppercase">
                 Kode Token Meter (Sekali Pakai)
               </span>
-              <div className="my-2 select-all font-mono text-2xl font-black tracking-[0.2em] text-ink sm:text-3xl">
-                {kodeToken ? token(kodeToken) : "55120 •••••"}
-              </div>
-
+              {/*
+                Tanpa kode, yang digambar adalah KETERANGAN — bukan angka.
+                Sebelumnya di sini ada `"55120 •••••"` yang ditulis mati:
+                lima digit karangan yang sama untuk setiap orang, tergambar
+                dengan huruf sebesar kode sungguhan, di halaman yang
+                judulnya "Token Air Diterbitkan". Warga yang mencatatnya
+                akan mengetikkannya ke keypad meter dan gagal — dan gagalnya
+                terjadi di depan meter, bukan di layar ini.
+              */}
               {kodeToken ? (
-                <Button
-                  type="button"
-                  varian="sekunder"
-                  ukuran="sm"
-                  onClick={handleSalinKode}
-                >
-                  <Copy size={14} />
-                  <span>{sudahSalin ? "Kode Tersalin!" : "Salin Kode Token"}</span>
-                </Button>
-              ) : null}
-
-              <p className="mt-3 text-[11px] text-muted">
-                Catat kodenya sekarang — kode utuh hanya ditampilkan sekali di layar ini dan dikirim ke email terdaftar Anda.
-              </p>
+                <>
+                  <div className="my-2 font-mono text-2xl font-black tracking-[0.2em] text-ink select-all sm:text-3xl">
+                    {token(kodeToken)}
+                  </div>
+                  {/*
+                   * Spasinya DIBUANG sebelum disalin. Kode ditampilkan per
+                   * lima digit (`48217 73015`) tetapi disimpan tanpa spasi,
+                   * dan keypad meter hanya menerima angka — menempelkan
+                   * versi berspasi membuat warga mengetik ulang, atau
+                   * mengira tokennya rusak.
+                   */}
+                  <SalinKode
+                    nilai={kodeToken.replace(/\s/g, "")}
+                    label="Salin kode token"
+                    teks="Salin kode token"
+                  />
+                  <p className="mt-3 text-[11px] text-muted">
+                    Simpan kodenya sekarang. Kode yang sama juga dikirim ke
+                    email terdaftar Anda.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div className="my-2 font-mono text-lg font-bold text-muted">
+                    Kode belum tersedia di layar ini
+                  </div>
+                  <p className="mt-1 text-[11px] leading-relaxed text-muted">
+                    Pembayaran Anda berhasil dan tokennya sudah terbit. Kode
+                    utuhnya dikirim ke email terdaftar Anda — buka strukya di
+                    sana, atau cek halaman{" "}
+                    <Link
+                      href="/riwayat"
+                      className="font-semibold text-brand-700 hover:underline dark:text-accent"
+                    >
+                      Riwayat
+                    </Link>
+                    .
+                  </p>
+                </>
+              )}
             </div>
 
             {/* Peringatan: Pembelian tidak langsung menambah saldo meter */}
-            <div className="flex items-start gap-2 rounded-[2px] border border-warn/30 bg-warn/10 p-3 text-left text-xs leading-relaxed text-ink">
+            <div className="flex items-start gap-2 rounded-[8px] border border-warn/30 bg-warn/10 p-3 text-left text-xs leading-relaxed text-ink">
               <ShieldAlert size={16} className="shrink-0 text-warn mt-0.5" />
               <span>
                 <strong>Perhatian:</strong> Pembelian ini tidak otomatis menambah saldo fisik meter Anda.
@@ -176,8 +255,14 @@ export default function HalamanBayarInvoice({
 
             <div className="mt-6 flex flex-col gap-2 sm:flex-row">
               <Link href="/token" className="flex-1">
-                <Button varian="utama" blok>
-                  Tukarkan ke Meter Sekarang
+                {/*
+                  `whitespace-nowrap`: "Tukarkan ke Meter Sekarang" pecah
+                  jadi dua baris begitu tombolnya berbagi lebar dengan tombol
+                  di sebelahnya, dan tombol dua baris di tengah halaman
+                  keberhasilan terbaca seperti tata letak yang rusak.
+                */}
+                <Button varian="utama" blok className="whitespace-nowrap">
+                  Tukarkan ke Meter
                   <ArrowRight size={14} />
                 </Button>
               </Link>
@@ -192,7 +277,7 @@ export default function HalamanBayarInvoice({
       ) : (
         /* ── MODE 2: Menunggu Pembayaran (QR / VA) ── */
         <div className="space-y-6">
-          <div className="rounded-[4px] border border-line bg-surface p-6 shadow-xs text-center">
+          <div className="permukaan p-6 shadow-xs text-center">
             <span className="font-mono text-xs font-bold text-warn uppercase tracking-wider">
               Menunggu Pembayaran
             </span>
@@ -214,7 +299,7 @@ export default function HalamanBayarInvoice({
             {/* QRIS Display atau Virtual Account */}
             {transaksi?.metode === "QRIS" ? (
               <div className="mx-auto flex flex-col items-center">
-                <div className="grid size-48 place-items-center rounded-[3px] border border-line bg-white p-4 shadow-xs">
+                <div className="grid size-48 place-items-center permukaan-rata border-line bg-white p-4 shadow-xs">
                   <QrCode size={160} className="text-black" />
                 </div>
                 <p className="mt-3 text-xs text-muted">
@@ -222,7 +307,7 @@ export default function HalamanBayarInvoice({
                 </p>
               </div>
             ) : (
-              <div className="rounded-[3px] border border-line bg-soft p-4">
+              <div className="cekung border-line bg-soft p-4">
                 <p className="text-xs text-muted">Nomor Virtual Account</p>
                 <p className="my-1 font-mono text-xl font-bold text-ink">
                   {transaksi?.nomorVa ?? "88081234567890"}

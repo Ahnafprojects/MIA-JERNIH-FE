@@ -86,7 +86,7 @@ export default function HalamanNotifikasi() {
     localStorage.setItem("jernih_kanal_notifikasi", JSON.stringify(next));
   };
   return (
-    <main className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6">
+    <main className="space-y-6 px-4 py-8 sm:px-6 lg:px-8">
       <div className="border-b border-line pb-4">
         <span className="eyebrow text-brand-700 dark:text-accent">
           Pusat Informasi
