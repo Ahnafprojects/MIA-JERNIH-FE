@@ -1,5 +1,5 @@
 "use client";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { tanggalJam } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +21,7 @@ export default function HalamanInsiden() {
   const [rows, setRows] = useState<I[]>([]);
   const [selected, setSelected] = useState<I | null>(null);
   const [status, setStatus] = useState("");
-  const load = useCallback(async () => {
+  const load = async () => {
     const r = await api<{ insiden: I[] }>(
       `/api/admin/insiden${status ? `?status=${status}` : ""}`,
     );
@@ -30,13 +30,13 @@ export default function HalamanInsiden() {
       (x) =>
         (x && r.insiden.find((i) => i.id === x.id)) || r.insiden[0] || null,
     );
-  }, [status]);
+  };
   useEffect(() => {
     const timer = window.setTimeout(() => {
       load().catch(() => {});
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [load]);
+  }, [status]);
   const update = async (s: string) => {
     if (!selected) return;
     await api(`/api/admin/insiden/${selected.id}`, {
