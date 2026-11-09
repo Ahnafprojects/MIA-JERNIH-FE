@@ -474,23 +474,23 @@ export function AvatarMenu() {
               sementara di bilah ia memakan petak sebesar notifikasi —
               sesuatu yang berubah sepanjang hari.
 
-              `TombolTema` hanya menggambar ikonnya sendiri dan tidak
-              menerima label, jadi ia direntangkan menutupi seluruh baris
-              sementara teksnya digambar di lapisan bawah dengan
-              `pointer-events-none`. Dengan begitu seluruh lebar baris tetap
-              bisa ditekan — baris menu yang hanya menanggapi sentuhan pada
-              ikon selebar 18px adalah sasaran yang meleset terus di ponsel.
+              Labelnya dibawa MASUK ke dalam tombol, bukan digambar di
+              lapisan terpisah di bawahnya. Susunan dua lapis yang dipakai
+              sebelumnya menaruh tombol transparan `absolute inset-0 z-10` di
+              ATAS teksnya, jadi `hover:bg-soft` menyapukan latar legap
+              selebar baris dan menghapus tulisan yang ada di bawahnya: yang
+              tersisa hanya ikon di tepi kiri dengan kapsul kosong memanjang
+              ke kanan.
+
+              Kelasnya sekarang sama persis dengan baris "Pengaturan akun"
+              dan "Keluar" di bawahnya, jadi ketiganya satu bentuk dan
+              seluruh lebar baris tetap bisa ditekan.
             */}
-            <div className="relative">
-              <TombolTema className="absolute inset-0 z-10 flex w-full items-center rounded-[8px] px-2 text-muted hover:bg-soft" />
-              <div
-                aria-hidden
-                className="pointer-events-none flex items-center gap-2 px-2 py-1.5 text-xs text-ink"
-              >
-                <span className="w-[18px] shrink-0" />
-                <span>Tema terang / gelap</span>
-              </div>
-            </div>
+            <TombolTema
+              label="Tema terang / gelap"
+              ukuranIkon={14}
+              className="flex w-full items-center gap-2 rounded-[8px] px-2 py-1.5 text-xs text-ink hover:bg-soft"
+            />
 
             <Link
               href="/akun"
