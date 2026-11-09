@@ -29,11 +29,19 @@ Gagasan yang menyatukan seluruh halaman: melacak layanan publik berarti melihatn
 5. [Struktur direktori](#struktur-direktori)
 6. [Pengambilan data](#pengambilan-data)
 7. [Sistem desain](#sistem-desain)
-8. [Penyebaran](#penyebaran)
-9. [Yang diukur, bukan dikira](#yang-diukur-bukan-dikira)
+8. [Jebakan yang pernah memakan waktu](#jebakan-yang-pernah-memakan-waktu)
+9. [Penyebaran](#penyebaran)
+10. [Yang diukur, bukan dikira](#yang-diukur-bukan-dikira)
 
-Catatan teknis yang lebih dalam — animasi, jebakan yang pernah memakan waktu,
-dan pemecahan masalah — ada di [`docs/CATATAN-TEKNIS.md`](docs/CATATAN-TEKNIS.md).
+Catatan teknis yang lebih dalam, mencakup animasi dan pemecahan masalah, ada
+di [`docs/CATATAN-TEKNIS.md`](docs/CATATAN-TEKNIS.md).
+
+Perlu diperhatikan bahwa [`docs/ARAH-VISUAL.md`](docs/ARAH-VISUAL.md) sudah
+tertinggal. Berkas itu menyebut pasangan huruf Fraunces, Public Sans, dan
+JetBrains Mono, padahal yang dipakai sekarang Bricolage Grotesque, Plus
+Jakarta Sans, dan IBM Plex Mono. Ia juga menyebut `silt` sebagai warna
+hangat `#E8E3D8`, padahal nilainya sekarang `#dfebee` yang dingin. Rujukan
+sistem desain yang mutakhir dipegang tim di luar repositori ini.
 
 ## Tech stack
 
@@ -80,6 +88,12 @@ NEXT_PUBLIC_API_URL=https://api.jernih.biz.id
 
 Backend produksi sudah berjalan, jadi tidak ada yang perlu dinyalakan selain perintah di atas. Untuk menunjuk backend lokal, ganti nilainya menjadi `http://localhost:4000` dan pastikan asal yang dipakai terdaftar di konfigurasi CORS backend. Perlu diperhatikan bahwa `http://localhost:3000` terdaftar sedangkan `http://127.0.0.1:3000` tidak, dan keduanya adalah asal yang berbeda bagi peramban.
 
+Konsekuensi menunjuk backend produksi perlu disadari. Uji coba pembelian
+menyentuh basis data sungguhan dan meninggalkan transaksi di sana. Endpoint
+backend yang baru dibuat akan membalas 404 dari localhost sampai ia
+dideploy, dan gejalanya terbaca seperti kode frontend yang salah padahal
+bukan.
+
 ### Perintah lain
 
 ```bash
@@ -91,56 +105,47 @@ npm start          # menjalankan hasil build
 
 ## Progres saat ini
 
-**19 dari 33 halaman sudah jadi dan terhubung ke backend sungguhan di
-produksi.** Sisanya masih kerangka: judul, satu kalimat keterangan, dan
-penanda bahwa halamannya belum dikerjakan. Tiap kerangka punya issue dengan
-spesifikasi lengkapnya.
-
-### Sudah jadi
+**Seluruh 34 halaman sudah jadi dan terhubung ke backend sungguhan di
+produksi.** Tidak ada lagi halaman kerangka. Seluruhnya mengambil data dari
+`api.jernih.biz.id`, tanpa data tiruan.
 
 | Bagian | Halaman |
 | --- | --- |
 | Fondasi | Sistem desain, token tema terang dan gelap, komponen dasar dan domain |
-| Layout | Publik dan konsol, navigasi responsif dengan laci di ponsel |
-| Publik (5) | Landing, Status Layanan, Lacak Pengaduan, Rapor Kinerja, Statistik |
+| Layout | Publik, portal, dan konsol, masing-masing dengan navigasi responsifnya |
+| Publik (6) | Landing, Fitur, Status Layanan, Lacak Pengaduan, Rapor Kinerja, Statistik |
 | Autentikasi (6) | Masuk, Daftar, Verifikasi, Lupa sandi, Atur ulang, Hubungkan meter |
-| Portal warga (4) | Beranda, Token, Beli, Bayar |
-| Konsol petugas (4) | Dashboard, Pelanggan, Detail pelanggan, Peta jaringan |
-| Lintas halaman | Penjaga rute berbasis peran, responsif 320–1920 px, aksesibilitas, tema gelap |
+| Portal warga (10) | Beranda, Beli, Token, Bayar, Pemakaian, Riwayat, Meter, Bantuan, Notifikasi, Akun |
+| Konsol petugas (12) | Dashboard, Pelanggan, Detail pelanggan, Peta, Perangkat, Token, Insiden, Broadcast, Audit, Laporan, Analitik, Pengaturan |
+| Lintas halaman | Penjaga rute berbasis peran, responsif 320 sampai 1920 px, aksesibilitas, tema gelap |
 
-Seluruhnya mengambil data dari `api.jernih.biz.id`, tanpa data tiruan.
+Yang ditambahkan paling akhir, menjawab saran pengembangan pada tahap FDS:
 
-### Belum dikerjakan
-
-| Halaman | Issue |
+| Kemampuan | Letaknya |
 | --- | --- |
-| Konsol: Token, Insiden | [#21](https://github.com/Ahnafprojects/MIA-JERNIH-FE/issues/21) |
-| Konsol: Laporan (kanban SLA), Perangkat | [#23](https://github.com/Ahnafprojects/MIA-JERNIH-FE/issues/23) |
-| Konsol: Broadcast, Analitik, Audit, Pengaturan | [#24](https://github.com/Ahnafprojects/MIA-JERNIH-FE/issues/24) |
-| Portal: Riwayat transaksi dan struk | [#15](https://github.com/Ahnafprojects/MIA-JERNIH-FE/issues/15) |
-| Portal: Meter saya dan kontrol aliran | [#16](https://github.com/Ahnafprojects/MIA-JERNIH-FE/issues/16) |
-| Portal: Bantuan dan lapor gangguan | [#17](https://github.com/Ahnafprojects/MIA-JERNIH-FE/issues/17) |
-| Portal: Notifikasi, Akun | [#18](https://github.com/Ahnafprojects/MIA-JERNIH-FE/issues/18) |
-| Portal: Pemakaian | belum ada issue |
-| Berkas submission lomba | [#26](https://github.com/Ahnafprojects/MIA-JERNIH-FE/issues/26) |
+| Peragaan kabar WhatsApp dan Telegram | `(publik)/_bagian/kabar-langsung.tsx` |
+| Halaman Fitur tersendiri | `(publik)/fitur/page.tsx` |
+| Pendaftaran saluran kabar oleh warga | `(portal)/akun/_bagian/saluran-kabar.tsx` |
+| Peta sebaran titik kebocoran | `components/peta/titik-kebocoran.tsx` |
+| Pemilih lokasi aduan dari GPS | `(portal)/bantuan/_bagian/titik-lokasi.tsx` |
 
-Di luar halaman: notifikasi push dan mode luring belum dikerjakan.
+Belum dikerjakan: notifikasi push peramban dan mode luring.
 
 ## Peta rute
 
-33 halaman dalam empat kelompok. Satu aplikasi melayani tiga peran, dan tampilannya menyesuaikan siapa yang masuk, bukan tiga situs terpisah.
-
-Rute bertanda **(kerangka)** rutenya sudah ada dan bisa dibuka, tetapi isinya belum dikerjakan.
+34 halaman dalam empat kelompok. Satu aplikasi melayani tiga peran, dan
+tampilannya menyesuaikan siapa yang masuk. Bukan tiga situs terpisah.
 
 ### `(publik)` — tanpa akun
 
 | Rute | Isi |
 | --- | --- |
-| `/` | Landing: hero video, peraga meter interaktif, pita angka jaringan |
-| `/status` | Status tiap zona: peta, keandalan 30 hari, kualitas air, riwayat gangguan |
-| `/lacak` | Lacak pengaduan dengan nomor tiket, janji waktu, alur penanganan, kanal lapor |
+| `/` | Landing: hero video, pita angka jaringan, sorotan fitur, peraga meter, cara kerja, peragaan kabar WhatsApp dan Telegram |
+| `/fitur` | Dua belas kemampuan portal sebagai daftar bergaris, masing-masing diverifikasi ke kode yang menegakkannya |
+| `/status` | Status tiap zona: peta, sebaran titik kebocoran, keandalan 30 hari, riwayat gangguan |
+| `/lacak` | Lacak pengaduan dengan nomor tiket, janji waktu, alur penanganan |
 | `/kinerja` | Rapor kinerja SLA: ketepatan, waktu tanggap, rincian per kategori |
-| `/statistik` | Neraca air, tolok ukur, tren 12 bulan, pemakaian per orang, unduhan data |
+| `/statistik` | Neraca air, tolok ukur, tren 12 bulan, unduhan data |
 
 ### `(auth)` — pintu masuk
 
@@ -148,17 +153,30 @@ Rute bertanda **(kerangka)** rutenya sudah ada dan bisa dibuka, tetapi isinya be
 
 Seluruhnya berbagi `AuthShell`: panel merek beranimasi di kiri, formulir di kanan.
 
+Verifikasi dilakukan sepenuhnya lewat email dengan kode enam digit yang
+berlaku sepuluh menit. Tidak ada SMS di mana pun.
+
 ### `(portal)` — warga
 
-`/beranda`, `/token`, `/beli`, `/bayar/[invoice]`
-
-Kerangka: `/meter`, `/pemakaian`, `/riwayat`, `/notifikasi`, `/akun`, `/bantuan`
+| Rute | Isi |
+| --- | --- |
+| `/beranda` | Saldo sebagai bola kaca, debit, layar meter, penyegaran tiap lima detik |
+| `/beli`, `/bayar/[invoice]` | Paket liter sebagai tabel, nominal bebas, pembayaran |
+| `/token` | Isi token lewat halaman atau simulasi keypad meter |
+| `/pemakaian` | Grafik kolom air, proyeksi saldo, peta panas tujuh hari kali dua puluh empat jam |
+| `/riwayat` | Tabel transaksi, struk yang bisa dibuka ulang dan dicetak |
+| `/meter` | Perangkat, layar LCD, deteksi kebocoran dini hari |
+| `/bantuan` | Pengaduan dengan pemilih lokasi peta dan unggah foto |
+| `/notifikasi`, `/akun` | Notifikasi dalam aplikasi, dan pendaftaran saluran WhatsApp serta Telegram |
 
 ### `(konsol)` — petugas PDAM
 
-`/konsol`, `/pelanggan`, `/pelanggan/[id]`, `/peta`
+`/konsol`, `/konsol/pelanggan`, `/konsol/pelanggan/[id]`, `/konsol/peta`,
+`/konsol/perangkat`, `/konsol/token`, `/konsol/insiden`,
+`/konsol/broadcast`, `/konsol/audit`, `/konsol/laporan`,
+`/konsol/analitik`, `/konsol/pengaturan`
 
-Kerangka: `/perangkat`, `/insiden`, `/token`, `/analitik`, `/laporan`, `/audit`, `/broadcast`, `/pengaturan`
+Panel tim pada halaman pengaturan hanya terbuka bagi peran supervisor.
 
 ## Struktur direktori
 
@@ -218,6 +236,41 @@ Konvensi yang berlaku di seluruh berkas:
 - **Lencana berbentuk persegi dengan garis takar**, bukan kapsul dengan titik bulat.
 - **Tema terang dan gelap sama-sama wajib berfungsi.** Bawaannya terang.
 - **`prefers-reduced-motion: reduce` wajib mematikan seluruh animasi.**
+
+## Jebakan yang pernah memakan waktu
+
+Lima hal berikut lolos `typecheck`, `lint`, dan `build` tanpa satu pun pesan
+galat, tetapi tetap salah. Masing-masing sudah menghabiskan waktu di proyek
+ini, jadi dicatat di sini supaya tidak terulang.
+
+**Tailwind v4 memangkas kelas di `@layer utilities` yang tidak punya
+selektor telanjang.** Kelasnya terpasang rapi di DOM, tetapi
+`document.styleSheets` mengembalikan nol aturan yang cocok. Tidak ada
+peringatan Tailwind dan tidak ada galat build. Karena itu `.cincin-fokus`
+ditulis dengan satu selektor telanjang walau isinya cuma satu baris.
+
+**Font di dalam `@theme` membuat seluruh situs memakai huruf sistem.**
+Ketiga font termuat tetapi tidak pernah dipakai satu kali pun, sebab
+nilainya menunjuk variabel yang baru dipasang `next/font` saat jalan,
+sedangkan Tailwind membacanya waktu dibangun. Ketiganya sekarang ditulis di
+`:root` tanpa `@layer`. Kalau menyentuh bagian ini, periksa
+`getComputedStyle(document.body).fontFamily` di peramban.
+
+**`usePathname()` tanpa `<Suspense>` menggagalkan `next build`** dengan
+`CLIENT_HOOK_DYNAMIC` pada rute berparameter. Dibuktikan oleh
+`/konsol/pelanggan/[id]` yang menggagalkan seluruh build.
+
+**`transition` tidak pernah berjalan pada elemen yang baru dipasang ke
+DOM.** Tidak ada keadaan "sebelum" yang sempat tercat, jadi bingkai pertama
+sudah menampilkan keadaan akhir. Bahkan dua `requestAnimationFrame`
+bertingkat tidak menolong. Elemen baru memakai `@keyframes`; elemen yang
+sudah ada dan berubah keadaan memakai `transition`.
+
+**Flag Chrome `--virtual-time-budget` membekukan
+`requestAnimationFrame`.** Setiap angka yang dianimasikan terbaca nol dan
+halaman tampak kosong padahal datanya ada, sehingga setiap pemeriksaan
+animasi lewat flag itu berbohong. Kendalikan peramban lewat CDP. Tab yang
+menumpuk juga membekukan rAF, jadi tutup tab sebelum mengukur.
 
 ## Penyebaran
 
