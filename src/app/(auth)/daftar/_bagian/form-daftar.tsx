@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TextField } from "@/components/ui/field";
-import type { KekuatanSandi } from "../_tipe";
+import type { SyaratSandi } from "../_tipe";
 import { FieldSandi } from "./field-sandi";
 
 export function FormDaftar({
@@ -19,7 +19,7 @@ export function FormDaftar({
   lihatSandi,
   setLihatSandi,
   memuat,
-  kekuatan,
+  syarat,
   onSubmit,
 }: {
   nama: string;
@@ -35,7 +35,7 @@ export function FormDaftar({
   lihatSandi: boolean;
   setLihatSandi: (v: boolean) => void;
   memuat: boolean;
-  kekuatan: KekuatanSandi;
+  syarat: SyaratSandi;
   onSubmit: (e: React.FormEvent) => void;
 }) {
   return (
@@ -80,7 +80,7 @@ export function FormDaftar({
         lihatSandi={lihatSandi}
         setLihatSandi={setLihatSandi}
         memuat={memuat}
-        kekuatan={kekuatan}
+        syarat={syarat}
       />
 
       <div className="flex items-start gap-2 pt-2">

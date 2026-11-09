@@ -32,10 +32,14 @@ export function IsiRiwayat({ riwayat }: { riwayat: ReturnType<typeof useRiwayat>
           />
         </div>
 
-        <div className="hidden lg:block">
+        {/* `print:block`: lihat catatan di `panel-struk.tsx` — lebar kertas
+            A4 berada di bawah ambang `lg`, jadi tanpa ini panel justru
+            tersembunyi tepat saat dicetak. */}
+        <div className="hidden lg:block print:block">
           <PanelStruk
             transaksiTerpilih={riwayat.transaksiTerpilih}
             pesanEmail={riwayat.pesanEmail}
+            sheetBuka={riwayat.sheetBuka}
             onUnduhStrukPdf={riwayat.handleUnduhStrukPdf}
             onKirimEmailStruk={riwayat.handleKirimEmailStruk}
           />

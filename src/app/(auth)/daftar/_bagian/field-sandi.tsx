@@ -1,7 +1,7 @@
 import { Eye, EyeOff } from "lucide-react";
 import { TextField } from "@/components/ui/field";
-import type { KekuatanSandi } from "../_tipe";
-import { IndikatorSandi } from "./indikator-sandi";
+import type { SyaratSandi } from "../_tipe";
+import { SyaratSandiBaris } from "./syarat-sandi";
 
 export function FieldSandi({
   kataSandi,
@@ -9,14 +9,14 @@ export function FieldSandi({
   lihatSandi,
   setLihatSandi,
   memuat,
-  kekuatan,
+  syarat,
 }: {
   kataSandi: string;
   setKataSandi: (v: string) => void;
   lihatSandi: boolean;
   setLihatSandi: (v: boolean) => void;
   memuat: boolean;
-  kekuatan: KekuatanSandi;
+  syarat: SyaratSandi;
 }) {
   return (
     <div>
@@ -41,7 +41,13 @@ export function FieldSandi({
         }
       />
 
-      {kataSandi ? <IndikatorSandi kekuatan={kekuatan} /> : null}
+      {/*
+        Syaratnya SELALU tergambar, bukan hanya setelah orang mulai
+        mengetik. Aturan yang baru muncul setelah kolomnya disentuh tidak
+        pernah sempat membantu orang memilih sandi — ia cuma menilai
+        sesudahnya.
+      */}
+      <SyaratSandiBaris syarat={syarat} />
     </div>
   );
 }

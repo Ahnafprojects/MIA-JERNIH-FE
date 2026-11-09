@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, ApiError } from "@/lib/api";
-import { hitungKekuatanSandi } from "../_bagian/indikator-sandi";
+import { periksaSandi } from "../_bagian/syarat-sandi";
 
 export function useDaftar() {
   const router = useRouter();
@@ -18,7 +18,7 @@ export function useDaftar() {
   const [memuat, setMemuat] = useState(false);
   const [pesanGalat, setPesanGalat] = useState<string | null>(null);
 
-  const kekuatan = hitungKekuatanSandi(kataSandi);
+  const syarat = periksaSandi(kataSandi);
 
   const handleDaftar = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,7 +77,7 @@ export function useDaftar() {
     setLihatSandi,
     memuat,
     pesanGalat,
-    kekuatan,
+    syarat,
     handleDaftar,
   };
 }

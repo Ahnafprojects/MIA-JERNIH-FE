@@ -11,6 +11,17 @@ export function useBeli() {
   const { meter, meterAktif, pilihMeter } = useAuth();
 
   const [tarifPerLiter, setTarifPerLiter] = useState(7.5);
+  /*
+   * Batas satu kali pembelian, DIAMBIL DARI SERVER.
+   *
+   * Tanpa batas atas, warga bisa mengetik berapa pun digit sampai muncul
+   * tagihan "Rp 15.000.000.000.000.000.000.000" yang menjulur keluar kartu —
+   * dan server menerimanya. Pembatasan ini pernah ada lalu HILANG saat dua
+   * cabang digabung, tanpa satu pun galat: build tetap hijau, halaman tetap
+   * terbuka, hanya batasnya yang lenyap. Nilai di bawah cuma cadangan bila
+   * `/api/paket` gagal dimuat; angka yang mengikat tetap milik server.
+   */
+  const [maksLiter, setMaksLiter] = useState(100_000);
   const [golonganNama, setGolonganNama] = useState("Rumah Tangga Umum");
   const [daftarPaket, setDaftarPaket] = useState<PaketOpsi[]>([]);
   const [modePilihan, setModePilihan] = useState<ModePilihan>("paket");
@@ -29,6 +40,7 @@ export function useBeli() {
       try {
         const res = await api<DataPaketResponse>("/api/paket");
         setTarifPerLiter(res.tarifPerLiter);
+        if (res.maksimalLiter) setMaksLiter(res.maksimalLiter);
         setGolonganNama(res.golongan);
         setDaftarPaket(res.paket);
         if (res.paket.length > 0) {
@@ -47,19 +59,30 @@ export function useBeli() {
     })();
   }, []);
 
+  /*
+   * Dipotong DI SUMBERNYA, bukan hanya ditolak saat menekan bayar: angka
+   * yang mustahil tidak boleh sempat tergambar di kartu ringkasan. Kedua
+   * arah — liter dan rupiah — harus dibatasi, kalau tidak batasnya bisa
+   * dilewati lewat kolom yang satunya.
+   */
   const handleUbahLiterBebas = (val: string) => {
     const angkaSaja = val.replace(/\D/g, "");
-    setInputLiterBebas(angkaSaja);
-    const n = Number(angkaSaja) || 0;
+    const n = Math.min(Number(angkaSaja) || 0, maksLiter);
+    setInputLiterBebas(n > 0 ? String(n) : "");
     const rp = Math.round(n * tarifPerLiter);
     setInputRupiahBebas(rp > 0 ? String(rp) : "");
   };
 
   const handleUbahRupiahBebas = (val: string) => {
     const angkaSaja = val.replace(/\D/g, "");
-    setInputRupiahBebas(angkaSaja);
-    const rp = Number(angkaSaja) || 0;
-    const l = Math.round(rp / tarifPerLiter);
+    const rpMentah = Number(angkaSaja) || 0;
+    const literMentah = Math.round(rpMentah / tarifPerLiter);
+    const l = Math.min(literMentah, maksLiter);
+    /* Rupiahnya ikut dipotong HANYA kalau liternya memang dipotong —
+       kalau tidak, angka yang baru diketik warga dibulatkan ulang di
+       bawah jarinya dan kolomnya terasa melawan. */
+    const rp = l === literMentah ? rpMentah : Math.round(l * tarifPerLiter);
+    setInputRupiahBebas(rp > 0 ? String(rp) : "");
     setInputLiterBebas(l > 0 ? String(l) : "");
   };
 
@@ -73,6 +96,12 @@ export function useBeli() {
     }
     if (volumeFinalL < 500) {
       setPesanGalat("Pembelian minimal adalah 500 liter.");
+      return;
+    }
+    if (volumeFinalL > maksLiter) {
+      setPesanGalat(
+        `Pembelian maksimal ${maksLiter.toLocaleString("id-ID")} liter sekali transaksi.`,
+      );
       return;
     }
 
@@ -139,6 +168,7 @@ export function useBeli() {
     meterAktif,
     pilihMeter,
     tarifPerLiter,
+    maksLiter,
     golonganNama,
     daftarPaket,
     modePilihan,

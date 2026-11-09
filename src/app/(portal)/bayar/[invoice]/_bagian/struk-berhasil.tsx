@@ -38,8 +38,23 @@ export function StrukBerhasil({
           <span className="font-mono text-[11px] font-semibold tracking-wider text-muted uppercase">
             Kode Token Meter (Sekali Pakai)
           </span>
+          {/*
+            TIDAK ADA kode cadangan yang ditulis mati di sini.
+            "55120 •••••" dulu tergambar persis pada halaman berjudul
+            "Pembayaran Berhasil" setiap kali kode aslinya gagal dimuat —
+            angka karangan yang tampil seperti kode sungguhan, di layar yang
+            MENJANJIKAN kode sungguhan. Warga akan mencoba mengetikkannya ke
+            meter, meter menolaknya, dan tidak ada apa pun di layar yang
+            memberi petunjuk kenapa. Lebih baik mengakui kodenya belum ada.
+          */}
           <div className="my-2 select-all font-mono text-2xl font-black tracking-[0.2em] text-ink sm:text-3xl">
-            {kodeToken ? token(kodeToken) : "55120 •••••"}
+            {kodeToken ? (
+              token(kodeToken)
+            ) : (
+              <span className="text-base font-semibold tracking-normal text-muted">
+                Kode belum dapat ditampilkan
+              </span>
+            )}
           </div>
 
           {kodeToken ? (
@@ -50,7 +65,9 @@ export function StrukBerhasil({
           ) : null}
 
           <p className="mt-3 text-[11px] text-muted">
-            Catat kodenya sekarang — kode utuh hanya ditampilkan sekali di layar ini dan dikirim ke email terdaftar Anda.
+            {kodeToken
+              ? "Kode ini juga dikirim ke email terdaftar Anda, dan bisa dibuka lagi dari halaman Riwayat."
+              : "Kode sudah terbit dan tersimpan. Buka halaman Riwayat untuk menampilkannya kembali."}
           </p>
         </div>
 

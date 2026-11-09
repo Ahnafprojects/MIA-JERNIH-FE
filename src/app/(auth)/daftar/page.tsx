@@ -38,7 +38,7 @@ export default function HalamanDaftar() {
         lihatSandi={daftar.lihatSandi}
         setLihatSandi={daftar.setLihatSandi}
         memuat={daftar.memuat}
-        kekuatan={daftar.kekuatan}
+        syarat={daftar.syarat}
         onSubmit={daftar.handleDaftar}
       />
     </AuthShell>

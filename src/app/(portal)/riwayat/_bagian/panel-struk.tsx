@@ -1,88 +1,69 @@
-import { Download, FileText, Mail } from "lucide-react";
-import { liter, rupiah, tanggalJam } from "@/lib/format";
+import { Download, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { TransaksiBaris } from "../_tipe";
-import { LencanaStatus } from "./lencana-status";
+import { Struk } from "./struk";
 
+/**
+ * Struk versi desktop: panel lengket di kolom kanan.
+ *
+ * Isinya DIDELEGASIKAN ke `<Struk>`, tidak ditulis ulang di sini. Versi
+ * sebelumnya menyalin seluruh daftar baris struk, dan salinan itu tertinggal
+ * saat perbaikan mendarat di tempat lain: kode token kembali menjadi teks
+ * karangan "55120 •••••", dan atribut `data-struk` — satu-satunya pegangan
+ * aturan `@media print` — hilang sama sekali, sehingga mencetak struk
+ * kembali mencetak seluruh halaman.
+ *
+ * ── Kenapa `print:block`, bukan sekadar `hidden lg:block` ─────────────
+ *
+ * Dialog cetak peramban menata ulang halaman pada lebar KERTAS (A4 ≈ 794px),
+ * yang berada di bawah ambang `lg` (1024px). Jadi panel ini `display: none`
+ * tepat pada saat ia satu-satunya yang boleh tercetak — dan `visibility:
+ * visible` di aturan cetak tidak bisa menghidupkan elemen yang sudah
+ * dimatikan `display`.
+ */
 export function PanelStruk({
   transaksiTerpilih,
   pesanEmail,
+  sheetBuka,
   onUnduhStrukPdf,
   onKirimEmailStruk,
 }: {
   transaksiTerpilih: TransaksiBaris | null;
   pesanEmail: string | null;
+  /**
+   * Saat lembar bawah terbuka, DIA yang membawa `data-struk`. Dua elemen
+   * bertanda sekaligus membuat hasil cetaknya menumpuk dua struk di posisi
+   * yang sama — aturan cetaknya memaksa `position: absolute; inset: 0`.
+   */
+  sheetBuka: boolean;
   onUnduhStrukPdf: () => void;
   onKirimEmailStruk: () => void;
 }) {
   if (!transaksiTerpilih) {
     return (
-      <div className="rounded-[4px] border border-dashed border-line p-8 text-center text-xs text-muted">
-        Pilih baris pada tabel untuk melihat struk pembayaran.
+      <div className="cekung p-8 text-center text-xs text-muted">
+        Pilih salah satu transaksi untuk melihat strukrnya.
       </div>
     );
   }
 
   return (
-    <div className="sticky top-24 rounded-[4px] border border-line bg-surface p-6 shadow-xs">
-      <div className="flex items-center justify-between border-b border-line pb-3">
-        <div className="flex items-center gap-2">
-          <FileText size={16} className="text-brand-600 dark:text-accent" />
-          <h3 className="font-display text-sm font-bold text-ink">Struk Pembayaran</h3>
-        </div>
-        <LencanaStatus status={transaksiTerpilih.status} />
-      </div>
-
+    <div className="sticky top-28 space-y-3 print:static">
       {pesanEmail ? (
-        <div className="my-3 rounded-[3px] bg-success/10 p-2 text-center text-xs text-success">
+        <p className="rounded-[10px] border border-success/40 bg-success-soft p-2.5 text-center text-xs font-medium text-success print:hidden">
           {pesanEmail}
-        </div>
+        </p>
       ) : null}
 
-      <div className="my-4 space-y-3 text-xs">
-        <div className="flex justify-between">
-          <span className="text-muted">Nomor Invoice</span>
-          <span className="font-mono font-bold text-ink">{transaksiTerpilih.id}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-muted">ID Meter Tujuan</span>
-          <span className="font-mono text-ink">{transaksiTerpilih.meterId}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-muted">Waktu Transaksi</span>
-          <span className="font-mono text-muted">{tanggalJam(transaksiTerpilih.dibuatPada)}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-muted">Metode Pembayaran</span>
-          <span className="font-semibold text-ink">{transaksiTerpilih.metode}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-muted">Volume Air</span>
-          <span className="font-mono font-bold text-brand-700 dark:text-accent">
-            {liter(transaksiTerpilih.volumeL, 0)}
-          </span>
-        </div>
-        <div className="flex justify-between border-t border-line pt-2">
-          <span className="text-muted">Total Bayar</span>
-          <span className="tabular font-mono text-base font-black text-ink">
-            {rupiah(transaksiTerpilih.jumlahRp)}
-          </span>
-        </div>
+      {/* `key`: memilih baris lain MEMASANG ULANG struk, jadi kode token yang
+          sudah diminta untuk transaksi sebelumnya tidak ikut terbawa. */}
+      <Struk
+        key={transaksiTerpilih.id}
+        data={transaksiTerpilih}
+        penandaCetak={!sheetBuka}
+      />
 
-        <div className="mt-4 rounded-[3px] border border-dashed border-line bg-soft p-3 text-center">
-          <span className="font-mono text-[10px] text-muted uppercase tracking-wider">
-            Kode Token Air (Bertopeng)
-          </span>
-          <div className="my-1 font-mono text-lg font-black tracking-widest text-ink select-none">
-            {transaksiTerpilih.token || "55120 •••••"}
-          </div>
-          <p className="text-[10px] text-muted">
-            Kode utuh hanya dikirim sekali saat pembayaran dan tersimpan di email Anda.
-          </p>
-        </div>
-      </div>
-
-      <div className="space-y-2 border-t border-line pt-4">
+      <div className="space-y-2 print:hidden">
         <Button varian="utama" blok ukuran="sm" onClick={onUnduhStrukPdf}>
           <Download size={14} />
           Cetak / Unduh Struk
