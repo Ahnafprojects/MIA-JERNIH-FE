@@ -1,18 +1,40 @@
+import Link from "next/link";
 import {
   Activity,
+  ArrowRight,
+  BadgeCheck,
+  Download,
   Droplets,
   KeyRound,
   Mail,
+  MapPinned,
+  MessageCircle,
   Receipt,
   RefreshCw,
   ShieldCheck,
   Ticket,
+  type LucideIcon,
 } from "lucide-react";
 
 import { Muncul } from "@/components/ui/muncul";
 
+interface ButirFitur {
+  Ikon: LucideIcon;
+  judul: string;
+  teks: string;
+  /**
+   * Tampil di halaman depan.
+   *
+   * Opsional, dan karena itu lariknya TIDAK boleh `as const`: dengan `as
+   * const` TypeScript menyimpulkan tipe berbeda untuk butir yang punya
+   * benderanya dan yang tidak, lalu menolak `f.sorot` pada gabungan
+   * keduanya.
+   */
+  sorot?: boolean;
+}
+
 /**
- * Delapan kemampuan portal.
+ * Dua belas kemampuan portal.
  *
  * Aturan berkas ini: tiap angka, ambang, dan batasan diverifikasi ke kode
  * yang menegakkannya sebelum ditulis, dan acuannya dicatat per butir supaya
@@ -23,11 +45,24 @@ import { Muncul } from "@/components/ui/muncul";
  * dan tanpa konstruksi "X, bukan Y". Versi sebelumnya memakai kontras itu
  * di enam dari delapan butir sekaligus, dan pengulangan pola itulah yang
  * membuat seluruh seksi terbaca seperti teks mesin, bukan halaman produk.
+ *
+ * ── Satu larik, dua tempat ────────────────────────────────────────────
+ *
+ * Daftar ini tampil di halaman depan (empat butir bertanda `sorot`) dan di
+ * `/fitur` (kedua belasnya). Lariknya SENGAJA tidak digandakan: dua salinan
+ * isi yang sama adalah cara paling cepat membuat kedua halaman menyebut hal
+ * berbeda beberapa bulan lagi, dan yang satu basi tanpa ada yang tahu.
+ *
+ * `sorot` HARUS tepat empat butir. Grid landing empat kolom, jadi butir
+ * kelima akan menggantung sendirian di baris kedua. Kalau mau mengganti
+ * pilihan, tukar bendera `sorot`-nya, jangan menambah.
  */
-const FITUR = [
+const FITUR: readonly ButirFitur[] = [
   {
     Ikon: Activity,
     judul: "Pemantauan waktu nyata",
+    // SOROT: Inti janji produknya: angka yang sama dibaca warga dan petugas.
+    sorot: true,
     teks: "Sisa saldo dan laju pemakaian diperbarui setiap lima detik selama air mengalir.",
     // `GET /api/meter/:id/live` (BE src/rute/meter.ts:142);
     // penyegaran 5 detik di FE (beranda/_hooks/use-beranda.ts:176).
@@ -57,6 +92,8 @@ const FITUR = [
   {
     Ikon: Ticket,
     judul: "Pelacakan pengaduan",
+    // SOROT: Menjawab subtema Public Service Tracking secara langsung.
+    sorot: true,
     teks: "Setiap pengaduan memperoleh nomor tiket dan tenggat penanganan sesuai kategorinya. Status penanganan dapat dilacak tanpa masuk akun.",
     // Tenggat per kategori: hitungSlaJatuhTempo() (BE src/rute/tiket.ts:29).
     // Lacak tanpa autentikasi: GET /api/publik/lacak/:nomor (publik.ts:202).
@@ -87,83 +124,197 @@ const FITUR = [
     // FE riwayat/_bagian/{struk,panel-struk,sheet-struk}.tsx, aturan
     // cetaknya di globals.css (@media print, data-struk).
   },
-] as const;
+  {
+    Ikon: MessageCircle,
+    judul: "Kabar ke WhatsApp dan Telegram",
+    teks: "Perubahan status pengaduan, pembelian yang lunas, dan saldo yang menipis dikirim ke saluran yang Anda pilih sendiri. Dapat dimatikan kapan saja.",
+    // Pengirimnya layanan terpisah di BE notifikasi/, hidup di produksi.
+    // Titik sambungnya: rute/tiket.ts (status berubah), rute/bayar.ts
+    // (pembelian lunas), lib/saldo-menipis.ts (ambang peringatan).
+    // Persetujuan per warga: Pengguna.waOptIn dan Pengguna.telegramChatId;
+    // pendaftarannya di halaman Akun.
+  },
+  {
+    Ikon: MapPinned,
+    judul: "Peta sebaran kebocoran",
+    // SOROT: Satu-satunya presensi peta kebocoran di halaman depan; petanya
+    //        sendiri tinggal di /status, jadi tanpa kartu ini ia tidak
+    //        terlihat sama sekali oleh yang baru mendarat.
+    sorot: true,
+    teks: "Titik kebocoran pipa, status penanganannya, dan riwayat perbaikan tergambar di peta yang bisa dibuka siapa pun.",
+    // GET /api/publik/titik-kebocoran (BE rute/publik.ts), logika petak di
+    // BE lib/titik-kebocoran.ts. Koordinat sengaja dibulatkan ke petak
+    // sekitar 110 m dan aduan sepetak digabung, supaya titiknya tidak
+    // menunjuk rumah pelapor. Nomor tiket tidak pernah ikut keluar.
+  },
+  {
+    Ikon: BadgeCheck,
+    judul: "Laporan yang terverifikasi",
+    teks: "Lokasi aduan diambil dari GPS perangkat atau koordinat meter terdaftar, dan setiap laporan terikat pada nomor pelanggan yang sudah diverifikasi.",
+    // BE lib/validasi-laporan.ts: haversine, pembaca GPS EXIF, penilai
+    // keyakinan lokasi, pendeteksi aduan ganda. Semuanya MENANDAI untuk
+    // ditinjau petugas, tidak pernah menolak laporan — foto yang kehilangan
+    // EXIF itu lazim karena aplikasi pesan menghapusnya.
+  },
+  {
+    Ikon: Download,
+    judul: "Data terbuka bisa diunduh",
+    // SOROT: Menjawab subtema Open Government Data secara langsung.
+    sorot: true,
+    teks: "Statistik jaringan, neraca air, dan rapor kinerja tersedia sebagai CSV atau JSON, tanpa perlu akun.",
+    // GET /api/publik/unduh?set=&format=csv|json&rentang=
+    // (BE rute/publik.ts:670). Diuji ke produksi: membalas 200 dengan
+    // content-type text/csv dan header attachment, jadi tombolnya benar-
+    // benar mengunduh berkas.
+  },
+];
 
-export function FiturJernih() {
+/**
+ * Daftar fitur, dalam dua ukuran.
+ *
+ * `ringkas` menampilkan empat butir bertanda `sorot` beserta tautan ke
+ * `/fitur`; tanpanya tampil kedua belasnya. Halaman depan memakai yang
+ * ringkas karena dua belas kartu di sana terbaca terlalu panjang sebelum
+ * pengunjung sampai ke bagian halaman lainnya.
+ *
+ * `judulUtama` menaikkan judulnya dari `h2` ke `h1`. Di halaman depan seksi
+ * ini salah satu dari banyak seksi, jadi `h2` benar; di `/fitur` ia judul
+ * halaman, dan halaman tanpa `h1` membuat pembaca layar kehilangan titik
+ * masuknya.
+ */
+export function FiturJernih({
+  ringkas = false,
+  judulUtama = false,
+}: {
+  ringkas?: boolean;
+  judulUtama?: boolean;
+} = {}) {
+  const butir = ringkas ? FITUR.filter((f) => f.sorot) : FITUR;
+  const Judul = judulUtama ? "h1" : "h2";
+
   return (
-    <section className="mx-auto max-w-7xl px-5 py-24">
+    <section className="mx-auto max-w-6xl px-5 py-24">
       <Muncul className="max-w-2xl">
         <p className="eyebrow text-muted">Fitur</p>
-        <h2 className="mt-3 font-display text-[clamp(1.9rem,3.6vw,2.8rem)] leading-tight font-semibold tracking-[-0.02em]">
-          Kelola air rumah Anda dari satu portal
-        </h2>
+        <Judul className="mt-3 font-display text-[clamp(1.9rem,3.6vw,2.8rem)] leading-tight font-semibold tracking-[-0.02em]">
+          {ringkas
+            ? "Kelola air rumah Anda dari satu portal"
+            : "Dua belas hal yang bisa Anda lakukan"}
+        </Judul>
         <p className="mt-4 text-[16px] leading-relaxed text-muted">
-          Pembelian, pemantauan, dan pengaduan berjalan di atas data meter yang
-          sama dengan yang digunakan petugas PDAM.
+          {ringkas
+            ? "Pembelian, pemantauan, dan pengaduan berjalan di atas data meter yang sama dengan yang digunakan petugas PDAM."
+            : "Setiap butir di bawah berjalan di produksi hari ini. Angka, ambang, dan batasannya diambil dari kode yang menegakkannya."}
         </p>
       </Muncul>
 
       {/*
-        Empat kolom di layar lebar, dua di tablet, satu di ponsel.
+        DAFTAR BERGARIS, bukan kartu berkotak.
 
-        Seksi lain di halaman ini sengaja memakai daftar bergaris — kartu
-        seragam memang pola yang paling cepat terlupa. Di sini kartu tetap
-        dipilih karena kedelapan butirnya SETARA: tidak ada urutan yang harus
-        dibaca lebih dulu, jadi memaksanya jadi satu kolom panjang justru
-        menyarankan hierarki yang tidak ada. Yang membedakannya dari petak
-        generik adalah nomor besar dan ikonnya, bukan bingkainya.
+        Bentuk sebelumnya memberi tiap butir kotaknya sendiri, dan itu
+        melanggar aturan desain proyek ini sendiri: butir pertama daftar
+        "Yang dilarang" di visual.md menyebut grid kartu membulat seragam
+        sebagai pola yang paling sering dipakai dan paling cepat terlupa,
+        serta menyuruh menimbang daftar bergaris atau tabel lebih dulu.
 
-        KOLOMNYA EMPAT, bukan tiga, dan itu ditentukan jumlah butirnya.
-        Delapan kartu di tiga kolom pecah jadi 3+3+2: baris terakhirnya
-        menggantung tidak rata, dan grid yang tidak rata terbaca seperti
-        daftar yang terpotong, bukan daftar yang selesai. Empat kolom
-        membaginya rata menjadi 4+4.
+        Pembelaan lama untuk kartu adalah "butirnya SETARA jadi boleh dibaca
+        acak". Alasan itu sah untuk menolak satu kolom BERURUT, tetapi tidak
+        pernah menjawab kenapa tiap butir harus punya bingkai sendiri. Butir
+        setara tetap bisa disajikan tanpa kotak per butir.
 
-        Konsekuensinya kartu menyempit, dan itu sebabnya seksi ini memakai
-        max-w-7xl sementara seksi lain max-w-6xl. Pada 1152px, empat kolom
-        hanya menyisakan sekitar 263px per kartu dan judulnya mulai pecah
-        tiga baris. Lebar halaman dinaikkan khusus di sini supaya empat
-        kolom tidak dibayar dengan keterbacaan.
+        Bentuknya sekarang SEJALAN dengan seksi "Yang biasanya tertutup" di
+        halaman yang sama: garis atas pada daftar, garis bawah pada tiap
+        baris, nomor urut mono `brand-600`, judul `font-display`, keterangan
+        `muted`. Yang berbeda hanya dua hal, dan keduanya punya sebab:
 
-        Kalau suatu saat butirnya berubah jumlah, sesuaikan KOLOMNYA supaya
-        tetap habis dibagi — jangan mengarang butir tambahan demi grid.
+        - ADA IKON. Seksi transparansi tidak punya ikon per butir; fitur
+          punya, dan ikon itu yang membuat baris bisa dikenali sekilas tanpa
+          membaca judulnya.
+        - TIDAK ADA panah dan tidak ada `.sorot`. Barisnya bukan tautan.
+          Memberi sorot dan panah pada baris yang tidak bisa diklik adalah
+          janji palsu yang baru ketahuan setelah orang menekannya.
 
-        Yang berjenjang ARTIKELNYA, bukan wadahnya: dua transform bertumpuk
+        Nomornya penanda urutan baca pada daftar yang sedang tergambar, sama
+        seperti di seksi transparansi — bukan pengenal tetap. Karena itu
+        halaman depan menomori keempat sorotannya 01 sampai 04 meskipun di
+        `/fitur` butir yang sama berada di posisi lain.
+
+        Lebarnya turun ke `max-w-6xl` mengikuti seksi transparansi. `max-w-7xl`
+        dulu dipakai hanya karena empat kolom kartu menyempit sampai judulnya
+        pecah tiga baris; tanpa kartu, alasan itu hilang.
+
+        Yang berjenjang BARISNYA, bukan wadahnya: dua transform bertumpuk
         terbaca ramai.
       */}
-      <Muncul
-        className="mt-14 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4"
-        pilih="article"
-        langkah={70}
-      >
-        {FITUR.map(({ Ikon, judul, teks }, i) => (
-          <article
-            key={judul}
-            className="permukaan angkat flex h-full flex-col p-6"
-          >
-            <div className="flex items-center justify-between gap-3">
-              <span className="grid size-10 shrink-0 place-items-center rounded-[10px] bg-brand-50 text-brand-700 shadow-[var(--kedalaman-1)] ring-1 ring-white/60 ring-inset dark:bg-brand-100">
-                <Ikon size={18} aria-hidden />
-              </span>
-              {/* Nomor sengaja besar dan tipis: ia penanda urutan baca,
-                  bukan data — kalau setebal judulnya, keduanya berebut. */}
-              <span
-                aria-hidden
-                className="font-mono text-2xl font-bold text-line-strong tabular-nums"
-              >
+      <Muncul className="mt-12" pilih="li" langkah={70}>
+        <ul className="border-t border-line">
+          {butir.map(({ Ikon, judul, teks }, i) => (
+            <li
+              key={judul}
+              className="grid grid-cols-[2.5rem_1fr] items-baseline gap-x-4 gap-y-1.5 border-b border-line py-7 sm:grid-cols-[3.5rem_17rem_1fr] sm:gap-x-8"
+            >
+              {/* Nomor urutnya isi, bukan hiasan, jadi ia harus terbaca.
+                  `brand-600` satu-satunya nada merek yang lulus untuk teks
+                  sekecil ini di atas latar terang; `brand-400` hanya 2,4:1. */}
+              <span className="tabular font-mono text-[13px] text-brand-600">
                 {String(i + 1).padStart(2, "0")}
               </span>
-            </div>
 
-            <h3 className="mt-5 font-display text-[17px] leading-snug font-semibold tracking-[-0.01em] text-ink">
-              {judul}
-            </h3>
-            <p className="mt-2 text-[14.5px] leading-relaxed text-muted">
-              {teks}
-            </p>
-          </article>
-        ))}
+              <span className="flex items-center gap-2.5 font-display text-[1.2rem] leading-snug font-semibold tracking-[-0.01em] text-ink">
+                <Ikon
+                  size={17}
+                  aria-hidden
+                  className="shrink-0 text-brand-600"
+                />
+                {judul}
+              </span>
+
+              <span className="col-start-2 text-[14.5px] leading-relaxed text-muted sm:col-start-3">
+                {teks}
+              </span>
+            </li>
+          ))}
+        </ul>
       </Muncul>
+
+      {/*
+        Tautan ke daftar lengkap, hanya pada mode ringkas.
+
+        Menyebut ANGKANYA, bukan "selengkapnya". Pengunjung yang tahu ada dua
+        belas butir bisa memutuskan sendiri apakah mau membukanya; "lihat
+        selengkapnya" tidak memberi tahu apa pun tentang apa yang menunggu di
+        balik tautan.
+
+        Panahnya bergeser 4px ke arah tujuannya saat disentuh, sama seperti
+        daftar transparansi di bawahnya, supaya kedua tautan di halaman ini
+        berperilaku sama.
+      */}
+      {ringkas ? (
+        <Muncul className="mt-10">
+          {/*
+            Garis bawahnya ada di SPAN DI DALAM, bukan di tautannya.
+
+            Tautannya sendiri diberi `min-h-11` supaya sasaran sentuhnya
+            mencapai 44px; terukur hanya 30px sebelum ini, di bawah ambang
+            dan justru pada ajakan yang paling sering ditekan dengan jempol.
+            Kalau garisnya tetap di tautan, ia ikut turun ke dasar kotak
+            44px itu dan terlepas dari hurufnya.
+          */}
+          <Link
+            href="/fitur"
+            className="cincin-fokus group inline-flex min-h-11 items-center gap-2 font-semibold text-ink"
+          >
+            <span className="border-b-2 border-brand-300 pb-1 transition-colors group-hover:border-brand-600 motion-reduce:transition-none">
+              Lihat dua belas fitur selengkapnya
+            </span>
+            <ArrowRight
+              size={17}
+              aria-hidden
+              className="text-brand-600 transition-transform duration-200 group-hover:translate-x-1 motion-reduce:transition-none"
+            />
+          </Link>
+        </Muncul>
+      ) : null}
     </section>
   );
 }

@@ -16,6 +16,7 @@ import { VideoHero } from "./_bagian/video-hero";
 import { PitaStatistik } from "./_bagian/pita-statistik";
 import { FiturJernih } from "./_bagian/fitur";
 import { CaraKerja } from "./_bagian/cara-kerja";
+import { KabarLangsung } from "./_bagian/kabar-langsung";
 import { MeterPeraga } from "./_bagian/meter-peraga";
 import { VideoPenjelasan } from "./_bagian/video-penjelasan";
 import { Faq } from "./_bagian/faq";
@@ -140,8 +141,14 @@ export default function Landing() {
         "ini apa" lebih dulu, bukan "bagaimana cara mendaftarnya". Menaruh
         langkah pendaftaran di atas daftar kemampuan berarti menjelaskan cara
         memakai sesuatu yang belum diketahui gunanya.
+
+        RINGKAS: empat butir saja di sini, selebihnya di `/fitur`. Daftarnya
+        tumbuh jadi dua belas setelah notifikasi, peta kebocoran, validasi
+        laporan, dan unduhan data terbuka berjalan — dan dua belas kartu
+        memaksa pengunjung menggulir tiga baris penuh sebelum sampai ke
+        bagian halaman yang justru MEMPERAGAKAN produknya bekerja.
       */}
-      <FiturJernih />
+      <FiturJernih ringkas />
 
       {/* ── Empat pintu transparansi ─────────────────────────────────── */}
       <section className="mx-auto max-w-6xl px-5 py-24">
@@ -302,6 +309,17 @@ export default function Landing() {
 
       {/* ── Cara kerja ───────────────────────────────────────────────── */}
       <CaraKerja />
+
+      {/*
+        ── Kabar langsung ────────────────────────────────────────────────
+
+        Letaknya SESUDAH "cara kerja" dan sebelum harga, dan urutan itu
+        disengaja. "Cara kerja" menjelaskan bagaimana satu angka berjalan
+        dari meter sampai ke publik; pertanyaan yang wajar muncul berikutnya
+        adalah "lalu bagaimana saya tahu kalau ada yang berubah". Seksi ini
+        menjawabnya tepat di situ, sebelum pembaca beralih ke harga.
+      */}
+      <KabarLangsung />
 
       {/* ── Paket ────────────────────────────────────────────────────── */}
       <section className="lapis-permukaan border-t border-line">

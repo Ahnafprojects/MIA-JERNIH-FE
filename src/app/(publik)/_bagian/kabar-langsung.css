@@ -1,0 +1,81 @@
+/*
+ * Gerakan masuk untuk seksi "Kabar langsung".
+ *
+ * ── Kenapa berkas terpisah ────────────────────────────────────────────
+ *
+ * Mengikuti pola `bilah-atas.css` dan `cara-kerja.css`: aturan yang hanya
+ * dipakai satu seksi tinggal di sebelah seksinya, bukan menumpuk di
+ * globals.css.
+ *
+ * ── Kenapa `transition`, bukan `@keyframes` ───────────────────────────
+ *
+ * Aturannya di proyek ini: elemen yang BARU DIPASANG ke DOM memakai
+ * keyframes, elemen yang SUDAH ADA dan berubah keadaan memakai transition.
+ * Gelembung pesan di sini tergambar sejak render server dan hanya
+ * disembunyikan oleh kelas `gulir` yang dipasang `Muncul`, lalu diungkap
+ * oleh `gulir-tampil`. Itu perubahan keadaan pada elemen yang sudah tercat,
+ * jadi transition memang yang benar — sama seperti rel di `cara-kerja.css`.
+ *
+ * ── Kenapa gerakannya berjenjang jauh ─────────────────────────────────
+ *
+ * Yang ingin disampaikan seksi ini bukan "ada tiga pesan" melainkan "kabar
+ * ini DATANG SENDIRI, satu per satu, tanpa warga membuka apa pun". Jenjang
+ * rapat membuat ketiganya terbaca sebagai satu blok yang muncul berbarengan,
+ * dan maknanya hilang. Dipakai 150ms, nilai yang sama dengan langkah
+ * berurutan di `cara-kerja`, karena urutan di sini juga isi pesannya.
+ *
+ * ── Kegagalan harus berakhir pada keadaan TERLIHAT ────────────────────
+ *
+ * Semua aturan di bawah disyaratkan `.gulir`, kelas yang hanya dipasang oleh
+ * JavaScript. Tanpa JavaScript, tanpa IntersectionObserver, atau saat
+ * `prefers-reduced-motion` menyala, `Muncul` keluar lebih awal dan kelas itu
+ * tidak pernah ada — sehingga seluruh pesannya tergambar penuh apa adanya.
+ * Kalau disyaratkan sebaliknya, satu skrip yang gagal dimuat akan
+ * menyembunyikan isi seksi ini secara permanen.
+ */
+
+/* Gelembung pesan: naik sedikit lalu mendarat, seperti baru masuk.
+   `--jenjang` ditulis per pesan dari komponennya; jeda tidak bisa diambil
+   dari `Muncul` karena ia menulis `transition-delay` pada elemen sasaran dan
+   sifat itu tidak diwariskan ke anak. */
+.gulir [data-gelembung] {
+  transform: translateY(12px);
+  opacity: 0;
+  transition:
+    transform 420ms cubic-bezier(0.22, 0.72, 0.24, 1) var(--jenjang, 0ms),
+    opacity 300ms cubic-bezier(0.22, 0.72, 0.24, 1) var(--jenjang, 0ms);
+}
+
+.gulir.gulir-tampil [data-gelembung] {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* Tanda terbaca menyusul 260ms setelah gelembungnya mendarat. Urutannya
+   bermakna: centang yang muncul bersamaan dengan pesannya terbaca sebagai
+   hiasan, sedangkan yang menyusul terbaca sebagai pesan yang benar-benar
+   sampai lalu dibaca. */
+.gulir [data-tanda-terbaca] {
+  opacity: 0;
+  transition: opacity 240ms cubic-bezier(0.22, 0.72, 0.24, 1)
+    calc(var(--jenjang, 0ms) + 260ms);
+}
+
+.gulir.gulir-tampil [data-tanda-terbaca] {
+  opacity: 1;
+}
+
+/*
+ * Cadangan berlapis. `Muncul` memang sudah berhenti lebih awal saat gerakan
+ * dikurangi, jadi blok ini seharusnya tidak pernah terpakai — tetapi kalau
+ * suatu saat kelas `gulir` dipasang dari tempat lain, yang hilang harus
+ * gerakannya saja, bukan pesannya.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .gulir [data-gelembung],
+  .gulir [data-tanda-terbaca] {
+    transform: none;
+    opacity: 1;
+    transition: none;
+  }
+}
