@@ -33,7 +33,7 @@ export function KeypadMeter({
       <div className="mt-6 rounded-[3px] border border-line bg-soft p-3 text-xs text-muted">
         <div className="flex items-center gap-1.5 font-semibold text-ink">
           <HelpCircle size={14} />
-          <span>Petunjuk Keypad 4×4 ESP32:</span>
+          <span>Petunjuk Keypad Meter:</span>
         </div>
         <ul className="mt-2 list-inside list-disc space-y-1 text-[11px]">
           <li>Tombol <strong>*</strong>: Mengosongkan isian layar.</li>

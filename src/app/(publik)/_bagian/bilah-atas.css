@@ -36,6 +36,16 @@ html {
  * halaman jadi jauh lebih panjang dan bilah tempel di atasnya tidak lagi
  * membantu apa pun.
  */
+/*
+ * Tanpa JavaScript bilahnya kembali ke aliran dokumen, jadi ruang yang
+ * disediakan `main` untuk kapsul mengambang berubah jadi celah kosong
+ * setinggi 80px di atas isi halaman. Dinolkan di sini supaya cadangannya
+ * tetap rapat.
+ */
+html:not([data-js]) main {
+  padding-top: 0;
+}
+
 html:not([data-js]) [data-bilah-atas] {
   position: static;
 }

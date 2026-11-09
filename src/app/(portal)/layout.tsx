@@ -36,13 +36,60 @@ export default function LayoutPortal({
           potongan yang tertinggal.
         */}
         <header className="sticky top-0 z-40">
+          {/*
+            Pudar tipis di tepi atas, BUKAN kabut selebar layar.
+
+            Versi sebelumnya menutup seluruh pita atas dengan
+            `bg-canvas/75 backdrop-blur-md`. Itu masuk akal saat kapsulnya
+            masih merentang penuh, tetapi begitu ia dibatasi dan
+            ditengahkan, kabutnya tinggal terbaca sebagai pita padat
+            selebar layar dengan kapsul tertempel di tengahnya — persis
+            kebalikan dari kesan mengambang.
+
+            Sekarang yang memburamkan adalah kacanya sendiri. Yang tersisa
+            di sini hanya pudar setinggi bilah supaya baris pertama isi
+            halaman tidak menabrak tepi atas layar secara tajam.
+          */}
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-0 bg-canvas/75 backdrop-blur-md"
+            className="pointer-events-none absolute inset-x-0 top-0 h-full bg-gradient-to-b from-canvas/80 to-transparent"
           />
 
-          <div className="relative px-3 py-3 sm:px-4 sm:py-4">
-            <div className="flex h-14 items-center justify-between gap-3 rounded-full border border-line bg-surface px-3 shadow-[var(--kilau-tepi),var(--kedalaman-3)] sm:px-4">
+          {/*
+            Kapsulnya DIBATASI lebarnya dan ditengahkan, bukan merentang
+            sampai tepi layar.
+
+            Versi sebelumnya hanya diberi padding 12–16px, jadi pada layar
+            lebar kapsulnya ikut melar penuh dan isinya terlempar ke dua
+            ujung: logo menempel di pojok kiri, tombol di pojok kanan, dan
+            di antaranya pita kosong selebar setengah layar. Yang terbaca
+            bukan "bilah navigasi" melainkan dua kelompok tombol yang
+            kebetulan berbagi satu garis.
+
+            Lebarnya SENGAJA berbeda dari isi halaman, yang memang dibuat
+            merentang penuh sampai tepi jendela. Keduanya diminta terpisah,
+            dan keduanya benar untuk tujuannya masing-masing: isi halaman
+            memakai seluruh layar karena tabel dan grafiknya butuh ruang,
+            sementara bilah navigasi dibatasi supaya isinya tidak terpisah
+            sejauh mungkin dan tetap terbaca sebagai satu benda.
+          */}
+          <div className="relative mx-auto max-w-6xl px-3 py-3 sm:px-4 sm:py-4">
+            <div /*
+               * Kaca: latar separuh tembus + `backdrop-blur` DI KAPSULNYA
+               * SENDIRI, bukan di lapisan terpisah di belakangnya.
+               *
+               * Opasitasnya ditahan di 72%, tidak lebih rendah. Di bawah
+               * bilah ini bisa lewat foto hero yang gelap, dan teks `ink`
+               * di atas kaca yang terlalu bening kehilangan kontrasnya
+               * tepat saat bagian gelap itu tergulir lewat — kegagalan
+               * yang hanya muncul pada sebagian halaman dan karena itu
+               * gampang lolos dari pemeriksaan sekali lihat.
+               *
+               * `backdrop-saturate` dinaikkan sedikit supaya warna yang
+               * lewat di baliknya tidak terbaca kelabu; tanpa itu kacanya
+               * terlihat seperti plastik buram, bukan kaca.
+               */
+              className="flex h-14 items-center justify-between gap-3 rounded-full border border-white/50 bg-surface/72 px-4 shadow-[var(--kilau-tepi),var(--kedalaman-3)] backdrop-blur-xl backdrop-saturate-150 sm:px-5 dark:border-white/10">
               <div className="flex min-w-0 items-center gap-5">
                 <Link href="/beranda" className="flex items-center">
                   <MerekJernih sub="Portal warga" />

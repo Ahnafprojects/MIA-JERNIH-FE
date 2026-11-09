@@ -65,14 +65,43 @@ export function Tabel<T>({
         </thead>
         <tbody>
           {data.map((b) => {
+    /*
+     * Baris yang bisa diklik WAJIB bisa dijangkau papan ketik.
+     * Sebelumnya ia hanya punya `onClick` dan `hover:bg-soft`:
+     * pengguna tetikus bisa membukanya, pengguna papan ketik tidak
+     * punya jalan sama sekali — barisnya tidak pernah menerima
+     * fokus, jadi Enter tidak pernah sampai ke mana pun.
+     * `tabIndex` dan penanganan tombol hanya dipasang saat baris
+     * memang bisa diklik. Baris mati yang ikut masuk urutan Tab
+     * membuat orang menekan Enter dan tidak terjadi apa-apa —
+     * lebih membingungkan daripada baris yang jelas tidak bisa
+     * disentuh.
+     * Penandanya dua lapis: latar untuk hover, dan garis kiri
+     * tebal untuk fokus. Dua keadaan yang dibedakan hanya oleh
+     * nada latar tidak terbaca oleh orang yang berpindah cepat
+     * dengan Tab.
+     */
             const id = kunciBaris(b);
             return (
               <tr
                 key={id}
                 onClick={onKlikBaris ? () => onKlikBaris(b) : undefined}
+                tabIndex={onKlikBaris ? 0 : undefined}
+                role={onKlikBaris ? "button" : undefined}
+                onKeyDown={
+                  onKlikBaris
+                    ? (e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          onKlikBaris(b);
+                        }
+                      }
+                    : undefined
+                }
                 className={cn(
                   "border-b border-line/70 last:border-0",
-                  onKlikBaris && "cursor-pointer hover:bg-soft",
+                  onKlikBaris &&
+                    "cursor-pointer transition-colors hover:bg-soft focus-visible:bg-brand-50 focus-visible:shadow-[inset_3px_0_0_0_var(--color-brand-600)] focus-visible:outline-none dark:focus-visible:bg-brand-900/30",
                   terpilih === id && "bg-brand-50 dark:bg-brand-900/25",
                 )}
               >

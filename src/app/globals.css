@@ -240,37 +240,86 @@
  *   dengan garis takar di sisi kolom air dan pembatas seksi. Halaman ini
  *   tentang MENGUKUR air; kisinya mengatakan itu tanpa satu kata pun.
  *
- * Nilainya sengaja sangat rendah (5–7%). Pola latar yang terbaca jelas akan
+ * Nilainya sengaja sangat rendah (4–6%). Pola latar yang terbaca jelas akan
  * berebut perhatian dengan angka, dan angka yang kalah adalah kegagalan
  * untuk situs seperti ini. Yang dicari: mata tahu ada sesuatu di sana,
  * tapi tidak berhenti untuk melihatnya.
+ *
+ * ── Kenapa bentuknya diubah: polanya bikin pusing ─────────────────────
+ *
+ * Versi pertama menumpuk DUA pola berulang sekaligus, dan keduanya bergetar
+ * saat dilihat:
+ *
+ * 1. Kisi silang 36px — `repeating-linear-gradient` 0deg DAN 90deg. Pada
+ *    satu layar 1440×900 itu berarti ±40 garis mendatar menyilang ±25 garis
+ *    tegak: seribu perpotongan sekaligus. Kisi serapat itu memaksa mata
+ *    terus mencoba memfokuskan sesuatu yang tidak pernah berhenti berulang.
+ *
+ * 2. `repeating-radial-gradient` — cincin sepusat tanpa batas. Cincin
+ *    sepusat adalah pola getar klasik dengan sendirinya, dan di sini ia
+ *    MENYILANG kisi lurus pada sudut yang berubah terus-menerus. Garis
+ *    lurus yang dipotong lengkung pada sudut landai menghasilkan moiré —
+ *    pola ketiga yang tidak digambar siapa pun tetapi muncul sendiri dari
+ *    tumpukan keduanya. Itulah yang terasa sebagai pusing, dan ia paling
+ *    parah di seksi bawah yang latarnya paling pekat.
+ *
+ * Yang diubah BUKAN sekadar opasitasnya — pola yang bergetar tetap bergetar
+ * walau dipudarkan; ia cuma jadi getaran yang samar. Yang dibuang adalah
+ * sumber getarannya:
+ *
+ * - Kisi tinggal SATU ARAH (tegak) dan jaraknya 120px, bukan 36px. Garis
+ *   sejajar satu arah tidak bisa bermoiré dengan dirinya sendiri, dan pada
+ *   jarak selebar itu ia terbaca sebagai garis takar — motif yang memang
+ *   dimaksud — bukan kertas milimeter.
+ * - Riaknya jadi cincin BERHINGGA: empat lingkaran di dua titik, digambar
+ *   satu per satu dengan `radial-gradient` biasa. Motif tetesan jatuhnya
+ *   bertahan; pengulangannya yang hilang, dan dengan itu moirénya ikut
+ *   hilang.
  */
 :root {
-  --kisi-ukur: color-mix(in oklab, var(--color-brand-700) 7%, transparent);
-  --riak-air: color-mix(in oklab, var(--color-brand-500) 9%, transparent);
+  --kisi-ukur: color-mix(in oklab, var(--color-brand-700) 6%, transparent);
+  --riak-air: color-mix(in oklab, var(--color-brand-500) 7%, transparent);
 
-  --pola-latar:
-    repeating-radial-gradient(
-      circle at 88% 4%,
-      transparent 0 58px,
-      var(--riak-air) 58px 60px,
-      transparent 60px 122px
+  /*
+   * Garis takar. Satu arah, jarak lebar — lihat alasannya di atas.
+   * Dipisahkan dari riaknya karena yang ini DIAM: garis ukur yang ikut
+   * hanyut berhenti berfungsi sebagai garis ukur.
+   */
+  --pola-latar: repeating-linear-gradient(
+    90deg,
+    var(--kisi-ukur) 0 1px,
+    transparent 1px 120px
+  );
+
+  /*
+   * Riak: empat cincin di dua titik jatuh, bukan cincin tak berhingga.
+   * Jari-jarinya sengaja tidak berkelipatan (260/400 dan 210/330) supaya
+   * jaraknya tidak terbaca sebagai irama yang bisa ditebak.
+   */
+  --riak-latar:
+    radial-gradient(
+      circle at 84% 12%,
+      transparent 0 260px,
+      var(--riak-air) 260px 262px,
+      transparent 262px
     ),
-    repeating-radial-gradient(
-      circle at 6% 58%,
-      transparent 0 74px,
-      var(--riak-air) 74px 76px,
-      transparent 76px 158px
+    radial-gradient(
+      circle at 84% 12%,
+      transparent 0 400px,
+      var(--riak-air) 400px 402px,
+      transparent 402px
     ),
-    repeating-linear-gradient(
-      0deg,
-      var(--kisi-ukur) 0 1px,
-      transparent 1px 36px
+    radial-gradient(
+      circle at 10% 66%,
+      transparent 0 210px,
+      var(--riak-air) 210px 212px,
+      transparent 212px
     ),
-    repeating-linear-gradient(
-      90deg,
-      var(--kisi-ukur) 0 1px,
-      transparent 1px 36px
+    radial-gradient(
+      circle at 10% 66%,
+      transparent 0 330px,
+      var(--riak-air) 330px 332px,
+      transparent 332px
     );
 
   --air-dangkal: #ffffff;
@@ -398,9 +447,14 @@
    * gelap selalu terbaca lebih lemah daripada garis gelap di atas latar
    * terang pada persentase yang sama — memakai angka tema terang di sini
    * membuat polanya hilang sama sekali.
+   *
+   * Tetap dinaikkan, tetapi tidak sejauh dulu (11%/13% → 9%/10%). Keluhan
+   * pusing datang dari tema terang, dan di tema gelap getarannya justru
+   * LEBIH kuat: garis terang di atas bidang nyaris hitam punya kontras
+   * tepi yang lebih tajam daripada garis gelap di atas bidang terang.
    */
-  --kisi-ukur: color-mix(in oklab, var(--color-brand-300) 11%, transparent);
-  --riak-air: color-mix(in oklab, var(--color-brand-400) 13%, transparent);
+  --kisi-ukur: color-mix(in oklab, var(--color-brand-300) 9%, transparent);
+  --riak-air: color-mix(in oklab, var(--color-brand-400) 10%, transparent);
 
   --air-dangkal: #0e3847;
   --air-tengah: #05161c;
@@ -529,16 +583,16 @@
   }
 
   /*
-   * Lembar pola — riak dan kisi ukur.
+   * Lembar garis takar.
    *
    * Dipasang sebagai pseudo-elemen TERSENDIRI, bukan lapisan tambahan di
    * `background-image` body, karena body memakai `background-size: 100% 100%`
    * untuk gradasinya. Satu ukuran itu berlaku ke SEMUA lapisan: pola
-   * berulangnya akan ditarik setinggi dokumen dan kisinya berubah jadi empat
-   * garis raksasa. Memisahkannya juga berarti ukuran kisi tetap 36px di
-   * halaman pendek maupun panjang.
+   * berulangnya akan ditarik setinggi dokumen dan kisinya berubah jadi
+   * beberapa garis raksasa. Memisahkannya juga berarti jarak garisnya tetap
+   * 120px di halaman pendek maupun panjang.
    *
-   * `fixed` supaya polanya diam saat digulir. Isi halaman bergerak di atas
+   * `fixed` supaya garisnya diam saat digulir. Isi halaman bergerak di atas
    * permukaan yang tenang — dan itu pembacaan yang benar untuk air.
    *
    * `z-index: -1` menaruhnya di belakang seluruh isi tapi di depan warna
@@ -552,6 +606,48 @@
     z-index: -1;
     pointer-events: none;
     background-image: var(--pola-latar);
+  }
+
+  /*
+   * Lembar riak — satu-satunya bagian latar yang BERGERAK.
+   *
+   * Dipisahkan dari garis takar karena keduanya harus berbeda perilaku:
+   * garis ukur yang ikut hanyut berhenti terbaca sebagai alat ukur,
+   * sementara air yang benar-benar diam terbaca sebagai gambar, bukan air.
+   *
+   * ── Kenapa `transform`, bukan `background-position` ──────────────────
+   *
+   * Menganimasikan `background-position` memaksa peramban menggambar ulang
+   * gradiennya tiap bingkai, di lapisan yang menutupi seluruh layar.
+   * `transform` ditangani compositor: lapisannya digambar sekali lalu
+   * digeser. Pada halaman yang orangnya sedang MEMBACA, selisih itu
+   * menentukan — cat ulang selebar layar tiap bingkai terasa sebagai
+   * halaman yang berat, bukan sebagai gerakan yang halus.
+   *
+   * `inset: -12%` membuat lembarnya lebih besar daripada layar. Tanpa itu,
+   * menggesernya akan menyingkap tepi kosong di sisi yang ditinggalkan.
+   *
+   * ── Kenapa 32 detik ──────────────────────────────────────────────────
+   *
+   * Satu arah 32 detik, bolak-balik 64 detik, dengan jarak total 20px. Itu
+   * sekitar 0,6 piksel per detik: terlalu lambat untuk ditangkap mata yang
+   * sedang membaca, tetapi cukup untuk membuat halaman tidak terasa sebagai
+   * gambar diam saat dipandang beberapa puluh detik. `ease-in-out` membuat
+   * titik baliknya mengendap, bukan berbalik mendadak — pembalikan tajam
+   * pada gerakan selambat ini justru yang akan terlihat.
+   *
+   * `prefers-reduced-motion` ditangani jaring pengaman global di akhir
+   * berkas ini, yang mencakup `*::after`.
+   */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: -12%;
+    z-index: -1;
+    pointer-events: none;
+    background-image: var(--riak-latar);
+    animation: arus-latar 32s ease-in-out infinite alternate;
+    will-change: transform;
   }
 
   /* Judul panjang tidak boleh menyisakan satu kata sendirian di baris akhir. */
@@ -851,6 +947,72 @@
     box-shadow: var(--kilau-tepi), var(--kedalaman-1);
   }
 
+  /* ── Cincin fokus ───────────────────────────────────────────────────
+   *
+   * ── Kenapa jadi utilitas, bukan kelas Tailwind yang diulang ─────────
+   *
+   * Ada aturan `:focus-visible` global di `@layer base` yang memberi
+   * outline 2px pada setiap elemen. Masalahnya, hampir semua kolom isian
+   * dan tombol di proyek ini menulis `outline-none` untuk membuang cincin
+   * bawaan peramban — dan itu ikut MEMBUNUH aturan global tadi. Yang
+   * tersisa adalah penggantinya: `focus:ring-2 focus:ring-brand-500/30`.
+   *
+   * Penggantinya punya dua cacat, keduanya terukur:
+   *
+   * 1. `brand-500` pada 30% di atas putih hanya mencapai 1,38:1 — jauh di
+   *    bawah ambang 3:1 untuk penanda non-teks. Bahkan `brand-500` PENUH
+   *    cuma 2,88:1 dan tetap gagal. Karena itu cincin di permukaan terang
+   *    memakai `brand-600`, yang terukur 5,11–6,08:1 di atas putih,
+   *    `surface-2`, `soft`, dan `brand-50`.
+   *
+   * 2. `focus:` bukan `focus-visible:`, jadi cincinnya menyala tiap kali
+   *    tombol DIKLIK tetikus. Orang membacanya sebagai cacat tampilan,
+   *    dan lama-lama mengabaikan cincin yang sama saat ia benar-benar
+   *    menandai posisi papan ketik.
+   *
+   * ── Kenapa terpisah dari hover ─────────────────────────────────────
+   *
+   * Hover dan fokus menjawab dua pertanyaan berbeda: "tetikus saya di
+   * atas apa" dan "papan ketik saya sedang di mana". Kalau keduanya
+   * digambar sama, pengguna papan ketik kehilangan satu-satunya petunjuk
+   * posisinya. Jadi hover mengurus PERMUKAAN (kedalaman, latar) lewat
+   * `.angkat`, dan fokus mengurus CINCIN lewat kelas di bawah ini.
+   */
+  /*
+   * Selektor telanjang WAJIB ada, walau isinya cuma satu baris.
+   *
+   * Tailwind v4 memangkas kelas di `@layer utilities` yang tidak pernah
+   * cocok sebagai selektor utuh. Versi pertama hanya menulis
+   * `.cincin-fokus:focus-visible`, dan aturannya TIDAK PERNAH SAMPAI ke CSS
+   * terbangun — kelasnya terpasang rapi di DOM, `document.styleSheets`
+   * mengembalikan nol aturan yang cocok, dan cincin yang tergambar tetap
+   * milik aturan global. Gagal tanpa galat: tidak ada peringatan Tailwind,
+   * tidak ada galat build.
+   */
+  .cincin-fokus {
+    outline-color: var(--color-brand-600);
+  }
+  .cincin-fokus:focus-visible {
+    outline: 2px solid var(--color-brand-600);
+    outline-offset: 2px;
+  }
+
+  /*
+   * Varian untuk panel gelap (`bg-console`) dan tombol berisi warna pekat.
+   *
+   * `brand-600` yang terbaca jelas di atas putih justru tenggelam di atas
+   * `console` — ia hanya terpaut 1,7:1 dari latarnya sendiri. `accent`
+   * terukur 8,66:1 di sana, jadi cincinnya tetap terlihat tanpa harus
+   * menebalkan garisnya.
+   */
+  .cincin-fokus-gelap {
+    outline-color: var(--color-accent);
+  }
+  .cincin-fokus-gelap:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
   /*
    * Transisi masuk saat rute berpindah (lihat `ui/transisi-halaman.tsx`).
    *
@@ -1044,6 +1206,27 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/*
+ * Hanyutnya riak latar (lihat `body::after`).
+ *
+ * Hanya `translate3d`, tanpa perubahan opasitas maupun skala. Kecerahan
+ * yang naik-turun di latar seluruh layar terbaca sebagai halaman yang
+ * berkedip — persis yang harus dihindari di halaman yang dibaca. Yang
+ * bergeser pun cuma 20px total, dibagi ke dua sumbu supaya arahnya miring
+ * dan tidak terbaca sebagai geseran mendatar yang kaku.
+ *
+ * `translate3d`, bukan `translate`: sumbu Z memaksa lapisannya naik ke
+ * compositor, jadi pergeserannya tidak memicu cat ulang.
+ */
+@keyframes arus-latar {
+  from {
+    transform: translate3d(-10px, -6px, 0);
+  }
+  to {
+    transform: translate3d(10px, 6px, 0);
   }
 }
 

@@ -27,7 +27,7 @@ export function LegendaPanas() {
         </div>
       </div>
 
-      <span className="font-mono text-[11px]">Sensor ESP32 JM-200</span>
+      <span className="font-mono text-[11px]">Sensor meter JM-200</span>
     </div>
   );
 }
