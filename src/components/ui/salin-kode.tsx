@@ -134,12 +134,15 @@ export function SalinKode({
       /* `print:hidden`: tombol tidak punya arti di atas kertas, dan di
          halaman riwayat ia berada di dalam elemen yang ikut tercetak. */
       className={cn(
-        "angkat inline-flex shrink-0 items-center justify-center gap-1.5 rounded-[8px] border px-2.5 py-1.5 text-[11px] font-semibold whitespace-nowrap print:hidden",
+        /* `cincin-fokus`: tombol ini hidup di dalam kotak kode yang
+           sudah ramai garis putus-putus, dan cincin bawaan peramban
+           di sana tertukar dengan salah satu garis itu. */
+        "angkat cincin-fokus inline-flex shrink-0 items-center justify-center gap-1.5 rounded-[8px] border px-2.5 py-1.5 text-[11px] font-semibold whitespace-nowrap print:hidden",
         keadaan === "tersalin" &&
           "border-success/40 bg-success-soft text-success",
         keadaan === "gagal" && "border-warn/40 bg-warn-soft text-warn",
         keadaan === "diam" &&
-          "border-line bg-surface text-ink shadow-[var(--kilau-tepi),var(--kedalaman-1)] hover:border-brand-500/40",
+          "border-line bg-surface text-ink shadow-[var(--kilau-tepi),var(--kedalaman-1)] hover:border-brand-500/60 hover:bg-brand-50 hover:text-brand-700",
         className,
       )}
     >

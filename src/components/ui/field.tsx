@@ -31,10 +31,26 @@ export function TextField({
         </label>
         {kananLabel}
       </div>
+      {/*
+        Cincinnya PENUH dan bernada `brand-600`, bukan `brand-500/30`.
+        Terukur: `brand-500` pada 30% di atas putih hanya 1,38:1, sementara
+        penanda non-teks butuh 3:1 — jadi cincin lama praktis tidak terlihat.
+        `brand-600` penuh mencapai 6,08:1.
+
+        Garis tepinya ikut berubah saat fokus, dan itu bukan hiasan: cincin
+        sendirian mudah tertukar dengan bayangan pada kolom yang sudah
+        cekung. Garis yang ikut menegas memastikan kolom yang sedang diketik
+        tetap terbaca berbeda walaupun cincinnya terpotong wadah di luarnya.
+
+        Hover memakai garis tepi, BUKAN cincin. Kalau keduanya memakai
+        cincin, pengguna papan ketik kehilangan satu-satunya tanda posisinya.
+      */}
       <div
         className={cn(
           "flex items-center gap-2 rounded-input border bg-surface px-3",
-          "focus-within:ring-2 focus-within:ring-brand-500/30",
+          "transition-[border-color,box-shadow] duration-150",
+          "hover:border-brand-500/60",
+          "focus-within:border-brand-600 focus-within:ring-2 focus-within:ring-brand-600",
           galat ? "border-danger" : "border-line-strong",
         )}
       >
@@ -82,11 +98,23 @@ export function Select({
           {label}
         </label>
       ) : null}
+      {/*
+        `focus-visible`, bukan `focus`. Dengan `focus:` cincinnya menyala
+        tiap kali daftar ini diklik tetikus — orang membacanya sebagai cacat
+        tampilan, lalu berhenti memperhatikan cincin yang sama ketika ia
+        benar-benar menandai posisi papan ketik.
+
+        `outline-none` dipertahankan karena cincin pengganti digambar lewat
+        `ring`; tanpa itu outline bawaan peramban dan cincin ini tergambar
+        bertumpuk sebagai dua garis sejajar.
+      */}
       <select
         id={id}
         className={cn(
           "h-11 w-full rounded-input border border-line-strong bg-surface px-3",
-          "text-[15px] outline-none focus:ring-2 focus:ring-brand-500/30",
+          "text-[15px] outline-none transition-[border-color,box-shadow] duration-150",
+          "hover:border-brand-500/60",
+          "focus-visible:border-brand-600 focus-visible:ring-2 focus-visible:ring-brand-600",
         )}
         {...sisa}
       >
@@ -111,12 +139,28 @@ export function Switch({
       role="switch"
       aria-checked={aktif}
       onClick={() => onChange(!aktif)}
-      className="inline-flex items-center gap-2.5 text-left text-sm"
+      /*
+       * Sakelar ini sebelumnya TIDAK punya hover maupun cincin fokus sama
+       * sekali — padahal ia `<button>`. Pengguna papan ketik bisa men-Tab ke
+       * sini dan menekan spasi tanpa pernah tahu bahwa fokusnya ada di sini,
+       * dan sakelar yang terbalik tanpa disadari adalah jenis kesalahan yang
+       * baru ketahuan jauh belakangan.
+       *
+       * Cincinnya dipasang di tombolnya, bukan di alurnya, supaya ia
+       * melingkupi alur BESERTA labelnya — label itu bagian dari target
+       * klik, jadi ia juga bagian dari yang sedang difokus.
+       */
+      className="cincin-fokus group inline-flex items-center gap-2.5 rounded-[8px] text-left text-sm"
     >
       <span
         className={cn(
           "relative h-6 w-10 shrink-0 rounded-full transition-colors",
-          aktif ? "bg-brand-600" : "bg-line-strong",
+          /* Hover menggelapkan alurnya — satu-satunya petunjuk bahwa benda
+             ini bisa ditekan, karena bentuk kapsulnya sendiri sudah dipakai
+             lencana di tempat lain. */
+          aktif
+            ? "bg-brand-600 group-hover:bg-brand-700"
+            : "bg-line-strong group-hover:bg-muted",
         )}
       >
         <span

@@ -79,7 +79,7 @@ export function SlideToConfirm({
     <div
       ref={wadahRef}
       className={cn(
-        "relative flex h-12 w-full items-center overflow-hidden rounded-[3px] border border-line bg-soft px-1 select-none",
+        "relative flex h-12 w-full items-center overflow-hidden rounded-full border border-line bg-soft px-1 select-none",
         disabled && "opacity-50 cursor-not-allowed",
       )}
     >
@@ -95,12 +95,39 @@ export function SlideToConfirm({
       </div>
 
       {/* Tombol Penggeser (Handle Slider) */}
-      <div
+      {/*
+        Penggesernya `<button>`, bukan `<div>`.
+
+        Sebelumnya ia div dengan `onMouseDown` saja: tidak pernah menerima
+        fokus, tidak muncul di urutan Tab, dan tidak punya padanan papan
+        ketik sama sekali. Pada kendali yang dipakai untuk MENUTUP KATUP AIR,
+        itu berarti sebagian orang tidak punya jalan untuk melakukannya.
+
+        Enter dan spasi mengonfirmasi langsung — menuntut orang "menggeser"
+        dengan tombol panah hanya meniru gerakan tetikus tanpa menambah
+        keamanan apa pun; yang dicegah pola geser ini adalah klik TIDAK
+        SENGAJA, dan menekan Enter pada elemen yang sudah difokus sengaja
+        bukan hal yang tidak sengaja.
+      */}
+      <button
+        type="button"
+        disabled={disabled || memuat || selesai}
+        aria-label={selesai ? teksBerhasil : teks}
         onMouseDown={handleMulai}
         onTouchStart={handleMulai}
+        onKeyDown={(e) => {
+          if (disabled || memuat || selesai) return;
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setPosisi(lebarMaksimal);
+            setSelesai(true);
+            onKonfirmasi();
+          }
+        }}
         style={{ transform: `translateX(${posisi}px)` }}
         className={cn(
-          "relative z-10 grid size-10 place-items-center rounded-[2px] bg-brand-600 text-white shadow-sm transition-transform cursor-grab active:cursor-grabbing",
+          "cincin-fokus-gelap relative z-10 grid size-10 cursor-grab place-items-center rounded-[8px] bg-brand-600 text-white shadow-[var(--kilau-tepi),var(--kedalaman-1)] transition-transform active:cursor-grabbing",
+          "enabled:hover:bg-brand-700 enabled:hover:shadow-[var(--kedalaman-2)]",
           selesai && "bg-success",
         )}
       >
@@ -111,7 +138,7 @@ export function SlideToConfirm({
         ) : (
           <ArrowRight size={16} />
         )}
-      </div>
+      </button>
     </div>
   );
 }

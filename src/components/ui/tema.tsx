@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { cn } from "@/lib/cn";
 import { Moon, Sun } from "lucide-react";
 
 const KUNCI = "jernih-tema";
@@ -51,7 +52,22 @@ export function TombolTema({ className }: { className?: string }) {
       type="button"
       onClick={ganti}
       aria-label={gelap ? "Ganti ke tema terang" : "Ganti ke tema gelap"}
-      className={className}
+      /*
+       * Cincin fokus dibawa KOMPONENNYA, bukan dititipkan ke pemanggil.
+       *
+       * Sebelumnya `className` pemanggil adalah satu-satunya gaya yang ada
+       * di sini — tombol ini tidak punya hover maupun cincin bawaan sama
+       * sekali. Hasilnya tergantung siapa yang memakainya: bilah publik
+       * menulis cincinnya sendiri, tempat lain lupa, dan tombol yang sama
+       * berperilaku berbeda di dua halaman.
+       *
+       * `className` tetap ditaruh SESUDAHNYA supaya pemanggil masih bisa
+       * menimpa — bilah gelap, misalnya, perlu cincin terang.
+       */
+      className={cn(
+        "cincin-fokus transition-colors hover:text-ink",
+        className,
+      )}
     >
       {gelap ? <Sun size={18} /> : <Moon size={18} />}
     </button>
