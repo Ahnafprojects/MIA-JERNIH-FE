@@ -1,25 +1,215 @@
-/**
- * S15 — Akun & Keamanan
- *
- * Profil, ubah kata sandi, sesi aktif, ambang peringatan, meter tertaut.
- *
- * BELUM DIKERJAKAN. Spesifikasi lengkap ada di issue GitHub repo ini.
- * Acuan rancangan: Aquantum `design/docs/03-website-admin.md` dan
- * `04-website-pelanggan.md` — isinya sama, tampilannya baru.
- */
-export default function Halaman() {
+"use client";
+
+import React, { useEffect, useState } from "react";
+import { Unlink, LogOut } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
+import { api } from "@/lib/api";
+import { liter } from "@/lib/format";
+import { Button } from "@/components/ui/button";
+import { TombolTema } from "@/components/ui/tema";
+import { Badge } from "@/components/ui/badge";
+
+interface Sesi {
+  id: string;
+  perangkat: string;
+  ip: string;
+  terakhirPada: string;
+  dibuatPada: string;
+}
+const BAGIAN = [
+  "Profil",
+  "Keamanan",
+  "Peringatan",
+  "Meter tertaut",
+  "Tampilan",
+];
+export default function HalamanAkun() {
+  const { pengguna, meter } = useAuth();
+  const [bagian, setBagian] = useState("Profil");
+  const [sesi, setSesi] = useState<Sesi[]>([]);
+  const [ambang, setAmbang] = useState(100);
+  const [pesan, setPesan] = useState<string | null>(null);
+  useEffect(() => {
+    let ok = true;
+    const timer = window.setTimeout(() => {
+      (async () => {
+        try {
+          const r = await api<{ sesi: Sesi[] }>("/api/me/sesi");
+          if (ok) setSesi(r.sesi || []);
+        } catch {}
+      })();
+      if (pengguna?.ambangPeringatanL) setAmbang(pengguna.ambangPeringatanL);
+    }, 0);
+    return () => {
+      ok = false;
+      window.clearTimeout(timer);
+    };
+  }, [pengguna]);
+  const currentUA = typeof navigator !== "undefined" ? navigator.userAgent : "";
+  const lepas = async (id: string) => {
+    if (!confirm("Keluarkan sesi ini dari akun Anda?")) return;
+    await api(`/api/me/sesi/${id}`, { method: "DELETE" });
+    setSesi((x) => x.filter((s) => s.id !== id));
+  };
+  const simpanAmbang = async () => {
+    setPesan(
+      "Ambang tersimpan di perangkat ini. Endpoint server untuk menyimpan preferensi akun belum tersedia.",
+    );
+    localStorage.setItem("jernih_ambang", String(ambang));
+  };
   return (
-    <main className="mx-auto max-w-5xl px-6 py-16">
-      <p className="text-xs font-semibold uppercase tracking-widest text-sky-600">
-        S15
-      </p>
-      <h1 className="mt-2 text-3xl font-bold tracking-tight">Akun & Keamanan</h1>
-      <p className="mt-3 max-w-2xl text-slate-600 dark:text-slate-400">
-        Profil, ubah kata sandi, sesi aktif, ambang peringatan, meter tertaut.
-      </p>
-      <p className="mt-8 rounded-xl border border-dashed border-slate-300 px-5 py-4 text-sm text-slate-500 dark:border-slate-700">
-        Halaman ini belum dikerjakan. Lihat issue GitHub untuk spesifikasinya.
-      </p>
+    <main className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6">
+      <div className="border-b border-line pb-4">
+        <span className="eyebrow text-brand-700 dark:text-accent">
+          Pengaturan Pribadi
+        </span>
+        <h1 className="font-display text-3xl font-bold text-ink">
+          Akun & Keamanan
+        </h1>
+      </div>
+      <div className="grid gap-6 lg:grid-cols-[13rem_1fr]">
+        <nav className="flex gap-1 overflow-x-auto lg:flex-col">
+          {BAGIAN.map((x) => (
+            <button
+              key={x}
+              onClick={() => setBagian(x)}
+              className={`whitespace-nowrap px-3 py-2 text-left text-xs font-semibold ${bagian === x ? "border-l-2 border-brand-500 bg-brand-500/5 text-brand-700 dark:text-accent" : "text-muted hover:bg-soft"}`}
+            >
+              {x}
+            </button>
+          ))}
+        </nav>
+        <section className="border border-line bg-surface p-6">
+          {bagian === "Profil" && (
+            <div className="space-y-4">
+              <h2 className="font-display text-xl font-bold">Profil</h2>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <span className="eyebrow text-muted">Nama</span>
+                  <p className="mt-1 text-sm font-semibold">
+                    {pengguna?.nama || "—"}
+                  </p>
+                </div>
+                <div>
+                  <span className="eyebrow text-muted">Email</span>
+                  <p className="mt-1 text-sm font-semibold">
+                    {pengguna?.email || "—"}{" "}
+                    <Badge nada="sukses">Terverifikasi</Badge>
+                  </p>
+                </div>
+                <div>
+                  <span className="eyebrow text-muted">Nomor HP</span>
+                  <p className="mt-1 text-sm font-mono">
+                    {pengguna?.hp || "—"}
+                  </p>
+                  <p className="text-xs text-muted">Untuk dihubungi petugas.</p>
+                </div>
+              </div>
+            </div>
+          )}
+          {bagian === "Keamanan" && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="font-display text-xl font-bold">Keamanan</h2>
+                <p className="mt-1 text-xs text-muted">
+                  Perubahan kata sandi membutuhkan kode email dari server.
+                </p>
+                <Button varian="sekunder" className="mt-4" disabled>
+                  Ubah Kata Sandi
+                </Button>
+              </div>
+              <div className="border-t border-line pt-5">
+                <h3 className="font-bold text-ink">Sesi Aktif</h3>
+                <ul className="mt-3 divide-y divide-line">
+                  {sesi.map((s) => {
+                    const ini = s.perangkat === currentUA;
+                    return (
+                      <li
+                        key={s.id}
+                        className="flex justify-between gap-3 py-3 text-xs"
+                      >
+                        <div>
+                          <p className="font-mono font-bold">
+                            {s.perangkat.slice(0, 70)}{" "}
+                            {ini && <Badge nada="brand">Perangkat ini</Badge>}
+                          </p>
+                          <p className="text-muted">{s.ip}</p>
+                        </div>
+                        {!ini && (
+                          <Button
+                            varian="bahaya"
+                            ukuran="sm"
+                            onClick={() => lepas(s.id)}
+                          >
+                            <LogOut size={13} /> Keluarkan
+                          </Button>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            </div>
+          )}
+          {bagian === "Peringatan" && (
+            <div className="space-y-4">
+              <h2 className="font-display text-xl font-bold">
+                Peringatan Saldo
+              </h2>
+              <p className="text-xs text-muted">
+                Peringatan aplikasi ini terpisah dari alarm meter: 5 L, 2 L, dan
+                0 L yang diatur firmware dan tidak bisa diubah dari sini.
+              </p>
+              <select
+                value={ambang}
+                onChange={(e) => setAmbang(Number(e.target.value))}
+                className="h-11 rounded-[3px] border border-line bg-canvas px-3 text-sm"
+              >
+                {[50, 100, 250, 500].map((x) => (
+                  <option key={x} value={x}>
+                    {liter(x, 0)}
+                  </option>
+                ))}
+              </select>
+              <br />
+              <Button onClick={simpanAmbang}>Simpan Ambang</Button>
+              {pesan && <p className="text-xs text-muted">{pesan}</p>}
+            </div>
+          )}
+          {bagian === "Meter tertaut" && (
+            <div className="space-y-4">
+              <h2 className="font-display text-xl font-bold">Meter Tertaut</h2>
+              {meter.map((m) => (
+                <div
+                  key={m.id}
+                  className="flex justify-between border-b border-line py-3 text-sm"
+                >
+                  <span className="font-mono">
+                    {m.nomorSeri} · {liter(m.saldoLiter, 0)}
+                  </span>
+                  <Button
+                    varian="bahaya"
+                    ukuran="sm"
+                    disabled
+                    title="Konfirmasi lepas meter akan tersedia setelah endpoint terhubung"
+                  >
+                    <Unlink size={13} /> Lepas
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+          {bagian === "Tampilan" && (
+            <div className="space-y-4">
+              <h2 className="font-display text-xl font-bold">Tampilan</h2>
+              <p className="text-xs text-muted">
+                Tema tersimpan antar kunjungan.
+              </p>
+              <TombolTema />
+            </div>
+          )}
+        </section>
+      </div>
     </main>
   );
 }

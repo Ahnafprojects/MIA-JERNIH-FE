@@ -67,7 +67,16 @@ function KontenVerifikasi() {
       });
 
       masukDenganAkses(res.accessToken, res.pengguna);
-      router.push("/hubungkan-meter");
+      /*
+       * Langsung ke beranda, bukan ke halaman hubungkan meter.
+       *
+       * Akun baru sekarang menerima meter bawaan begitu verifikasi selesai,
+       * jadi memaksa warga mengisi nomor meter yang tidak dimilikinya hanya
+       * membuat pendaftaran berakhir buntu. Kalau karena sesuatu hal meter
+       * bawaan gagal dibuat, penjaga di /beranda tetap mengarahkan ke
+       * /hubungkan-meter — jadi jalur manual tidak hilang.
+       */
+      router.push("/beranda");
     } catch (err) {
       if (err instanceof ApiError) {
         setPesanGalat(err.message);
