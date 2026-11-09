@@ -26,7 +26,6 @@ import {
   Map as MapIcon,
   Megaphone,
   ScrollText,
-  Settings,
   Users,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
@@ -43,7 +42,6 @@ export const MENU = [
   { href: "/konsol/broadcast", label: "Broadcast", Ikon: Megaphone },
   { href: "/konsol/analitik", label: "Analitik", Ikon: BarChart3 },
   { href: "/konsol/audit", label: "Audit", Ikon: ScrollText },
-  { href: "/konsol/pengaturan", label: "Pengaturan", Ikon: Settings },
 ];
 
 /**
@@ -92,7 +90,7 @@ function Baris({
         onClick={onPilih}
         aria-current={aktif ? "page" : undefined}
         className={cn(
-          "flex min-h-11 items-center gap-3 rounded-[3px] text-[13.5px] font-medium",
+          "flex min-h-11 items-center gap-3 rounded-input text-[13.5px] font-medium",
           ringkas ? "justify-center px-0" : "px-3",
           "transition-colors motion-reduce:transition-none",
           aktif
