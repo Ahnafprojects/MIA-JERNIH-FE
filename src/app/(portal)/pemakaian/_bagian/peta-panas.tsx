@@ -1,6 +1,8 @@
+import { Info } from "lucide-react";
 import { HARI_LABEL, JAM_LABEL, warnaSelPetaPanas } from "./_skala-warna";
+import { LegendaPanas } from "./legenda-panas";
 
-export function PetaPanas({ gridPetaPanas }: { gridPetaPanas: (number | null)[][] }) {
+function GridPetaPanas({ gridPetaPanas }: { gridPetaPanas: (number | null)[][] }) {
   return (
     <div className="overflow-x-auto pb-2">
       <div className="min-w-[48rem]">
@@ -43,6 +45,33 @@ export function PetaPanas({ gridPetaPanas }: { gridPetaPanas: (number | null)[][
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+export function PetaPanas({ gridPetaPanas }: { gridPetaPanas: (number | null)[][] }) {
+  return (
+    <div className="rounded-[4px] border border-line bg-surface p-6 shadow-xs">
+      <div className="mb-4 flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
+        <div>
+          <h2 className="font-display text-base font-bold text-ink">
+            Peta Panas Pemakaian (7 Hari × 24 Jam)
+          </h2>
+          <p className="text-xs text-muted">
+            Warna menunjukkan volume air per jam. Bergulir mendatar untuk
+            melihat jam lengkap di ponsel.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-1.5 text-xs text-muted">
+          <Info size={13} />
+          <span>Pembaruan tiap pergantian jam</span>
+        </div>
+      </div>
+
+      <GridPetaPanas gridPetaPanas={gridPetaPanas} />
+
+      <LegendaPanas />
     </div>
   );
 }
