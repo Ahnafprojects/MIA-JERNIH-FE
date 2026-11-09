@@ -179,15 +179,42 @@ export function BilahAtas({ menu }: { menu: readonly ButirMenu[] }) {
 
   return (
     <>
-      <header data-bilah-atas className="sticky top-0 z-40">
-        <div
-          aria-hidden
-          data-kabut-bilah
-          className="pointer-events-none absolute inset-0 bg-canvas/75 backdrop-blur-md"
-        />
+      <header data-bilah-atas className="fixed inset-x-0 top-0 z-40">
+        {/*
+          Elemen ini DIPERTAHANKAN tanpa gaya apa pun, hanya karena
+          `bilah-atas.css` memakai `data-kabut-bilah` sebagai sasaran saat
+          JavaScript mati. Pudar yang dulu ada di sini dibuang: begitu latar
+          hero menembus ke belakang bilah, pudar itu justru menggambar pita
+          berwarna lain tepat di tempat yang seharusnya menyatu — persis
+          yang membuatnya terbaca sebagai bilah terpisah, bukan kaca.
 
-        <div className="relative px-3 py-3 sm:px-4 sm:py-4">
-          <div className="flex h-14 items-center justify-between gap-3 rounded-full border border-line bg-surface px-3 shadow-[var(--kilau-tepi),var(--kedalaman-3)] sm:px-4">
+          Yang memburamkan isi di baliknya sekarang hanya kacanya sendiri.
+        */}
+        <div aria-hidden data-kabut-bilah className="hidden" />
+
+        {/*
+          Kapsulnya dibatasi dan ditengahkan — lihat catatan panjang yang
+          sama di `(portal)/layout.tsx`. Merentang penuh membuat logo dan
+          tombol terlempar ke dua pojok dengan pita kosong di antaranya,
+          dan keduanya berhenti sejajar dengan isi halaman di bawahnya.
+        */}
+        <div className="relative mx-auto max-w-6xl px-3 py-3 sm:px-4 sm:py-4">
+          <div /*
+               * Kaca: latar separuh tembus + `backdrop-blur` DI KAPSULNYA
+               * SENDIRI, bukan di lapisan terpisah di belakangnya.
+               *
+               * Opasitasnya ditahan di 72%, tidak lebih rendah. Di bawah
+               * bilah ini bisa lewat foto hero yang gelap, dan teks `ink`
+               * di atas kaca yang terlalu bening kehilangan kontrasnya
+               * tepat saat bagian gelap itu tergulir lewat — kegagalan
+               * yang hanya muncul pada sebagian halaman dan karena itu
+               * gampang lolos dari pemeriksaan sekali lihat.
+               *
+               * `backdrop-saturate` dinaikkan sedikit supaya warna yang
+               * lewat di baliknya tidak terbaca kelabu; tanpa itu kacanya
+               * terlihat seperti plastik buram, bukan kaca.
+               */
+              className="flex h-14 items-center justify-between gap-3 rounded-full border border-white/50 bg-surface/72 px-4 shadow-[var(--kilau-tepi),var(--kedalaman-3)] backdrop-blur-xl backdrop-saturate-150 sm:px-5 dark:border-white/10">
             <div className="flex min-w-0 items-center gap-5">
               <Link
                 href="/"
@@ -300,7 +327,22 @@ export function BilahAtas({ menu }: { menu: readonly ButirMenu[] }) {
         aria-label="Menu navigasi"
         className={cn(
           "fixed inset-0 z-50 flex flex-col overflow-y-auto overscroll-contain lg:hidden",
-          "bg-console text-on-console",
+          /*
+           * Kaca, bukan bidang pekat.
+           *
+           * Opasitasnya 80% dan TIDAK lebih rendah. Panel ini melayang di
+           * atas halaman yang latarnya terang, jadi makin bening ia makin
+           * memutih — dan teks `on-console` yang nyaris putih justru
+           * kehilangan kontrasnya di situ. Dihitung pada perpaduan 80%
+           * console + 20% canvas, teksnya masih 7,9:1; pada 70% ia jatuh ke
+           * 5,6:1, dan pada 60% sudah di bawah ambang.
+           *
+           * `backdrop-blur-2xl` yang membuat halaman di baliknya terbaca
+           * sebagai sesuatu yang MASIH ADA tetapi tidak bisa disentuh —
+           * tanpa blur, bidang separuh tembus cuma terlihat seperti warna
+           * yang salah.
+           */
+          "bg-console/80 text-on-console backdrop-blur-2xl",
           "transition-[opacity,visibility] [transition-duration:200ms,0s] ease-out motion-reduce:transition-none",
           terbuka
             ? "visible opacity-100"
