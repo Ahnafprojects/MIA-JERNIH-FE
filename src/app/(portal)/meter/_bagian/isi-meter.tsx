@@ -8,6 +8,7 @@ import { KontrolAliran } from "./kontrol-aliran";
 import { DeteksiKebocoran } from "./deteksi-kebocoran";
 import { LogMeter } from "./log-meter";
 import { DialogRelay } from "./dialog-relay";
+import { IsiOtomatis } from "./isi-otomatis";
 
 export function IsiMeter({ meter }: { meter: ReturnType<typeof useMeter> }) {
   const meterAktif = meter.meterAktif;
@@ -95,6 +96,8 @@ export function IsiMeter({ meter }: { meter: ReturnType<typeof useMeter> }) {
               meter.setAlasanRelay("");
             }}
           />
+
+          <IsiOtomatis meterId={meterAktif.id} />
 
           <DeteksiKebocoran dataDeteksiKebocoran={meter.dataDeteksiKebocoran} />
 
