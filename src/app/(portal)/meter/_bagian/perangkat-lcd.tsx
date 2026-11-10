@@ -7,12 +7,23 @@ export function PerangkatLcd({
   volumeTotalL,
   relayAktif,
 }: {
-  saldo: number;
+  /** `null` = server belum mengirim nilainya. Layar menulis garis, bukan angka. */
+  saldo: number | null;
   saklarOn: boolean;
-  debitLpm: number;
-  volumeTotalL: number;
+  debitLpm: number | null;
+  volumeTotalL: number | null;
   relayAktif: boolean;
 }) {
+  /*
+   * Nilai yang belum diketahui ditulis sebagai garis, seperti layar meter
+   * sungguhan sebelum sensornya melapor. Sebelumnya halaman ini mengisi
+   * kekosongan dengan angka karangan (volume `8420.4`), yang tergambar di
+   * layar tiruan seolah dibaca dari perangkat.
+   */
+  const s = saldo !== null ? saldo.toFixed(2) : "----";
+  const dbt = debitLpm !== null ? debitLpm.toFixed(1) : "--";
+  const v = volumeTotalL !== null ? volumeTotalL.toFixed(1) : "----";
+
   return (
     <div className="rounded-[4px] border border-line bg-surface p-6 shadow-xs">
       <h2 className="font-display text-base font-bold text-ink">
@@ -24,10 +35,12 @@ export function PerangkatLcd({
 
       <div className="my-6 flex justify-center">
         <MeterDevice
-          baris1={`S=${saldo.toFixed(2)}L  ${saklarOn ? "ON" : "OFF"}`}
-          baris2={`D=${debitLpm.toFixed(1)}   V=${volumeTotalL.toFixed(1)}`}
+          baris1={`S=${s}L  ${saklarOn ? "ON" : "OFF"}`}
+          baris2={`D=${dbt}   V=${v}`}
           relayAktif={relayAktif}
-          buzzer={saldo <= 2 ? "crit" : saldo <= 5 ? "warn" : "off"}
+          buzzer={
+            saldo === null ? "off" : saldo <= 2 ? "crit" : saldo <= 5 ? "warn" : "off"
+          }
         />
       </div>
     </div>

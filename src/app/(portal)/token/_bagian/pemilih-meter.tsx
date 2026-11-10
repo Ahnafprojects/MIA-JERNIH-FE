@@ -1,4 +1,4 @@
-import { liter } from "@/lib/format";
+import { literAtauKosong } from "@/lib/format";
 import type { MeterSingkat } from "@/lib/auth-tipe";
 
 export function PemilihMeter({
@@ -27,7 +27,7 @@ export function PemilihMeter({
                 : "border border-line bg-soft text-muted hover:text-ink"
             }`}
           >
-            {m.nomorSeri} ({liter(m.saldoLiter, 0)})
+            {m.nomorSeri} ({literAtauKosong(m.saldoLiter, 0)})
           </button>
         ))}
       </div>

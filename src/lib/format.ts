@@ -18,6 +18,10 @@ export const angka = (n: number, desimal = 0): string =>
 /** `4.820,50 L` — saldo, token, paket, dan pemakaian SELALU dalam liter. */
 export const liter = (n: number, desimal = 2): string => `${angka(n, desimal)} L`;
 
+/** Seperti `liter`, tetapi `null` tampil "—". Nilai hilang bukan nol. */
+export const literAtauKosong = (n: number | null | undefined, desimal = 2): string =>
+  n === null || n === undefined ? "—" : liter(n, desimal);
+
 /** `2,4 L/mnt` */
 export const debit = (n: number): string => `${angka(n, 1)} L/mnt`;
 

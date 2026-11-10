@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Unlink, LogOut } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { api, ApiError } from "@/lib/api";
-import { liter } from "@/lib/format";
+import { liter, literAtauKosong } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { TombolTema } from "@/components/ui/tema";
 import { Badge } from "@/components/ui/badge";
@@ -340,7 +340,7 @@ export default function HalamanAkun() {
                   className="flex justify-between border-b border-line py-3 text-sm"
                 >
                   <span className="font-mono">
-                    {m.nomorSeri} · {liter(m.saldoLiter, 0)}
+                    {m.nomorSeri} · {literAtauKosong(m.saldoLiter, 0)}
                   </span>
                   <Button
                     varian="bahaya"

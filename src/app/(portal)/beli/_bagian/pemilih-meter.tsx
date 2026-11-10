@@ -1,5 +1,5 @@
 import { Droplets } from "lucide-react";
-import { liter } from "@/lib/format";
+import { literAtauKosong } from "@/lib/format";
 import type { MeterSingkat } from "@/lib/auth-tipe";
 
 export function PemilihMeter({
@@ -29,7 +29,7 @@ export function PemilihMeter({
             <Droplets size={14} />
             <span>{m.nomorSeri}</span>
             <span className="font-mono text-[11px] text-muted">
-              ({liter(m.saldoLiter, 0)})
+              ({literAtauKosong(m.saldoLiter, 0)})
             </span>
           </button>
         ))}
