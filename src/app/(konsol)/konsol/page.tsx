@@ -40,79 +40,23 @@
  *   tampil "—" — bukan 0, karena nol adalah hasil pengukuran.
  */
 
-import { useMemo } from "react";
-import { Card, Panel } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { KeadaanGalat, Skeleton } from "@/components/ui/keadaan";
-import useApi from "@/lib/use-api";
-import { angka } from "@/lib/format";
-import { nilaiKpi } from "@/types/publik";
+import { Card } from "@/components/ui/card";
+import { KeadaanGalat } from "@/components/ui/keadaan";
+import { useDashboard } from "./_hooks/use-dashboard";
 import { DenyutSegar, JEDA_SEGAR_DETIK } from "./_bagian/denyut";
 import { PitaGenting } from "./_bagian/pita-genting";
 import { PitaKpi } from "./_bagian/kpi";
-import { StatusJaringan } from "./_bagian/status-jaringan";
-import { GrafikSuplai } from "./_bagian/grafik-suplai";
-import { TabelLive } from "./_bagian/tabel-live";
-import { DaftarBerbunyi, DaftarInsiden } from "./_bagian/antrian";
-import { DaftarNrwZona } from "./_bagian/nrw-zona";
-import { TokenHariIni } from "./_bagian/token-hari-ini";
-import { angkaSah, pasanganCelah, type Dashboard } from "./_bagian/tipe";
+import { PanelUtama } from "./_bagian/panel-utama";
+import { RelAntrean } from "./_bagian/rel-antrean";
 
 export default function HalamanKonsol() {
-  const { data, memuat, menyegarkan, galat, muatUlang } = useApi<Dashboard>(
-    "/api/admin/dashboard",
-  );
+  const d = useDashboard();
 
-  const kpi = data?.kpi ?? [];
-  const insiden = data?.insiden ?? [];
-  const berbunyi = data?.meterBerbunyi ?? [];
-
-  /*
-   * Jumlah TOTAL, bukan panjang daftar yang dikirim.
-   *
-   * Kedua daftar di rel kanan sengaja dipotong server (enam insiden,
-   * delapan meter). Memakai panjangnya sebagai jumlah membuat pita genting
-   * mengumumkan "6 insiden" sementara panel di sebelahnya menulis 87 untuk
-   * hari yang sama — dan dua angka yang berselisih di satu layar adalah hal
-   * pertama yang dihitung ulang orang, lalu seluruh halaman berhenti
-   * dipercaya. Panjang daftar hanya dipakai sebagai cadangan terakhir.
-   */
-  const jumlahInsiden = data
-    ? (angkaSah(data.jumlahStatus?.insiden) ?? insiden.length)
-    : null;
-  const jumlahBerbunyi = data
-    ? (angkaSah(data.totalMeterBerbunyi) ?? berbunyi.length)
-    : null;
-
-  // Zona yang disebut di pita genting: gabungan dari kedua antrean, tanpa
-  // pengulangan, urut supaya kalimatnya tidak berganti susunan tiap muat.
-  const zonaTerdampak = Array.from(
-    new Set([...insiden, ...berbunyi].map((x) => x.zona).filter(Boolean)),
-  ).sort((a, b) => a.localeCompare(b, "id-ID"));
-
-  /*
-   * Grafik distabilkan lewat ISI-nya, bukan referensinya.
-   *
-   * Tiap pengambilan berkala menghasilkan objek baru walau tiap titiknya
-   * sama persis, dan Recharts menggambar ulang seluruh deret — garisnya
-   * menyapu dari kiri ke kanan tiap dua belas detik tanpa ada satu pun
-   * nilai yang berganti. Dengan kunci teks sebagai satu-satunya kebergantungan,
-   * objeknya baru berganti kalau angkanya memang berganti.
-   */
-  const kunciGrafik = JSON.stringify(data?.grafik ?? null);
-  const grafik = useMemo(
-    () => JSON.parse(kunciGrafik) as Dashboard["grafik"] | null,
-    [kunciGrafik],
-  );
-
-  const { atas, bawah } = pasanganCelah(grafik?.series);
-  const nrwRata = data ? nilaiKpi(kpi, "nrwRataPct") : null;
-
-  if (galat) {
+  if (d.galat) {
     return (
       <div className="mx-auto max-w-[96rem] px-4 py-6 sm:px-6">
         <Card>
-          <KeadaanGalat pesan={galat} onCoba={muatUlang} />
+          <KeadaanGalat pesan={d.galat} onCoba={d.muatUlang} />
         </Card>
       </div>
     );
@@ -134,9 +78,9 @@ export default function HalamanKonsol() {
         </div>
 
         <DenyutSegar
-          memuat={memuat}
-          menyegarkan={menyegarkan}
-          onSegarkan={muatUlang}
+          memuat={d.memuat}
+          menyegarkan={d.menyegarkan}
+          onSegarkan={d.muatUlang}
         />
       </header>
 
@@ -145,134 +89,34 @@ export default function HalamanKonsol() {
       {/* ── Jawaban lebih dulu ──────────────────────────────────────── */}
       <div className="mt-5">
         <PitaGenting
-          insiden={jumlahInsiden}
-          berbunyi={jumlahBerbunyi}
-          zonaTerdampak={zonaTerdampak}
-          memuat={memuat}
+          insiden={d.jumlahInsiden}
+          berbunyi={d.jumlahBerbunyi}
+          zonaTerdampak={d.zonaTerdampak}
+          memuat={d.memuat}
         />
       </div>
 
       {/* ── Lima KPI jaringan ───────────────────────────────────────── */}
       <div className="mt-5">
-        <PitaKpi kpi={kpi} memuat={memuat} />
+        <PitaKpi kpi={d.kpi} memuat={d.memuat} />
       </div>
 
       {/* ── Isi utama: kerja di kiri, antrean di kanan ──────────────── */}
       <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_21rem]">
-        <div className="min-w-0 space-y-5">
-          <Panel
-            judul="Air disuplai dan air tercatat"
-            sub="30 hari terakhir · meter kubik per hari"
-            aksi={
-              nrwRata === null ? null : (
-                <Badge
-                  nada={
-                    nrwRata <= 20
-                      ? "sukses"
-                      : nrwRata <= 30
-                        ? "peringatan"
-                        : "bahaya"
-                  }
-                  titik
-                >
-                  <span className="tabular font-mono">
-                    {angka(nrwRata, 1)}%
-                  </span>
-                  <span className="ml-1 font-semibold">hilang</span>
-                </Badge>
-              )
-            }
-          >
-            {memuat ? (
-              <Skeleton className="h-64 w-full" />
-            ) : (
-              <GrafikSuplai
-                labels={grafik?.labels ?? []}
-                atas={atas}
-                bawah={bawah}
-              />
-            )}
-          </Panel>
-
-          <Panel
-            judul="Pelanggan yang sedang mengalir"
-            sub="Diurutkan dari debit terbesar"
-            isiClassName="p-0"
-          >
-            <TabelLive baris={data?.pelangganLive} memuat={memuat} />
-          </Panel>
-
-          <Panel
-            judul="Kehilangan air per zona"
-            sub="Penanda tipis pada batang adalah ambang 20%"
-            isiClassName="p-0"
-          >
-            <DaftarNrwZona zona={data?.nrwPerZona} memuat={memuat} />
-          </Panel>
-        </div>
-
-        <aside className="min-w-0 space-y-5">
-          <Panel
-            judul="Status seluruh meter"
-            sub="Dihitung dari laporan terakhir tiap meter"
-          >
-            <StatusJaringan jumlah={data?.jumlahStatus} memuat={memuat} />
-          </Panel>
-
-          <Panel
-            judul="Meter berbunyi"
-            sub="Saldo paling tipis di atas"
-            aksi={
-              jumlahBerbunyi === null ? null : (
-                <Badge nada={jumlahBerbunyi > 0 ? "peringatan" : "netral"}>
-                  <span className="tabular font-mono">
-                    {angka(jumlahBerbunyi)}
-                  </span>
-                </Badge>
-              )
-            }
-            isiClassName="p-0"
-          >
-            <DaftarBerbunyi
-              daftar={data?.meterBerbunyi}
-              total={jumlahBerbunyi}
-              memuat={memuat}
-            />
-          </Panel>
-
-          <Panel
-            judul="Insiden terbaru"
-            sub="Laporan yang belum ditutup"
-            aksi={
-              jumlahInsiden === null ? null : (
-                <Badge nada={jumlahInsiden > 0 ? "bahaya" : "netral"}>
-                  <span className="tabular font-mono">
-                    {angka(jumlahInsiden)}
-                  </span>
-                </Badge>
-              )
-            }
-            isiClassName="p-0"
-          >
-            <DaftarInsiden
-              daftar={data?.insiden}
-              total={jumlahInsiden}
-              memuat={memuat}
-            />
-          </Panel>
-
-          <Panel
-            judul="Token hari ini"
-            sub="Sejak tengah malam"
-            isiClassName="p-0"
-          >
-            <TokenHariIni
-              total={data ? angkaSah(data.tokenHariIni) : null}
-              rincian={data?.tokenHariIniDetail}
-              memuat={memuat}
-            />
-          </Panel>
-        </aside>
+        <PanelUtama
+          data={d.data}
+          memuat={d.memuat}
+          nrwRata={d.nrwRata}
+          labels={d.grafik?.labels ?? []}
+          atas={d.atas}
+          bawah={d.bawah}
+        />
+        <RelAntrean
+          data={d.data}
+          memuat={d.memuat}
+          jumlahBerbunyi={d.jumlahBerbunyi}
+          jumlahInsiden={d.jumlahInsiden}
+        />
       </div>
     </div>
   );
