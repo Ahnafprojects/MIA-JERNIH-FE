@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { api, ApiError } from "@/lib/api";
@@ -9,6 +9,27 @@ import type { DataPaketResponse, ModePilihan, PaketOpsi } from "../_tipe";
 export function useBeli() {
   const router = useRouter();
   const { meter, meterAktif, pilihMeter } = useAuth();
+
+  /*
+   * `/beli?meter=<id>` memilih meter itu lebih dulu.
+   *
+   * Peringatan saldo menipis di halaman Notifikasi menautkan ke sini dengan
+   * id meternya. Tanpa ini, warga dengan dua sambungan yang mengetuk
+   * peringatan untuk meter kos bisa membeli token untuk meter rumah, karena
+   * yang terpilih tetap meter aktif terakhir.
+   *
+   * Dibaca dari `window.location`, bukan `useSearchParams()`: yang kedua
+   * menuntut batas Suspense di halaman, dan tanpanya `next build` berhenti
+   * (lihat design.md §15.7). Diterapkan sekali saja, supaya pilihan warga
+   * sesudahnya tidak ditimpa balik oleh parameter yang sama.
+   */
+  const meterDariTautan = useRef(false);
+  useEffect(() => {
+    if (meterDariTautan.current || meter.length === 0) return;
+    meterDariTautan.current = true;
+    const id = new URLSearchParams(window.location.search).get("meter");
+    if (id && meter.some((m) => m.id === id)) pilihMeter(id);
+  }, [meter, pilihMeter]);
 
   const [tarifPerLiter, setTarifPerLiter] = useState(7.5);
   /*

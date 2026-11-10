@@ -156,9 +156,12 @@ export function useBeranda() {
         void 0;
       }
 
+      /* Kuncinya `notifikasi`, bukan `rows` (BE src/rute/notifikasi.ts).
+         Membaca `rows` membuat kartu pengumuman di beranda selalu kosong
+         tanpa satu galat pun, karena `?? []` menelan selisihnya. */
       try {
-        const n = await api<{ rows: NotifRingkas[] }>("/api/notifikasi");
-        if (aktif) setNotifikasi((n.rows ?? []).slice(0, 2));
+        const n = await api<{ notifikasi: NotifRingkas[] }>("/api/notifikasi");
+        if (aktif) setNotifikasi((n.notifikasi ?? []).slice(0, 2));
       } catch {
         void 0;
       }

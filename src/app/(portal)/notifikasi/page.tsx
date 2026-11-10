@@ -111,13 +111,10 @@ export default function HalamanNotifikasi() {
           ukuran="sm"
           className="ml-auto"
           onClick={async () => {
-            await Promise.all(
-              items
-                .filter((x) => !x.dibaca)
-                .map((x) =>
-                  api(`/api/notifikasi/${x.id}/baca`, { method: "PATCH" }),
-                ),
-            );
+            /* Satu permintaan untuk semuanya. Dulu satu PATCH per baris:
+               yang gagal di tengah membuat sebagian tetap belum terbaca
+               sementara layar sudah menganggap semuanya terbaca. */
+            await api("/api/notifikasi/baca-semua", { method: "PATCH" });
             setItems((x) => x.map((n) => ({ ...n, dibaca: true })));
           }}
         >
