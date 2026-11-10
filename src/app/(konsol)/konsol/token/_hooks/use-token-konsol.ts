@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { api } from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
 import type { JawabanToken, TokenRow, TokenTerbit } from "../_tipe";
 
 export function useTokenKonsol() {
@@ -14,6 +14,23 @@ export function useTokenKonsol() {
   const [hasil, setHasil] = useState<TokenTerbit[]>([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState("");
+  const [galat, setGalat] = useState<string | null>(null);
+
+  /*
+   * `/konsol/token?meter=<id>` mengisi kolom meter lebih dulu. Tombol
+   * "Buat token" di detail pelanggan menautkan ke sini, sehingga token
+   * darurat terikat ke meter pelanggan itu tanpa petugas menyalin id-nya.
+   * Dibaca dari `window.location` supaya halaman tidak menuntut Suspense.
+   */
+  useEffect(() => {
+    // Ditunda satu tik, sama seperti pemuatan di bawah: state awal harus
+    // sama di server dan peramban supaya hidrasi tidak berselisih.
+    const timer = window.setTimeout(() => {
+      const id = new URLSearchParams(window.location.search).get("meter");
+      if (id) setMeterId(id);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   const load = async () => {
     const r = await api<JawabanToken>(
@@ -32,6 +49,7 @@ export function useTokenKonsol() {
 
   const generate = async () => {
     setLoading(true);
+    setGalat(null);
     try {
       const r = await api<{ tokens: { kode: string; nilaiL: number }[] }>(
         "/api/admin/token",
@@ -47,6 +65,11 @@ export function useTokenKonsol() {
       );
       setHasil(r.tokens);
       await load();
+    } catch (e) {
+      /* Dulu galat dilempar tanpa ditangkap: tombol berhenti berputar dan
+         tidak ada apa pun yang memberi tahu bahwa tidak satu token pun
+         terbit (alasan terlalu pendek, peran Teknisi, meter tidak ada). */
+      setGalat(e instanceof ApiError ? e.message : "Token gagal diterbitkan.");
     } finally {
       setLoading(false);
     }
@@ -71,6 +94,7 @@ export function useTokenKonsol() {
     setJumlah,
     meterId,
     setMeterId,
+    galat,
     alasan,
     setAlasan,
     hasil,

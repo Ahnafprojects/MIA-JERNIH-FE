@@ -15,28 +15,36 @@
  *
  * Tombol "Tutup aliran" disembunyikan untuk peran TEKNISI. Lihat `peran.ts`:
  * itu bukan keamanan, dan penolakan yang sebenarnya ada di server.
+ *
+ * Tidak ada tombol "Buat token" massal. Penerbitan token darurat menuntut
+ * alasan dan terikat pada satu meter, dan backend mengembalikan kodenya ke
+ * petugas, bukan mengirimkannya ke pelanggan. Versi lama menjanjikan
+ * sebaliknya tanpa memanggil server sama sekali. Penerbitan dilakukan per
+ * meter di halaman Token.
  */
 
-import { KeyRound, Mail, PowerOff, X } from "lucide-react";
+import { Mail, PowerOff, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { angka } from "@/lib/format";
-import { bolehTutupRelayMassal, PERAN_SEKARANG } from "./peran";
+import { bolehTutupRelayMassal, usePeranPetugas } from "./peran";
 
 export function BilahMassal({
   jumlah,
   onKosongkan,
   onEmail,
-  onToken,
   onTutupRelay,
+  sibuk = false,
 }: {
   jumlah: number;
   onKosongkan: () => void;
   onEmail: () => void;
-  onToken: () => void;
   onTutupRelay: () => void;
+  /** Aksi sedang berjalan: tombol dikunci supaya tidak terkirim dua kali. */
+  sibuk?: boolean;
 }) {
+  const peran = usePeranPetugas();
   if (jumlah === 0) return null;
-  const bolehTutup = bolehTutupRelayMassal(PERAN_SEKARANG);
+  const bolehTutup = bolehTutupRelayMassal(peran);
 
   return (
     <div
@@ -66,16 +74,12 @@ export function BilahMassal({
           </button>
 
           <div className="ml-auto flex flex-wrap items-center gap-2">
-            <Button varian="sekunder" ukuran="sm" onClick={onEmail}>
+            <Button varian="sekunder" ukuran="sm" onClick={onEmail} memuat={sibuk}>
               <Mail size={14} aria-hidden />
               Kirim email
             </Button>
-            <Button varian="sekunder" ukuran="sm" onClick={onToken}>
-              <KeyRound size={14} aria-hidden />
-              Buat token
-            </Button>
             {bolehTutup ? (
-              <Button varian="bahaya" ukuran="sm" onClick={onTutupRelay}>
+              <Button varian="bahaya" ukuran="sm" onClick={onTutupRelay} memuat={sibuk}>
                 <PowerOff size={14} aria-hidden />
                 Tutup aliran
               </Button>

@@ -11,6 +11,7 @@ export function FormPenerbit({
   alasan,
   setAlasan,
   loading,
+  galat = null,
   onTerbitkan,
 }: {
   nilaiL: number;
@@ -22,6 +23,7 @@ export function FormPenerbit({
   alasan: string;
   setAlasan: (v: string) => void;
   loading: boolean;
+  galat?: string | null;
   onTerbitkan: () => void;
 }) {
   return (
@@ -74,6 +76,14 @@ export function FormPenerbit({
       >
         Terbitkan Token
       </Button>
+      {galat ? (
+        <p
+          role="alert"
+          className="mt-3 rounded-[10px] border border-danger/40 bg-danger-soft p-2.5 text-xs font-medium text-danger"
+        >
+          {galat}
+        </p>
+      ) : null}
     </div>
   );
 }

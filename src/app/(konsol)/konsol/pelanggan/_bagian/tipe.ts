@@ -57,6 +57,8 @@ export interface DetailPelanggan
   /** `null` bila meternya belum pernah melapor sama sekali. */
   terakhirLapor: string | null;
   email: string;
+  /** Id METER untuk aksi relay; `null` bila pelanggan belum punya meter. */
+  meterId: string | null;
   hp: string | null;
   alamat: string | null;
   golongan: string | null;
@@ -158,6 +160,7 @@ export function rapikanDetail(
     id: d.id,
     nama: d.nama,
     email: d.email,
+    meterId: m?.id ?? null,
     hp: d.hp,
     alamat: d.alamat,
     golongan: d.golongan,
@@ -190,7 +193,9 @@ export function rapikanDetail(
       kode: t.kodeBertopeng,
       liter: t.nilaiL,
       pada: t.dipakaiPada ?? t.dibuatPada,
-      dipakai: t.status === "DIPAKAI",
+      /* Enum backend bernilai TERPAKAI. Dulu dicocokkan dengan "DIPAKAI",
+         sehingga tidak ada satu token pun yang pernah tampil terpakai. */
+      dipakai: t.status === "TERPAKAI",
     })),
     aktivitas: (mentah.liniMasa ?? []).map((l) => ({
       pada: l.ts,

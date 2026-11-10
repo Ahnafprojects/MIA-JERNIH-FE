@@ -45,9 +45,18 @@ import useApi from "@/lib/use-api";
 import { angka, liter, tanggal, tanggalJam } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import {
+  DialogKonfirmasiMassal,
   DialogTutupRelay,
   type IsiTutupRelay,
 } from "../_bagian/dialog-relay";
+import {
+  alasanRelay,
+  EMAIL_PENGINGAT,
+  emailPenutupan,
+  kirimEmailPelanggan,
+  pesanGalat,
+  ubahRelay,
+} from "../_bagian/aksi-pelanggan";
 import { LayarMeterLive, useBacaanLive } from "../_bagian/meter-live";
 import { TabungSaldo } from "../_bagian/tabung";
 import {
@@ -173,10 +182,14 @@ function RangkaDetail() {
 }
 
 function IsiDetail({ data }: { data: DetailPelanggan }) {
+  /* Keadaan relay sesudah perintah terakhir yang DITERIMA server. Hanya
+     diubah setelah `POST /relay` berhasil, tidak pernah sebelumnya. */
   const [relay, setRelay] = useState(data.relayOn);
   const [dialogTutup, setDialogTutup] = useState(false);
+  const [dialogEmail, setDialogEmail] = useState(false);
+  const [sibuk, setSibuk] = useState(false);
   const [kabar, setKabar] = useState<{
-    nada: "sukses" | "info" | "peringatan";
+    nada: "sukses" | "info" | "peringatan" | "bahaya";
     judul: string;
     teks: string;
   } | null>(null);
@@ -193,33 +206,92 @@ function IsiDetail({ data }: { data: DetailPelanggan }) {
   const s = STATUS_METER[data.status];
   const nada = nadaSaldo(bacaan.saldoL);
 
-  function tutupRelay(isi: IsiTutupRelay) {
-    /*
-     * Perubahan disimpan di state halaman, bukan dikirim ke server: endpoint
-     * mutasi relay datang bersama BE#1. Ganti baris ini dengan `PATCH` begitu
-     * rutenya ada — dan jangan lupa menghapus state `relay` yang menimpa
-     * `data.relayOn`.
-     */
-    setRelay(false);
+  /*
+   * Sebelumnya ketiga aksi di bawah hanya mengubah state halaman lalu
+   * menampilkan "Perintah dikirim" dan "Tercatat di audit log", tanpa satu
+   * permintaan pun ke server. Sekarang pesan sukses hanya muncul sesudah
+   * server menerima perintahnya, dan penolakan (saldo habis, saklar OFF,
+   * peran tidak cukup) ditampilkan dengan kalimat dari server.
+   */
+  const meterId = data.meterId;
+
+  async function tutupRelay(isi: IsiTutupRelay) {
+    if (!meterId) return;
+    const alasan = alasanRelay(isi);
     setDialogTutup(false);
-    setKabar({
-      nada: "peringatan",
-      judul: "Perintah tutup aliran dikirim",
-      teks: `Alasan: ${isi.alasan}${isi.keterangan ? ` — ${isi.keterangan}` : ""}. ${
-        isi.kirimEmail
-          ? "Email pemberitahuan dikirim ke pelanggan."
-          : "Tanpa email pemberitahuan ke pelanggan."
-      } Tercatat di audit log atas nama akun Anda.`,
-    });
+    setSibuk(true);
+    try {
+      await ubahRelay(meterId, "tutup", alasan);
+      setRelay(false);
+
+      let catatanEmail = "Tanpa email pemberitahuan ke pelanggan.";
+      if (isi.kirimEmail) {
+        const email = emailPenutupan(alasan);
+        catatanEmail = await kirimEmailPelanggan(data.id, email.subjek, email.pesan)
+          .then(() => "Email pemberitahuan terkirim ke pelanggan.")
+          .catch(
+            (e: unknown) =>
+              `Email pemberitahuan GAGAL: ${pesanGalat(e, "server menolak.")}`,
+          );
+      }
+
+      setKabar({
+        nada: "peringatan",
+        judul: "Aliran ditutup",
+        teks: `Alasan: ${alasan}. ${catatanEmail} Tercatat di audit log atas nama akun Anda.`,
+      });
+    } catch (e) {
+      setKabar({
+        nada: "bahaya",
+        judul: "Aliran tidak ditutup",
+        teks: pesanGalat(e, "Server menolak perintah tutup aliran."),
+      });
+    } finally {
+      setSibuk(false);
+    }
   }
 
-  function bukaRelay() {
-    setRelay(true);
-    setKabar({
-      nada: "sukses",
-      judul: "Perintah buka aliran dikirim",
-      teks: "Relay akan terbuka setelah meter menerima perintah. Tercatat di audit log atas nama akun Anda.",
-    });
+  async function bukaRelay() {
+    if (!meterId) return;
+    setSibuk(true);
+    try {
+      await ubahRelay(meterId, "buka", "Dibuka kembali oleh petugas dari konsol");
+      setRelay(true);
+      setKabar({
+        nada: "sukses",
+        judul: "Aliran dibuka",
+        teks: "Tercatat di audit log atas nama akun Anda.",
+      });
+    } catch (e) {
+      setKabar({
+        nada: "bahaya",
+        judul: "Aliran tidak dibuka",
+        teks: pesanGalat(e, "Server menolak perintah buka aliran."),
+      });
+    } finally {
+      setSibuk(false);
+    }
+  }
+
+  async function kirimEmail() {
+    setDialogEmail(false);
+    setSibuk(true);
+    try {
+      await kirimEmailPelanggan(data.id, EMAIL_PENGINGAT.subjek, EMAIL_PENGINGAT.pesan);
+      setKabar({
+        nada: "sukses",
+        judul: "Email terkirim",
+        teks: `Pengingat cara memeriksa saldo dan mengisi ulang dikirim ke ${data.email || data.nama}.`,
+      });
+    } catch (e) {
+      setKabar({
+        nada: "bahaya",
+        judul: "Email tidak terkirim",
+        teks: pesanGalat(e, "Server menolak pengiriman email."),
+      });
+    } finally {
+      setSibuk(false);
+    }
   }
 
   return (
@@ -274,39 +346,30 @@ function IsiDetail({ data }: { data: DetailPelanggan }) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Button
-            varian="sekunder"
-            onClick={() =>
-              setKabar({
-                nada: "sukses",
-                judul: "Token baru diterbitkan",
-                teks: `Token sekali pakai dikirim ke ${data.nama}. Kodenya tidak ditampilkan di konsol — server hanya mengirimkannya satu kali, ke pelanggan.`,
-              })
-            }
-          >
-            <KeyRound size={15} aria-hidden />
-            Buat token
-          </Button>
-          <Button
-            varian="sekunder"
-            onClick={() =>
-              setKabar({
-                nada: "sukses",
-                judul: "Email dikirim",
-                teks: `Ringkasan saldo dan cara isi ulang dikirim ke ${data.nama}.`,
-              })
-            }
-          >
+          {/* Token darurat diterbitkan di halaman Token, dengan meter ini
+              sudah terisi. Backend mengembalikan kodenya ke PETUGAS untuk
+              diserahkan; tombol lama menjanjikan kode "dikirim ke pelanggan"
+              tanpa memanggil server sama sekali. */}
+          {meterId ? (
+            <Link
+              href={`/konsol/token?meter=${encodeURIComponent(meterId)}`}
+              className="cincin-fokus inline-flex h-11 items-center gap-2 rounded-input border border-line-strong bg-surface px-4 text-sm font-semibold text-ink hover:border-brand-500/60 hover:bg-soft"
+            >
+              <KeyRound size={15} aria-hidden />
+              Buat token
+            </Link>
+          ) : null}
+          <Button varian="sekunder" onClick={() => setDialogEmail(true)} memuat={sibuk}>
             <Mail size={15} aria-hidden />
             Kirim email
           </Button>
-          {relay ? (
-            <Button varian="bahaya" onClick={() => setDialogTutup(true)}>
+          {!meterId ? null : relay ? (
+            <Button varian="bahaya" onClick={() => setDialogTutup(true)} memuat={sibuk}>
               <PowerOff size={15} aria-hidden />
               Tutup aliran
             </Button>
           ) : (
-            <Button onClick={bukaRelay}>
+            <Button onClick={bukaRelay} memuat={sibuk}>
               <Power size={15} aria-hidden />
               Buka aliran
             </Button>
@@ -482,6 +545,17 @@ function IsiDetail({ data }: { data: DetailPelanggan }) {
           namaTunggal={data.nama}
           onBatal={() => setDialogTutup(false)}
           onKonfirmasi={tutupRelay}
+        />
+      ) : null}
+
+      {dialogEmail ? (
+        <DialogKonfirmasiMassal
+          judul={`Kirim email pengingat ke ${data.nama}?`}
+          sub="Email berisi pengingat memeriksa saldo dan cara mengisi ulang. Email yang sudah terkirim tidak bisa ditarik kembali."
+          labelAksi="Kirim sekarang"
+          jumlah={1}
+          onBatal={() => setDialogEmail(false)}
+          onKonfirmasi={kirimEmail}
         />
       ) : null}
     </>
