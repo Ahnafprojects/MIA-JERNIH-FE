@@ -52,14 +52,151 @@ export interface TokenPelanggan {
   dipakai: boolean;
 }
 
-export interface DetailPelanggan extends BarisPelanggan {
-  firmware: string;
-  kalibrasiTerakhir: string;
-  /** Ambang milik firmware meter, bukan pilihan tampilan. */
+export interface DetailPelanggan
+  extends Omit<BarisPelanggan, "koordinat" | "terakhirLapor"> {
+  /** `null` bila meternya belum pernah melapor sama sekali. */
+  terakhirLapor: string | null;
+  email: string;
+  hp: string | null;
+  alamat: string | null;
+  golongan: string | null;
+  serial: string;
+  aktif: boolean;
+  volumeTotalL: number;
+  /** `null` bila meternya belum dipetakan. Nol derajat adalah titik asli. */
+  koordinat: [number, number] | null;
   alarm: { ringan: boolean; berat: boolean; tertutup: boolean };
   pakaiHarian: { labels: string[]; points: number[] };
   token: TokenPelanggan[];
   aktivitas: { pada: string; teks: string }[];
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   BENTUK MENTAH DARI SERVER, DAN PEMETANYA
+   ══════════════════════════════════════════════════════════════════════ */
+
+/*
+ * `GET /api/admin/pelanggan/:id` mengirim objek BERSARANG
+ * (`detail`, `meter`, `riwayatToken`, `liniMasa`), sedangkan halaman detail
+ * membaca objek datar. Selisih itu tidak pernah menimbulkan galat kompilasi:
+ * `useApi<DetailPelanggan>` hanya MENGAKU bentuknya tanpa memeriksanya saat
+ * jalan, sehingga setiap bacaan bernilai `undefined` dan `.map()` pertama
+ * melempar ke batas galat. Yang terlihat pengguna hanyalah layar
+ * "This page couldn't load" tanpa satu petunjuk pun.
+ *
+ * Pemetaan ditaruh di sini, bukan di halaman, supaya hanya ada SATU tempat
+ * yang tahu bentuk jawaban server. Nilai yang dipakai halaman tetapi tidak
+ * dikirim server tidak dikarang di sini: yang tidak ada menjadi `null`,
+ * dan halaman menampilkannya sebagai tanda hubung.
+ */
+export interface DetailPelangganMentah {
+  detail: {
+    id: string;
+    nama: string;
+    email: string;
+    hp: string | null;
+    alamat: string | null;
+    zona: { id: string; nama: string } | string | null;
+    golongan: string | null;
+    aktif: boolean;
+    dibuatPada: string;
+  };
+  meter: {
+    id: string;
+    serial: string;
+    label: string | null;
+    saldoL: number;
+    debitLpm: number;
+    volumeTotalL: number;
+    relay: string;
+    saklarOn: boolean;
+    daring: boolean;
+    terakhirTerlihat: string | null;
+    lat: number | null;
+    lng: number | null;
+  }[];
+  adaInsiden: boolean;
+  pakaiHarian: { labels: string[]; points: number[] };
+  riwayatToken: {
+    id: string;
+    kodeBertopeng: string;
+    nilaiL: number;
+    status: string;
+    dipakaiPada: string | null;
+    dibuatPada: string;
+  }[];
+  liniMasa: { aksi: string; detail: string | null; ts: string }[];
+}
+
+/** Urutan prioritas status WAJIB sama dengan tabel, peta, dan dasbor. */
+function statusDari(
+  adaInsiden: boolean,
+  daring: boolean,
+  saldoL: number,
+): StatusMeter {
+  if (adaInsiden) return "insiden";
+  if (!daring) return "offline";
+  if (saldoL <= AMBANG.ringan) return "alarm";
+  return "normal";
+}
+
+export function rapikanDetail(
+  mentah: DetailPelangganMentah | null,
+): DetailPelanggan | null {
+  if (!mentah?.detail) return null;
+  const d = mentah.detail;
+  const m = mentah.meter?.[0];
+
+  const saldoL = m ? m.saldoL : 0;
+  const relayOn = m ? m.relay === "AKTIF" : false;
+  const daring = m ? m.daring : false;
+  const zona =
+    typeof d.zona === "string" ? d.zona : (d.zona?.nama ?? "Tanpa zona");
+  const zonaId = typeof d.zona === "string" ? "" : (d.zona?.id ?? "");
+
+  return {
+    id: d.id,
+    nama: d.nama,
+    email: d.email,
+    hp: d.hp,
+    alamat: d.alamat,
+    golongan: d.golongan,
+    aktif: d.aktif,
+    zona,
+    zonaId,
+    serial: m?.serial ?? "-",
+    saldoL,
+    debitLpm: m ? m.debitLpm : 0,
+    volumeTotalL: m ? m.volumeTotalL : 0,
+    relayOn,
+    saklarOn: m ? m.saklarOn : false,
+    online: daring,
+    adaInsiden: mentah.adaInsiden ?? false,
+    /* Keduanya harus ada. Satu koordinat saja tidak menunjuk ke mana pun. */
+    koordinat:
+      m && m.lat !== null && m.lng !== null ? [m.lng, m.lat] : null,
+    terakhirLapor: m?.terakhirTerlihat ?? null,
+    status: statusDari(mentah.adaInsiden ?? false, daring, saldoL),
+    /* Ambang ini milik meter, dan dihitung dari saldo yang sama dengan
+       yang tampil di kartu, supaya tangga alarm tidak pernah bertentangan
+       dengan angka di atasnya. */
+    alarm: {
+      ringan: saldoL <= AMBANG.ringan,
+      berat: saldoL <= AMBANG.berat,
+      tertutup: !relayOn,
+    },
+    pakaiHarian: mentah.pakaiHarian ?? { labels: [], points: [] },
+    token: (mentah.riwayatToken ?? []).map((t) => ({
+      kode: t.kodeBertopeng,
+      liter: t.nilaiL,
+      pada: t.dipakaiPada ?? t.dibuatPada,
+      dipakai: t.status === "DIPAKAI",
+    })),
+    aktivitas: (mentah.liniMasa ?? []).map((l) => ({
+      pada: l.ts,
+      teks: l.detail ? `${l.aksi} — ${l.detail}` : l.aksi,
+    })),
+  };
 }
 
 /**

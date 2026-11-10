@@ -54,7 +54,9 @@ import {
   AMBANG,
   STATUS_METER,
   nadaSaldo,
+  rapikanDetail,
   type DetailPelanggan,
+  type DetailPelangganMentah,
   type TokenPelanggan,
 } from "../_bagian/tipe";
 
@@ -93,9 +95,18 @@ export default function HalamanDetailPelanggan({
 
 function PembacaDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { data, memuat, galat, muatUlang } = useApi<DetailPelanggan>(
-    `/api/admin/pelanggan/${encodeURIComponent(id)}`,
-  );
+  const { data: mentah, memuat, galat, muatUlang } =
+    useApi<DetailPelangganMentah>(
+      `/api/admin/pelanggan/${encodeURIComponent(id)}`,
+    );
+
+  /*
+   * Jawaban server bersarang dan halaman ini membaca objek datar, jadi
+   * pemetaannya dilakukan di satu tempat. `useMemo` menjaga identitas
+   * objeknya stabil antar render, sebab `IsiDetail` memakainya sebagai
+   * nilai awal keadaannya sendiri.
+   */
+  const data = useMemo(() => rapikanDetail(mentah), [mentah]);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-7 sm:px-6 sm:py-9">
@@ -232,7 +243,9 @@ function IsiDetail({ data }: { data: DetailPelanggan }) {
             <span className="font-sans">{data.zona}</span>
           </p>
           <p className="mt-0.5 text-[13px] text-muted">
-            Telemetri terakhir {tanggalJam(data.terakhirLapor)}
+            {data.terakhirLapor
+              ? `Telemetri terakhir ${tanggalJam(data.terakhirLapor)}`
+              : "Belum ada telemetri dari meter ini"}
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <Badge nada={s.nada} titik>
@@ -378,7 +391,7 @@ function IsiDetail({ data }: { data: DetailPelanggan }) {
 
           <Panel
             judul="Riwayat token"
-            sub="Lima token terakhir yang diterbitkan untuk meter ini."
+            sub="Sepuluh token terakhir yang diterbitkan untuk meter ini."
             isiClassName="p-0"
           >
             <TabelToken token={data.token} />
@@ -405,7 +418,7 @@ function IsiDetail({ data }: { data: DetailPelanggan }) {
 
         {/* ── Kolom perangkat ───────────────────────────────────────── */}
         <aside className="space-y-5">
-          <Panel judul="Layar meter" sub={`Modul 16×2 pada JM-200 · ${data.id}`}>
+          <Panel judul="Layar meter" sub={`${data.serial} · ${data.id}`}>
             <LayarMeterLive
               saldoL={bacaan.saldoL}
               volumeL={bacaan.volumeL}
@@ -432,25 +445,31 @@ function IsiDetail({ data }: { data: DetailPelanggan }) {
                   {data.online ? "Online" : "Offline"}
                 </Badge>
               </BarisInfo>
-              <BarisInfo label="Firmware">
+              <BarisInfo label="Nomor seri">
                 <span className="tabular font-mono font-semibold">
-                  v{data.firmware}
+                  {data.serial}
                 </span>
-              </BarisInfo>
-              <BarisInfo label="Kalibrasi terakhir">
-                {tanggal(data.kalibrasiTerakhir)}
               </BarisInfo>
               <BarisInfo label="Koordinat">
-                <span className="tabular font-mono text-[12px]">
-                  {data.koordinat[1].toFixed(5)}, {data.koordinat[0].toFixed(5)}
-                </span>
+                {/* Meter yang belum dipetakan ditandai tanda hubung. Menulis
+                    0,00000 akan menunjuk ke Teluk Guinea, dan teknisi yang
+                    membacanya tidak punya cara membedakannya dari koordinat
+                    sungguhan. */}
+                {data.koordinat ? (
+                  <span className="tabular font-mono text-[12px]">
+                    {data.koordinat[1].toFixed(5)},{" "}
+                    {data.koordinat[0].toFixed(5)}
+                  </span>
+                ) : (
+                  <span className="text-muted">Belum dipetakan</span>
+                )}
               </BarisInfo>
             </dl>
           </Panel>
 
           <Panel
             judul="Ambang alarm"
-            sub="Ambang ini milik firmware meter, bukan setelan konsol."
+            sub="Ambang ini milik meter, bukan setelan konsol."
           >
             <TanggaAlarm saldoL={bacaan.saldoL} alarm={data.alarm} />
           </Panel>
