@@ -23,255 +23,23 @@
  * - **Ekspor CSV berlokal Indonesia.** Lihat alasannya di `_bagian/csv.ts`.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
 import { Download, RefreshCw } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import {
-  KeadaanGalat,
-  KeadaanKosong,
-  Pemberitahuan,
-  Skeleton,
-} from "@/components/ui/keadaan";
-import useApi from "@/lib/use-api";
+import { KeadaanGalat, KeadaanKosong, Pemberitahuan, Skeleton } from "@/components/ui/keadaan";
 import { angka } from "@/lib/format";
 import { cn } from "@/lib/cn";
+import { usePelanggan } from "./_hooks/use-pelanggan";
 import { BilahMassal } from "./_bagian/bilah-massal";
-import { stempel, unduhCsv, type KolomCsv } from "./_bagian/csv";
 import { DaftarPelangganTabel, KotakSemua } from "./_bagian/daftar";
-import {
-  DialogKonfirmasiMassal,
-  DialogTutupRelay,
-  type IsiTutupRelay,
-} from "./_bagian/dialog-relay";
-import {
-  alasanRelay,
-  EMAIL_PENGINGAT,
-  emailPenutupan,
-  jalankanBanyak,
-  kirimEmailPelanggan,
-  ubahRelay,
-  type HasilBanyak,
-} from "./_bagian/aksi-pelanggan";
+import { DialogKonfirmasiMassal, DialogTutupRelay } from "./_bagian/dialog-relay";
 import { Paginasi } from "./_bagian/paginasi";
+import { PitaStatus } from "./_bagian/pita-status";
 import { Penyaring } from "./_bagian/penyaring";
-import {
-  STATUS_METER,
-  URUTAN,
-  URUTAN_STATUS,
-  type BarisPelanggan,
-  type DaftarPelanggan,
-  type SaringKunci,
-} from "./_bagian/tipe";
-
-/** Kolom berkas unduhan. Urutannya sama dengan yang dibaca di layar. */
-const KOLOM_CSV: KolomCsv<BarisPelanggan>[] = [
-  { label: "ID pelanggan", nilai: (b) => b.id },
-  { label: "Nama", nilai: (b) => b.nama },
-  { label: "Zona", nilai: (b) => b.zona },
-  { label: "Saldo (L)", nilai: (b) => b.saldoL, desimal: 2 },
-  { label: "Debit (L/mnt)", nilai: (b) => b.debitLpm, desimal: 1 },
-  { label: "Saklar ON", nilai: (b) => b.saklarOn },
-  { label: "Relay terbuka", nilai: (b) => b.relayOn },
-  { label: "Online", nilai: (b) => b.online },
-  { label: "Ada insiden", nilai: (b) => b.adaInsiden },
-  { label: "Status", nilai: (b) => STATUS_METER[b.status].label },
-  { label: "Telemetri terakhir", nilai: (b) => stempel(b.terakhirLapor) },
-];
-
-type Aksi = "email" | "relay" | null;
 
 export default function HalamanPelanggan() {
-  const [cari, setCari] = useState("");
-  const [cariTunda, setCariTunda] = useState("");
-  const [zona, setZona] = useState("");
-  const [saring, setSaring] = useState<SaringKunci | "">("");
-  const [urutan, setUrutan] = useState(URUTAN[0].kunci);
-  const [halaman, setHalaman] = useState(1);
-  const [perHalaman, setPerHalaman] = useState(25);
-
-  const [terpilih, setTerpilih] = useState<Set<string>>(new Set());
-  const [aksi, setAksi] = useState<Aksi>(null);
-  const [kabar, setKabar] = useState<{
-    nada: "sukses" | "info" | "peringatan";
-    judul: string;
-    teks: string;
-  } | null>(null);
-
-  /* Aksi massal sedang berjalan. Mengunci tombol supaya satu klik ganda
-     tidak menutup aliran atau mengirim email dua kali. */
-  const [sibuk, setSibuk] = useState(false);
-
-  // Pencarian ditunda; sisanya berlaku seketika karena datang dari klik.
-  useEffect(() => {
-    const t = setTimeout(() => setCariTunda(cari.trim()), 300);
-    return () => clearTimeout(t);
-  }, [cari]);
-
-  /*
-   * Tiap perubahan penyaring mengembalikan ke halaman 1.
-   *
-   * Tanpa ini, mencari "Budi" dari halaman 300 menghasilkan daftar kosong
-   * yang terbaca sebagai "tidak ada Budi" padahal hanya salah halaman.
-   *
-   * Dikerjakan di PENANGAN PERISTIWA, bukan di `useEffect` yang mengamati
-   * penyaringnya. Effect yang memanggil setState menjalankan render
-   * berantai — satu untuk penyaring barunya, satu lagi untuk halamannya —
-   * dan di antaranya sempat ada satu putaran dengan penyaring baru di
-   * halaman lama, yaitu permintaan ke server yang hasilnya langsung
-   * dibuang. Mengubah penyaring memang tindakan pengguna; tempatnya di
-   * sini.
-   */
-  function gantiSaringan(ubah: () => void) {
-    ubah();
-    setHalaman(1);
-  }
-
-  const pilihanUrut = URUTAN.find((u) => u.kunci === urutan) ?? URUTAN[0];
-
-  const jalur = useMemo(() => {
-    const q = new URLSearchParams({
-      halaman: String(halaman),
-      per: String(perHalaman),
-      urut: pilihanUrut.urut,
-      arah: pilihanUrut.arah,
-    });
-    if (cariTunda) q.set("cari", cariTunda);
-    if (zona) q.set("zona", zona);
-    if (saring) q.set("saring", saring);
-    return `/api/admin/pelanggan?${q.toString()}`;
-  }, [halaman, perHalaman, pilihanUrut, cariTunda, zona, saring]);
-
-  const { data, memuat, menyegarkan, galat, muatUlang } =
-    useApi<DaftarPelanggan>(jalur);
-
-  /* Baris apa adanya dari server. Sesudah aksi relay, halaman memuat ulang
-     dari server alih-alih menimpa barisnya di klien: yang tampil harus
-     keadaan yang memang tersimpan. */
-  const baris = useMemo(() => data?.baris ?? [], [data]);
-
-  const semuaHalamanTerpilih =
-    baris.length > 0 && baris.every((b) => terpilih.has(b.id));
-  const sebagianTerpilih =
-    !semuaHalamanTerpilih && baris.some((b) => terpilih.has(b.id));
-
-  const togglePilih = useCallback((id: string) => {
-    setTerpilih((lama) => {
-      const baru = new Set(lama);
-      if (baru.has(id)) baru.delete(id);
-      else baru.add(id);
-      return baru;
-    });
-  }, []);
-
-  const toggleHalaman = useCallback(
-    (pilihSemua: boolean) => {
-      setTerpilih((lama) => {
-        const baru = new Set(lama);
-        for (const b of baris) {
-          if (pilihSemua) baru.add(b.id);
-          else baru.delete(b.id);
-        }
-        return baru;
-      });
-    },
-    [baris],
-  );
-
-  const idTerpilih = useMemo(() => [...terpilih], [terpilih]);
-  const jumlahTerpilih = idTerpilih.length;
-
-  /** Satu nama hanya bila yang dipilih memang satu DAN ada di halaman ini. */
-  const namaTunggal =
-    jumlahTerpilih === 1
-      ? baris.find((b) => b.id === idTerpilih[0])?.nama
-      : undefined;
-
-  /*
-   * Yang diekspor adalah YANG SEDANG TAMPIL — atau yang dicentang bila ada.
-   *
-   * Bukan seluruh 8.219 baris: berkas yang isinya tidak sama dengan layar
-   * membuat orang pertama yang mencocokkannya berhenti percaya pada
-   * keduanya. Tombolnya menyebutkan jumlah barisnya supaya tidak ada yang
-   * perlu menebak.
-   */
-  const barisEkspor = useMemo(
-    () => (jumlahTerpilih > 0 ? baris.filter((b) => terpilih.has(b.id)) : baris),
-    [baris, terpilih, jumlahTerpilih],
-  );
-
-  function ekspor() {
-    unduhCsv("pelanggan-jernih", KOLOM_CSV, barisEkspor);
-    setKabar({
-      nada: "info",
-      judul: "Berkas CSV diunduh",
-      teks: `${angka(barisEkspor.length)} baris, pemisah titik koma dan desimal koma — langsung rapi di Excel berlokal Indonesia.`,
-    });
-  }
-
-  /** Ringkasan hasil aksi banyak pelanggan, menyebut yang gagal apa adanya. */
-  function laporkan(judulBerhasil: string, hasil: HasilBanyak, catatan = "") {
-    const gagal = hasil.gagal.length;
-    const contoh = hasil.gagal[0]?.pesan;
-    setKabar({
-      nada: gagal === 0 ? "sukses" : "peringatan",
-      judul:
-        gagal === 0
-          ? `${judulBerhasil} untuk ${angka(hasil.berhasil.length)} pelanggan`
-          : `${angka(hasil.berhasil.length)} berhasil, ${angka(gagal)} gagal`,
-      teks: [
-        gagal > 0 ? `Contoh penolakan server: ${contoh}` : "",
-        catatan,
-      ]
-        .filter(Boolean)
-        .join(" "),
-    });
-  }
-
-  async function jalankanEmail() {
-    const sasaran = idTerpilih;
-    setAksi(null);
-    setSibuk(true);
-    try {
-      const hasil = await jalankanBanyak(sasaran, (id) =>
-        kirimEmailPelanggan(id, EMAIL_PENGINGAT.subjek, EMAIL_PENGINGAT.pesan),
-      );
-      laporkan("Email pengingat terkirim", hasil);
-      setTerpilih(new Set(hasil.gagal.map((g) => g.id)));
-    } finally {
-      setSibuk(false);
-    }
-  }
-
-  async function jalankanTutupRelay(isi: IsiTutupRelay) {
-    const sasaran = idTerpilih;
-    const alasan = alasanRelay(isi);
-    setAksi(null);
-    setSibuk(true);
-    try {
-      /* Id baris di daftar ini adalah id METER (BE src/rute/konsol.ts). */
-      const hasil = await jalankanBanyak(sasaran, async (id) => {
-        await ubahRelay(id, "tutup", alasan);
-        if (isi.kirimEmail) {
-          const email = emailPenutupan(alasan);
-          // Email gagal tidak membatalkan penutupan yang sudah terjadi.
-          await kirimEmailPelanggan(id, email.subjek, email.pesan).catch(() => {});
-        }
-      });
-      laporkan(
-        "Aliran ditutup",
-        hasil,
-        "Tercatat di audit log atas nama akun Anda.",
-      );
-      setTerpilih(new Set(hasil.gagal.map((g) => g.id)));
-      muatUlang();
-    } finally {
-      setSibuk(false);
-    }
-  }
-
-  const total = data?.total ?? null;
+  const p = usePelanggan();
+  const { data, baris, memuat, menyegarkan, galat, muatUlang, total, kabar, gantiSaringan } = p;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-7 sm:px-6 sm:py-9">
@@ -314,15 +82,15 @@ export default function HalamanPelanggan() {
 
           <Card className="mt-6 p-4 sm:p-5">
             <Penyaring
-              cari={cari}
-              onCari={(v) => gantiSaringan(() => setCari(v))}
-              zona={zona}
-              onZona={(v) => gantiSaringan(() => setZona(v))}
+              cari={p.cari}
+              onCari={(v) => gantiSaringan(() => p.setCari(v))}
+              zona={p.zona}
+              onZona={(v) => gantiSaringan(() => p.setZona(v))}
               daftarZona={data?.zona ?? []}
-              saring={saring}
-              onSaring={(v) => gantiSaringan(() => setSaring(v))}
-              urutan={urutan}
-              onUrutan={(v) => gantiSaringan(() => setUrutan(v))}
+              saring={p.saring}
+              onSaring={(v) => gantiSaringan(() => p.setSaring(v))}
+              urutan={p.urutan}
+              onUrutan={(v) => gantiSaringan(() => p.setUrutan(v))}
               jumlahSaring={data?.jumlahSaring ?? null}
               total={total}
             />
@@ -335,7 +103,7 @@ export default function HalamanPelanggan() {
                   <p className="max-w-[72ch]">{kabar.teks}</p>
                   <button
                     type="button"
-                    onClick={() => setKabar(null)}
+                    onClick={() => p.setKabar(null)}
                     className="shrink-0 text-[12.5px] font-semibold underline underline-offset-2"
                   >
                     Tutup
@@ -348,19 +116,19 @@ export default function HalamanPelanggan() {
           <Card className="mt-4 overflow-hidden">
             <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-b border-line px-4 py-3 sm:px-5">
               <KotakSemua
-                semua={semuaHalamanTerpilih}
-                sebagian={sebagianTerpilih}
+                semua={p.semuaHalamanTerpilih}
+                sebagian={p.sebagianTerpilih}
                 jumlah={baris.length}
-                onUbah={toggleHalaman}
+                onUbah={p.toggleHalaman}
               />
               <Button
                 varian="sekunder"
                 ukuran="sm"
-                onClick={ekspor}
-                disabled={barisEkspor.length === 0}
+                onClick={p.ekspor}
+                disabled={p.barisEkspor.length === 0}
               >
                 <Download size={14} aria-hidden />
-                Ekspor CSV ({angka(barisEkspor.length)} baris)
+                Ekspor CSV ({angka(p.barisEkspor.length)} baris)
               </Button>
             </div>
 
@@ -373,8 +141,8 @@ export default function HalamanPelanggan() {
             ) : (
               <DaftarPelangganTabel
                 baris={baris}
-                terpilih={terpilih}
-                onToggle={togglePilih}
+                terpilih={p.terpilih}
+                onToggle={p.togglePilih}
                 menyegarkan={menyegarkan}
                 kosong={
                   <KeadaanKosong
@@ -385,9 +153,9 @@ export default function HalamanPelanggan() {
                         varian="sekunder"
                         onClick={() =>
                           gantiSaringan(() => {
-                            setCari("");
-                            setZona("");
-                            setSaring("");
+                            p.setCari("");
+                            p.setZona("");
+                            p.setSaring("");
                           })
                         }
                       >
@@ -406,8 +174,8 @@ export default function HalamanPelanggan() {
                 perHalaman={data.perHalaman}
                 total={data.total}
                 jumlahDitampilkan={baris.length}
-                onHalaman={setHalaman}
-                onPerHalaman={(n) => gantiSaringan(() => setPerHalaman(n))}
+                onHalaman={p.setHalaman}
+                onPerHalaman={(n) => gantiSaringan(() => p.setPerHalaman(n))}
               />
             ) : null}
           </Card>
@@ -421,121 +189,32 @@ export default function HalamanPelanggan() {
       )}
 
       <BilahMassal
-        jumlah={jumlahTerpilih}
-        onKosongkan={() => setTerpilih(new Set())}
-        onEmail={() => setAksi("email")}
-        onTutupRelay={() => setAksi("relay")}
-        sibuk={sibuk}
+        jumlah={p.jumlahTerpilih}
+        onKosongkan={() => p.setTerpilih(new Set())}
+        onEmail={() => p.setAksi("email")}
+        onTutupRelay={() => p.setAksi("relay")}
+        sibuk={p.sibuk}
       />
 
-      {aksi === "email" ? (
+      {p.aksi === "email" ? (
         <DialogKonfirmasiMassal
-          judul={`Kirim email ke ${angka(jumlahTerpilih)} pelanggan?`}
+          judul={`Kirim email ke ${angka(p.jumlahTerpilih)} pelanggan?`}
           sub="Email berisi pengingat memeriksa saldo dan cara mengisi ulang. Email yang sudah terkirim tidak bisa ditarik kembali."
           labelAksi="Kirim sekarang"
-          jumlah={jumlahTerpilih}
-          onBatal={() => setAksi(null)}
-          onKonfirmasi={jalankanEmail}
+          jumlah={p.jumlahTerpilih}
+          onBatal={() => p.setAksi(null)}
+          onKonfirmasi={p.jalankanEmail}
         />
       ) : null}
 
-      {aksi === "relay" ? (
+      {p.aksi === "relay" ? (
         <DialogTutupRelay
-          jumlah={jumlahTerpilih}
-          namaTunggal={namaTunggal}
-          onBatal={() => setAksi(null)}
-          onKonfirmasi={jalankanTutupRelay}
+          jumlah={p.jumlahTerpilih}
+          namaTunggal={p.namaTunggal}
+          onBatal={() => p.setAksi(null)}
+          onKonfirmasi={p.jalankanTutupRelay}
         />
       ) : null}
     </div>
-  );
-}
-
-/**
- * Pita ringkasan status.
- *
- * Dibuat sebagai PITA BERGARIS, bukan empat kartu membulat: keempat angka
- * ini satu bacaan alat ukur yang sama, dan susunan kartu menyamaratakan
- * "7.129 normal" dengan "87 insiden" padahal yang kedualah alasan orang
- * membuka halaman ini.
- *
- * Angkanya dihitung server SETELAH pencarian dan zona — jadi ia ikut
- * menyempit bersama penyaringnya, dan itu disebutkan di kakinya.
- */
-function PitaStatus({
-  data,
-  memuat,
-}: {
-  data: DaftarPelanggan | null;
-  memuat: boolean;
-}) {
-  return (
-    <section aria-label="Ringkasan status meter" className="mt-7">
-      <div aria-hidden className="takar h-1.5" />
-      {/*
-        Satu kolom di ponsel, EMPAT mulai `sm` — tidak ada tahap dua kolom.
-        Dua kolom memaksa garis pemisahnya berbeda antara baris pertama dan
-        kedua, dan tiap penimpaan `sm:border-t-0` yang bertabrakan dengan
-        `sm:border-t` adalah garis yang hilang di satu tempat tanpa ada yang
-        menyadarinya. Empat angka berderet juga memang lebih benar: ini satu
-        bacaan alat ukur, bukan dua pasang.
-      */}
-      <dl className="grid border-y border-line sm:grid-cols-4">
-        {URUTAN_STATUS.map((s, i) => {
-          const info = STATUS_METER[s];
-          return (
-            /*
-              Di ponsel tiap angka jadi SATU BARIS mendatar; mulai `sm` ia
-              bertumpuk seperti bacaan alat ukur. Susunan tegak yang sama
-              di 390px memakan hampir seribu piksel sebelum tabelnya
-              terlihat sama sekali — ringkasan yang harus digulir melewati
-              tiga layar berhenti menjadi ringkasan. Keterangan arti tiap
-              status ikut disembunyikan di sana: katanya sudah ada di
-              lencananya.
-            */
-            <div
-              key={s}
-              className={cn(
-                "flex items-center justify-between gap-3 px-4 py-3",
-                "sm:block sm:py-4",
-                i > 0 && "border-t border-line sm:border-t-0 sm:border-l",
-              )}
-            >
-              <dt>
-                <Badge nada={info.nada} titik>
-                  {info.label}
-                </Badge>
-              </dt>
-              <dd className="flex items-baseline gap-1.5 sm:mt-2.5">
-                {memuat ? (
-                  <Skeleton className="h-7 w-16" />
-                ) : (
-                  <>
-                    <span className="tabular font-mono text-[24px] leading-none font-bold sm:text-[28px]">
-                      {data ? angka(data.jumlahStatus[s]) : "—"}
-                    </span>
-                    <span className="text-[12.5px] text-muted">meter</span>
-                  </>
-                )}
-              </dd>
-              <p className="mt-1.5 hidden max-w-[32ch] text-[12.5px] leading-snug text-muted sm:block">
-                {info.arti}
-              </p>
-            </div>
-          );
-        })}
-      </dl>
-      {/*
-        Tidak ada stempel "diperbarui pukul …" di sini. Halaman ini di-render
-        di server lebih dulu, dan `new Date()` menghasilkan jam yang berbeda
-        antara server dan klien — React melaporkannya sebagai ketidakcocokan
-        hidrasi, lalu membuang hasil render servernya. Waktu telemetri tiap
-        meter tetap ada di halaman detail, di tempat ia memang berarti.
-      */}
-      <p className="mt-2 text-[12px] text-muted">
-        Dihitung dari pelanggan yang cocok dengan pencarian dan zona, sebelum
-        saring cepat diterapkan.
-      </p>
-    </section>
   );
 }
