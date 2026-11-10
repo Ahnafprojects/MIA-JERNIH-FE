@@ -15,10 +15,30 @@ interface RiwayatBroadcast {
   target: string;
   kanalPush: boolean;
   kanalEmail: boolean;
+  kanalTelegram: boolean;
   penerima: number;
   dibuka: number;
   dibuatPada: string;
 }
+
+interface Zona {
+  id: string;
+  nama: string;
+}
+
+/*
+ * Pilihan penerima, disalin dari `TARGET_BROADCAST` di backend.
+ *
+ * "Tunggakan" sengaja TIDAK ada di sini. Produk ini prabayar: air hanya
+ * mengalir selama saldo masih ada, jadi tidak ada pemakaian yang bisa
+ * menunggak. Backend menolaknya dengan 400, dan membiarkannya tetap
+ * terpilih di layar hanya memindahkan kebingungan ke operator.
+ */
+const TARGET = [
+  { nilai: "SEMUA_WARGA", label: "Semua warga" },
+  { nilai: "SALDO_RENDAH", label: "Saldo di bawah ambang alarm meter" },
+  { nilai: "ZONA", label: "Per zona" },
+] as const;
 
 export default function HalamanBroadcast() {
   const [riwayat, setRiwayat] = useState<RiwayatBroadcast[]>([]);
@@ -28,13 +48,17 @@ export default function HalamanBroadcast() {
   const [zona, setZona] = useState("");
   const [push, setPush] = useState(true);
   const [email, setEmail] = useState(false);
+  const [telegram, setTelegram] = useState(false);
+  const [zonaTersedia, setZonaTersedia] = useState<Zona[]>([]);
   const [loading, setLoading] = useState(false);
+  const [galat, setGalat] = useState<string | null>(null);
 
   const load = async () => {
-    const response = await api<{ broadcast: RiwayatBroadcast[] }>(
+    const response = await api<{ broadcast: RiwayatBroadcast[]; zona?: Zona[] }>(
       "/api/admin/broadcast",
     );
     setRiwayat(response.broadcast);
+    setZonaTersedia(response.zona ?? []);
   };
 
   useEffect(() => {
@@ -42,8 +66,19 @@ export default function HalamanBroadcast() {
     return () => window.clearTimeout(timer);
   }, []);
 
+  /*
+   * Zona WAJIB untuk target "Per zona". Backend menolaknya dengan 400, jadi
+   * dicegat di sini supaya operator melihat kalimat yang bisa ditindak,
+   * bukan pesan galat mentah setelah menekan kirim.
+   */
+  const siap =
+    judul.trim() !== "" &&
+    pesan.trim().length >= 5 &&
+    (push || email || telegram) &&
+    (target !== "ZONA" || zona !== "");
+
   const kirim = async () => {
-    if (!judul.trim() || pesan.trim().length < 5 || (!push && !email)) return;
+    if (!siap) return;
     const konfirmasi = confirm(
       `Kirim broadcast kepada ${target === "SEMUA_WARGA" ? "semua warga" : target.toLowerCase()}? Pesan tidak dapat ditarik kembali.`,
     );
@@ -57,12 +92,22 @@ export default function HalamanBroadcast() {
           pesan,
           target,
           zona: zona || undefined,
-          kanal: { push, email },
+          kanal: { push, email, telegram },
         }),
       });
       setJudul("");
       setPesan("");
+      setGalat(null);
       await load();
+    } catch (e) {
+      /*
+       * Galat ditampilkan, bukan ditelan. Broadcast yang gagal diam-diam
+       * membuat operator mengira pengumumannya sudah sampai, dan itu
+       * kesalahan yang baru ketahuan setelah warga tidak ada yang tahu.
+       */
+      setGalat(
+        e instanceof Error ? e.message : "Broadcast gagal dikirim.",
+      );
     } finally {
       setLoading(false);
     }
@@ -91,20 +136,35 @@ export default function HalamanBroadcast() {
                 value={target}
                 onChange={(e) => setTarget(e.target.value)}
               >
-                <option value="SEMUA_WARGA">Semua warga</option>
-                <option value="SALDO_RENDAH">Saldo ≤ 5 L</option>
-                <option value="TUNGGAKAN">Tunggakan</option>
-                <option value="ZONA">Per zona</option>
+                {TARGET.map((t) => (
+                  <option key={t.nilai} value={t.nilai}>
+                    {t.label}
+                  </option>
+                ))}
               </select>
             </label>
 
             {target === "ZONA" && (
-              <TextField
-                label="ID zona"
-                placeholder="ID zona"
-                value={zona}
-                onChange={(e) => setZona(e.target.value)}
-              />
+              /*
+                Daftar, bukan isian bebas. Id zona berbentuk cuid seperti
+                `cmvuq9ajy0008`, dan mengetiknya dengan tangan praktis
+                selalu salah. Backend mengirim daftarnya bersama riwayat.
+              */
+              <label className="block text-[13px] font-semibold">
+                Zona penerima
+                <select
+                  className="mt-1 h-11 w-full rounded-input border border-line-strong bg-surface px-3 text-sm outline-none hover:border-brand-500/60 focus:border-brand-600 focus:ring-2 focus:ring-brand-600"
+                  value={zona}
+                  onChange={(e) => setZona(e.target.value)}
+                >
+                  <option value="">Pilih zona…</option>
+                  {zonaTersedia.map((z) => (
+                    <option key={z.id} value={z.id}>
+                      {z.nama}
+                    </option>
+                  ))}
+                </select>
+              </label>
             )}
 
             <TextField
@@ -148,7 +208,29 @@ export default function HalamanBroadcast() {
                 />{" "}
                 Email
               </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  className="cincin-fokus size-4 accent-brand-600"
+                  checked={telegram}
+                  onChange={(e) => setTelegram(e.target.checked)}
+                />{" "}
+                Telegram
+              </label>
             </div>
+
+            {/* Channel hanya menerima pengumuman untuk SELURUH warga.
+                Isinya terbuka bagi siapa pun yang mengikuti channel, jadi
+                pesan untuk satu zona atau untuk warga bersaldo rendah tidak
+                diterbitkan di sana. Aturan ini ditegakkan backend; kalimat
+                ini hanya memberitahukannya lebih awal. */}
+            {telegram ? (
+              <p className="text-[12px] leading-relaxed text-muted">
+                {target === "SEMUA_WARGA" && !zona
+                  ? "Dikirim ke Telegram tiap warga yang sudah menautkan akunnya, dan sekali ke channel pengumuman."
+                  : "Dikirim ke Telegram tiap warga yang sudah menautkan akunnya. Tidak diterbitkan di channel, sebab pengumuman ini tidak ditujukan ke seluruh warga."}
+              </p>
+            ) : null}
 
             <div className="cekung p-4">
               <p className="eyebrow text-muted">Pratinjau</p>
@@ -158,15 +240,22 @@ export default function HalamanBroadcast() {
               </p>
             </div>
 
-            <Button
-              onClick={kirim}
-              disabled={
-                loading ||
-                !judul.trim() ||
-                pesan.trim().length < 5 ||
-                (!push && !email)
-              }
-            >
+            {galat ? (
+              <p className="text-[13px] font-semibold text-danger">{galat}</p>
+            ) : null}
+
+            {target === "ZONA" && zona === "" ? (
+              <p className="text-[12px] text-muted">
+                Pilih zona penerima dulu.
+              </p>
+            ) : null}
+            {!push && !email && !telegram ? (
+              <p className="text-[12px] text-muted">
+                Pilih sedikitnya satu kanal pengiriman.
+              </p>
+            ) : null}
+
+            <Button onClick={kirim} disabled={loading || !siap}>
               {loading ? "Mengirim..." : "Kirim Broadcast"}
             </Button>
           </div>
@@ -185,6 +274,15 @@ export default function HalamanBroadcast() {
                   </div>
                   <p className="mt-1 text-muted">
                     {item.penerima} penerima · {item.dibuka} dibuka
+                  </p>
+                  <p className="mt-1 text-muted">
+                    {[
+                      item.kanalPush ? "Aplikasi" : null,
+                      item.kanalEmail ? "Email" : null,
+                      item.kanalTelegram ? "Telegram" : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ") || "Tanpa kanal"}
                   </p>
                   <p className="mt-1 font-mono text-[10px] text-muted">
                     {tanggalJam(item.dibuatPada)}
