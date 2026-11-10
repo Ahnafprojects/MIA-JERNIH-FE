@@ -16,21 +16,30 @@ berisi kartu.
 | --- | --- |
 | `canvas` `#F4F8F9` | dasar, air jernih di bawah cahaya |
 | `surface` `#FFFFFF` | permukaan terangkat |
-| `silt` `#E8E3D8` | **netral hangat** untuk pita seksi berselang |
+| `silt` `#DFEBEE` | netral untuk pita seksi berselang |
 | `brand-500` `#00A6C8` | satu-satunya aksen |
-| `brand-900` `#08222C` | tinta, bukan hitam |
+| `brand-600` `#0A6B85` | **satu-satunya** nada merek untuk teks kecil |
+| `ink` `#08222C` | tinta, bukan hitam |
 | `accent` `#00D1D1` | **hanya** data hidup dan momen interaksi |
 
-`silt` itu pilihan, bukan abu bawaan: tanpa pembanding hangat, biru-air tidak
-pernah terbaca benar-benar dingin. Warna status (`success`/`warn`/`danger`)
-**terpisah dari aksen** dan tidak dihitung sebagai aksen.
+`silt` semula netral hangat (`#E8E3D8`), lalu diganti nada biru pucat yang
+sekeluarga dengan `canvas`: pita seksi berselang cukup dibedakan oleh
+kedalamannya, tanpa warna kedua yang bersaing dengan aksen. Nilai lengkap
+kedua tema ada di `src/app/globals.css`. Warna status
+(`success`/`warn`/`danger`) **terpisah dari aksen** dan tidak dihitung
+sebagai aksen.
 
 ### Huruf
 
-- **Fraunces** — display. Serif dengan sumbu *wonk*; tak terduga di produk
-  utilitas, membuat halaman terbaca seperti catatan publik yang manusiawi.
-- **Public Sans** — teks. Dirancang untuk layanan pemerintah.
-- **JetBrains Mono** — semua angka, dengan `.tabular`.
+- **Bricolage Grotesque** — judul. Grotesk editorial yang tidak mungkin
+  tertukar dengan huruf bawaan.
+- **Plus Jakarta Sans** — teks badan.
+- **IBM Plex Mono** — semua angka, dengan `.tabular`. Wataknya kelembagaan,
+  bukan terminal.
+
+Susunan pertama (Fraunces, Public Sans, JetBrains Mono) sudah ditinggalkan.
+JetBrains Mono paling lekat dengan perkakas pengembang, sehingga setiap angka
+terbaca "dibuat mesin".
 
 Judul pakai `tracking-[-0.02em]` dan `text-wrap: balance`. Baris teks jangan
 lebih dari ±65 karakter.

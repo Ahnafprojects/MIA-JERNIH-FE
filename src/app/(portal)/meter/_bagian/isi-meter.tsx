@@ -8,12 +8,13 @@ import { KontrolAliran } from "./kontrol-aliran";
 import { DeteksiKebocoran } from "./deteksi-kebocoran";
 import { LogMeter } from "./log-meter";
 import { DialogRelay } from "./dialog-relay";
+import { IsiOtomatis } from "./isi-otomatis";
 
 export function IsiMeter({ meter }: { meter: ReturnType<typeof useMeter> }) {
   const meterAktif = meter.meterAktif;
   if (!meterAktif) return null;
 
-  const saldo = meter.meterDetail?.saldoL ?? meterAktif.saldoLiter ?? 0;
+  const saldo = meter.meterDetail?.saldoL ?? meterAktif.saldoLiter;
   const isDaring = meter.meterDetail?.daring !== false;
   const saklarOn = meter.meterDetail?.saklarOn !== false;
   const relayAktif = meter.meterDetail?.relay === "AKTIF";
@@ -29,7 +30,7 @@ export function IsiMeter({ meter }: { meter: ReturnType<typeof useMeter> }) {
             Meter Saya: {meter.meterDetail?.serial ?? meterAktif.nomorSeri}
           </h1>
           <p className="mt-1 text-xs text-muted">
-            ID Perangkat: <strong className="font-mono text-ink">{meterAktif.id}</strong> &middot; Zona {meter.meterDetail?.zona ?? "Bandung Timur"}
+            ID Perangkat: <strong className="font-mono text-ink">{meterAktif.id}</strong> &middot; Zona {meter.meterDetail?.zona ?? "—"}
           </p>
         </div>
 
@@ -67,8 +68,8 @@ export function IsiMeter({ meter }: { meter: ReturnType<typeof useMeter> }) {
             <PerangkatLcd
               saldo={saldo}
               saklarOn={saklarOn}
-              debitLpm={meter.meterDetail?.debitLpm ?? 0}
-              volumeTotalL={meter.meterDetail?.volumeTotalL ?? 8420.4}
+              debitLpm={meter.meterDetail?.debitLpm ?? null}
+              volumeTotalL={meter.meterDetail?.volumeTotalL ?? null}
               relayAktif={relayAktif}
             />
             <SpesifikasiMeter volumeTotalL={meter.meterDetail?.volumeTotalL} />
@@ -82,7 +83,10 @@ export function IsiMeter({ meter }: { meter: ReturnType<typeof useMeter> }) {
             saklarOn={saklarOn}
             relayAktif={relayAktif}
             isDaring={isDaring}
-            saldo={saldo}
+            /* Saldo yang belum diketahui mengunci tombol buka, sama
+               seperti saldo habis: katup tidak boleh dibuka berdasarkan
+               tebakan. */
+            saldo={saldo ?? 0}
             onBuka={() => {
               meter.setModalRelay("buka");
               meter.setAlasanRelay("");
@@ -92,6 +96,8 @@ export function IsiMeter({ meter }: { meter: ReturnType<typeof useMeter> }) {
               meter.setAlasanRelay("");
             }}
           />
+
+          <IsiOtomatis meterId={meterAktif.id} />
 
           <DeteksiKebocoran dataDeteksiKebocoran={meter.dataDeteksiKebocoran} />
 

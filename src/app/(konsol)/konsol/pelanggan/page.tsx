@@ -45,6 +45,15 @@ import {
   DialogTutupRelay,
   type IsiTutupRelay,
 } from "./_bagian/dialog-relay";
+import {
+  alasanRelay,
+  EMAIL_PENGINGAT,
+  emailPenutupan,
+  jalankanBanyak,
+  kirimEmailPelanggan,
+  ubahRelay,
+  type HasilBanyak,
+} from "./_bagian/aksi-pelanggan";
 import { Paginasi } from "./_bagian/paginasi";
 import { Penyaring } from "./_bagian/penyaring";
 import {
@@ -71,7 +80,7 @@ const KOLOM_CSV: KolomCsv<BarisPelanggan>[] = [
   { label: "Telemetri terakhir", nilai: (b) => stempel(b.terakhirLapor) },
 ];
 
-type Aksi = "email" | "token" | "relay" | null;
+type Aksi = "email" | "relay" | null;
 
 export default function HalamanPelanggan() {
   const [cari, setCari] = useState("");
@@ -90,17 +99,9 @@ export default function HalamanPelanggan() {
     teks: string;
   } | null>(null);
 
-  /*
-   * Penutupan relay yang sudah dikonfirmasi disimpan di sini dan ditumpuk
-   * di atas data server saat ditampilkan.
-   *
-   * Belum ada endpoint yang menerimanya — mutasi relay datang bersama BE#1.
-   * Menyimpannya di klien membuat akibat tindakan langsung terlihat di baris
-   * yang benar, tapi JANGAN disalahpahami sebagai persistensi: muat ulang
-   * halaman dan daftar ini kosong lagi. Ganti dengan `PATCH` ke server
-   * begitu rutenya ada, lalu hapus state ini seluruhnya.
-   */
-  const [relayDitutup, setRelayDitutup] = useState<Set<string>>(new Set());
+  /* Aksi massal sedang berjalan. Mengunci tombol supaya satu klik ganda
+     tidak menutup aliran atau mengirim email dua kali. */
+  const [sibuk, setSibuk] = useState(false);
 
   // Pencarian ditunda; sisanya berlaku seketika karena datang dari klik.
   useEffect(() => {
@@ -145,14 +146,10 @@ export default function HalamanPelanggan() {
   const { data, memuat, menyegarkan, galat, muatUlang } =
     useApi<DaftarPelanggan>(jalur);
 
-  /** Baris apa adanya dari server, ditimpa penutupan relay yang baru terjadi. */
-  const baris = useMemo(
-    () =>
-      (data?.baris ?? []).map((b) =>
-        relayDitutup.has(b.id) ? { ...b, relayOn: false } : b,
-      ),
-    [data, relayDitutup],
-  );
+  /* Baris apa adanya dari server. Sesudah aksi relay, halaman memuat ulang
+     dari server alih-alih menimpa barisnya di klien: yang tampil harus
+     keadaan yang memang tersimpan. */
+  const baris = useMemo(() => data?.baris ?? [], [data]);
 
   const semuaHalamanTerpilih =
     baris.length > 0 && baris.every((b) => terpilih.has(b.id));
@@ -213,40 +210,65 @@ export default function HalamanPelanggan() {
     });
   }
 
-  function jalankanEmail() {
-    setAksi(null);
+  /** Ringkasan hasil aksi banyak pelanggan, menyebut yang gagal apa adanya. */
+  function laporkan(judulBerhasil: string, hasil: HasilBanyak, catatan = "") {
+    const gagal = hasil.gagal.length;
+    const contoh = hasil.gagal[0]?.pesan;
     setKabar({
-      nada: "sukses",
-      judul: "Email pemberitahuan diantrekan",
-      teks: `${angka(jumlahTerpilih)} pelanggan akan menerima email berisi sisa saldo dan cara mengisi ulang.`,
+      nada: gagal === 0 ? "sukses" : "peringatan",
+      judul:
+        gagal === 0
+          ? `${judulBerhasil} untuk ${angka(hasil.berhasil.length)} pelanggan`
+          : `${angka(hasil.berhasil.length)} berhasil, ${angka(gagal)} gagal`,
+      teks: [
+        gagal > 0 ? `Contoh penolakan server: ${contoh}` : "",
+        catatan,
+      ]
+        .filter(Boolean)
+        .join(" "),
     });
-    setTerpilih(new Set());
   }
 
-  function jalankanToken() {
-    setAksi(null);
-    setKabar({
-      nada: "sukses",
-      judul: "Permintaan token dikirim",
-      teks: `Token baru diterbitkan untuk ${angka(jumlahTerpilih)} pelanggan. Kodenya hanya dikirim ke pelanggan, tidak ditampilkan di konsol.`,
-    });
-    setTerpilih(new Set());
-  }
-
-  function jalankanTutupRelay(isi: IsiTutupRelay) {
+  async function jalankanEmail() {
     const sasaran = idTerpilih;
-    setRelayDitutup((lama) => new Set([...lama, ...sasaran]));
     setAksi(null);
-    setKabar({
-      nada: "peringatan",
-      judul: `Perintah tutup aliran dikirim untuk ${angka(sasaran.length)} pelanggan`,
-      teks: `Alasan: ${isi.alasan}${isi.keterangan ? ` — ${isi.keterangan}` : ""}. ${
-        isi.kirimEmail
-          ? "Email pemberitahuan ikut dikirim ke pelanggan."
-          : "Tanpa email pemberitahuan ke pelanggan."
-      } Tercatat di audit log atas nama akun Anda.`,
-    });
-    setTerpilih(new Set());
+    setSibuk(true);
+    try {
+      const hasil = await jalankanBanyak(sasaran, (id) =>
+        kirimEmailPelanggan(id, EMAIL_PENGINGAT.subjek, EMAIL_PENGINGAT.pesan),
+      );
+      laporkan("Email pengingat terkirim", hasil);
+      setTerpilih(new Set(hasil.gagal.map((g) => g.id)));
+    } finally {
+      setSibuk(false);
+    }
+  }
+
+  async function jalankanTutupRelay(isi: IsiTutupRelay) {
+    const sasaran = idTerpilih;
+    const alasan = alasanRelay(isi);
+    setAksi(null);
+    setSibuk(true);
+    try {
+      /* Id baris di daftar ini adalah id METER (BE src/rute/konsol.ts). */
+      const hasil = await jalankanBanyak(sasaran, async (id) => {
+        await ubahRelay(id, "tutup", alasan);
+        if (isi.kirimEmail) {
+          const email = emailPenutupan(alasan);
+          // Email gagal tidak membatalkan penutupan yang sudah terjadi.
+          await kirimEmailPelanggan(id, email.subjek, email.pesan).catch(() => {});
+        }
+      });
+      laporkan(
+        "Aliran ditutup",
+        hasil,
+        "Tercatat di audit log atas nama akun Anda.",
+      );
+      setTerpilih(new Set(hasil.gagal.map((g) => g.id)));
+      muatUlang();
+    } finally {
+      setSibuk(false);
+    }
   }
 
   const total = data?.total ?? null;
@@ -402,29 +424,18 @@ export default function HalamanPelanggan() {
         jumlah={jumlahTerpilih}
         onKosongkan={() => setTerpilih(new Set())}
         onEmail={() => setAksi("email")}
-        onToken={() => setAksi("token")}
         onTutupRelay={() => setAksi("relay")}
+        sibuk={sibuk}
       />
 
       {aksi === "email" ? (
         <DialogKonfirmasiMassal
           judul={`Kirim email ke ${angka(jumlahTerpilih)} pelanggan?`}
-          sub="Email berisi sisa saldo dan cara mengisi ulang. Email yang sudah terkirim tidak bisa ditarik kembali."
+          sub="Email berisi pengingat memeriksa saldo dan cara mengisi ulang. Email yang sudah terkirim tidak bisa ditarik kembali."
           labelAksi="Kirim sekarang"
           jumlah={jumlahTerpilih}
           onBatal={() => setAksi(null)}
           onKonfirmasi={jalankanEmail}
-        />
-      ) : null}
-
-      {aksi === "token" ? (
-        <DialogKonfirmasiMassal
-          judul={`Buat token untuk ${angka(jumlahTerpilih)} pelanggan?`}
-          sub="Tiap pelanggan menerima satu token sekali pakai yang terikat pada meternya. Kode token tidak ditampilkan di konsol."
-          labelAksi="Terbitkan token"
-          jumlah={jumlahTerpilih}
-          onBatal={() => setAksi(null)}
-          onKonfirmasi={jalankanToken}
         />
       ) : null}
 

@@ -30,7 +30,7 @@ import { angka } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import { Dialog } from "./dialog";
 import { GeserKonfirmasi } from "./geser";
-import { LABEL_PERAN, PERAN_SEKARANG } from "./peran";
+import { LABEL_PERAN, usePeranPetugas } from "./peran";
 
 /**
  * Alasan baku, bukan kotak teks kosong.
@@ -38,9 +38,12 @@ import { LABEL_PERAN, PERAN_SEKARANG } from "./peran";
  * Kotak kosong menghasilkan "tutup" dan "sesuai arahan" — tulisan yang lolos
  * validasi tapi tidak menjelaskan apa pun di audit log. Daftar tertutup
  * membuat alasannya bisa dihitung dan dibandingkan antar zona.
+ *
+ * Tidak ada "Tunggakan pembayaran". Meter prabayar menutup katupnya sendiri
+ * saat saldo habis, jadi tidak ada pelanggan yang bisa menunggak dan tidak
+ * ada alasan bagi petugas menutup aliran karena hal itu.
  */
 const ALASAN = [
-  "Tunggakan pembayaran",
   "Permintaan pelanggan",
   "Dugaan kebocoran di instalasi pelanggan",
   "Perbaikan jaringan terjadwal",
@@ -66,6 +69,7 @@ export function DialogTutupRelay({
   onBatal: () => void;
   onKonfirmasi: (isi: IsiTutupRelay) => void;
 }) {
+  const peran = usePeranPetugas();
   const [alasan, setAlasan] = useState("");
   const [keterangan, setKeterangan] = useState("");
   const [kirimEmail, setKirimEmail] = useState(true);
@@ -180,7 +184,7 @@ export function DialogTutupRelay({
               Penutupan aliran masuk ke audit log atas nama akun Anda
               <span className="text-muted">
                 {" "}
-                (peran {LABEL_PERAN[PERAN_SEKARANG]})
+                {peran ? `(peran ${LABEL_PERAN[peran]})` : null}
               </span>
               , lengkap dengan waktu, alasan, dan daftar meter yang terdampak.
               Catatan audit tidak bisa dihapus dari konsol.

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useKabarMeter } from "@/lib/use-kabar-meter";
 import { useAuth } from "@/lib/auth-context";
 import { api, ApiError } from "@/lib/api";
 import type { DataMeterDetail, LogMeter, ModalRelay, PesanAksi } from "../_tipe";
@@ -100,6 +101,16 @@ export function useMeter() {
       clearInterval(interval);
     };
   }, [meterAktif, ambilDetailMeter]);
+
+  /*
+   * Relay yang diubah petugas dari konsol, atau token yang ditukar dari
+   * perangkat lain, langsung terbaca di sini tanpa menunggu penarikan
+   * berikutnya. Isinya selalu dibaca ulang dari server.
+   */
+  const saatKabar = useCallback(() => {
+    if (meterAktif) ambilDetailMeter(meterAktif.id);
+  }, [meterAktif, ambilDetailMeter]);
+  useKabarMeter(meterAktif?.id, saatKabar);
 
   const handleEksekusiRelay = async () => {
     if (!meterDetail || !modalRelay || alasanRelay.trim().length < 3) return;

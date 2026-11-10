@@ -16,7 +16,7 @@ Tiga sub-tema yang dipilih, beserta halaman yang mewujudkannya:
 | --- | --- |
 | Situs produksi | <https://jernih.biz.id> |
 | API | <https://api.jernih.biz.id> ([repositori backend](https://github.com/Ahnafprojects/MIA-JERNIH-BE)) |
-| Halaman | 33 halaman dalam empat kelompok peran |
+| Halaman | 34 halaman dalam empat kelompok peran |
 
 Gagasan yang menyatukan seluruh halaman: melacak layanan publik berarti melihatnya sepanjang waktu, bukan satu jepretan. Janji, lalu kenyataan, termasuk ketika kenyataannya meleset.
 
@@ -36,12 +36,9 @@ Gagasan yang menyatukan seluruh halaman: melacak layanan publik berarti melihatn
 Catatan teknis yang lebih dalam, mencakup animasi dan pemecahan masalah, ada
 di [`docs/CATATAN-TEKNIS.md`](docs/CATATAN-TEKNIS.md).
 
-Perlu diperhatikan bahwa [`docs/ARAH-VISUAL.md`](docs/ARAH-VISUAL.md) sudah
-tertinggal. Berkas itu menyebut pasangan huruf Fraunces, Public Sans, dan
-JetBrains Mono, padahal yang dipakai sekarang Bricolage Grotesque, Plus
-Jakarta Sans, dan IBM Plex Mono. Ia juga menyebut `silt` sebagai warna
-hangat `#E8E3D8`, padahal nilainya sekarang `#dfebee` yang dingin. Rujukan
-sistem desain yang mutakhir dipegang tim di luar repositori ini.
+Arah visual ringkas ada di [`docs/ARAH-VISUAL.md`](docs/ARAH-VISUAL.md).
+Sumber kebenaran nilai warna, huruf, dan utilitasnya tetap
+`src/app/globals.css` dan `src/app/layout.tsx`.
 
 ## Tech stack
 
@@ -51,7 +48,7 @@ sistem desain yang mutakhir dipegang tim di luar repositori ini.
 | UI | React 19.3 | Server dan client component |
 | Bahasa | TypeScript 5 | Mode ketat |
 | Styling | Tailwind CSS v4 | Token warna di `src/app/globals.css`, tanpa berkas config |
-| Huruf | Fraunces, Public Sans, JetBrains Mono | Dimuat lewat `next/font` |
+| Huruf | Bricolage Grotesque, Plus Jakarta Sans, IBM Plex Mono | Dimuat lewat `next/font` |
 | Peta | MapLibre GL 6 dan react-map-gl | Basemap vektor CARTO, tanpa API key |
 | Grafik | Recharts 3 | Deret waktu dan perbandingan |
 | Validasi | Zod 4 | Validasi formulir |

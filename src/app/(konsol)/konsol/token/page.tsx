@@ -39,6 +39,7 @@ export default function HalamanTokenKonsol() {
             alasan={t.alasan}
             setAlasan={t.setAlasan}
             loading={t.loading}
+            galat={t.galat}
             onTerbitkan={t.generate}
           />
         </Panel>

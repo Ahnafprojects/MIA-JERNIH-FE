@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useAuth } from "@/lib/auth-context";
-import { liter } from "@/lib/format";
+import { literAtauKosong } from "@/lib/format";
 import { TombolTema } from "@/components/ui/tema";
 import { useState, useRef, useEffect } from "react";
 
@@ -391,7 +391,7 @@ export function PemilihMeter() {
                 >
                   <span className="font-mono">{m.nomorSeri}</span>
                   <span className="font-mono text-muted">
-                    {liter(m.saldoLiter)}
+                    {literAtauKosong(m.saldoLiter)}
                   </span>
                 </button>
               </li>

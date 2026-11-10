@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { useKabarMeter, type KabarMeter } from "@/lib/use-kabar-meter";
 import { liter } from "@/lib/format";
 import type {
   DataLiveMeter,
@@ -156,9 +157,12 @@ export function useBeranda() {
         void 0;
       }
 
+      /* Kuncinya `notifikasi`, bukan `rows` (BE src/rute/notifikasi.ts).
+         Membaca `rows` membuat kartu pengumuman di beranda selalu kosong
+         tanpa satu galat pun, karena `?? []` menelan selisihnya. */
       try {
-        const n = await api<{ rows: NotifRingkas[] }>("/api/notifikasi");
-        if (aktif) setNotifikasi((n.rows ?? []).slice(0, 2));
+        const n = await api<{ notifikasi: NotifRingkas[] }>("/api/notifikasi");
+        if (aktif) setNotifikasi((n.notifikasi ?? []).slice(0, 2));
       } catch {
         void 0;
       }
@@ -180,6 +184,25 @@ export function useBeranda() {
       clearInterval(interval);
     };
   }, [meterAktif, ambilDataLive]);
+
+  /*
+   * Saldo dan relay diperbarui SEKETIKA saat server mengabarkannya, lalu
+   * dibaca ulang dari `/live` supaya angka di layar tetap angka server.
+   * Polling lima detik di atas tetap berjalan; lihat `use-kabar-meter.ts`.
+   */
+  const saatKabar = useCallback(
+    (k: KabarMeter) => {
+      if (!meterAktif) return;
+      if (k.event === "meter:saldo") {
+        setDataLive((d) => (d ? { ...d, saldoL: k.data.saldoBaruL } : d));
+      } else if (k.event === "meter:relay") {
+        setDataLive((d) => (d ? { ...d, relay: k.data.relay } : d));
+      }
+      void ambilDataLive(meterAktif.id);
+    },
+    [meterAktif, ambilDataLive],
+  );
+  useKabarMeter(meterAktif?.id, saatKabar);
 
   const handleTukarTokenCepat = async () => {
     if (!meterAktif || tokenInput.length < 4) return;
