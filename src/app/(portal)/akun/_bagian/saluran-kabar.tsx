@@ -28,6 +28,8 @@ import { Button } from "@/components/ui/button";
  */
 
 interface KeadaanSaluran {
+  /** Nomor yang diisi saat mendaftar. Dipakai sebagai isian awal. */
+  hpTerdaftar: string | null;
   whatsapp: { nomor: string | null; aktif: boolean };
   telegram: { tertaut: boolean };
   layananSiap: boolean;
@@ -37,7 +39,15 @@ type Hasil = { tipe: "sukses" | "galat"; teks: string } | null;
 
 /** Tampilan nomor `62...` dikembalikan ke bentuk yang biasa dibaca orang. */
 function nomorTerbaca(nomor: string): string {
-  const lokal = nomor.startsWith("62") ? `0${nomor.slice(2)}` : nomor;
+  /*
+   * Bukan hanya digit yang masuk ke sini. `waNomor` tersimpan baku sebagai
+   * "6281…", tetapi `hp` dari formulir pendaftaran tersimpan apa adanya,
+   * termasuk tanda plus: "+6281…". Tanpa membuang bukan-angka lebih dulu,
+   * pemeriksaan awalan "62" meleset dan nomornya tergambar sebagai
+   * "+628 1333 5357 32".
+   */
+  const angka = nomor.replace(/\D/g, "");
+  const lokal = angka.startsWith("62") ? `0${angka.slice(2)}` : angka;
   return lokal.replace(/(\d{4})(?=\d)/g, "$1 ").trim();
 }
 
@@ -74,7 +84,23 @@ export function SaluranKabar() {
     try {
       const r = await api<KeadaanSaluran>("/api/me/notifikasi");
       setKeadaan(r);
-      setNomor(r.whatsapp.nomor ? nomorTerbaca(r.whatsapp.nomor) : "");
+      /*
+       * Kalau WhatsApp belum pernah dinyalakan, isiannya diisi dengan nomor
+       * dari pendaftaran.
+       *
+       * Formulir pendaftaran sudah meminta nomor ponsel. Menyuruh warga
+       * mengetik nomor yang sama sekali lagi di sini membuat halaman ini
+       * terasa seperti pekerjaan dobel, dan itulah yang paling sering
+       * membuat orang berhenti sebelum menyalakannya. Persetujuannya tetap
+       * harus dicentang sendiri; yang dihilangkan hanya pengetikannya.
+       */
+      setNomor(
+        r.whatsapp.nomor
+          ? nomorTerbaca(r.whatsapp.nomor)
+          : r.hpTerdaftar
+            ? nomorTerbaca(r.hpTerdaftar)
+            : "",
+      );
       /*
        * Centang mengikuti keadaan tersimpan, supaya orang yang sudah setuju
        * tidak perlu menyetujui ulang hanya untuk mengganti nomornya.
