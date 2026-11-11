@@ -15,6 +15,8 @@ export function FormDaftar({
   kataSandi,
   setKataSandi,
   setujuSyarat,
+  waSetuju,
+  setWaSetuju,
   setSetujuSyarat,
   lihatSandi,
   setLihatSandi,
@@ -31,6 +33,8 @@ export function FormDaftar({
   kataSandi: string;
   setKataSandi: (v: string) => void;
   setujuSyarat: boolean;
+  waSetuju: boolean;
+  setWaSetuju: (v: boolean) => void;
   setSetujuSyarat: (v: boolean) => void;
   lihatSandi: boolean;
   setLihatSandi: (v: boolean) => void;
@@ -71,8 +75,39 @@ export function FormDaftar({
         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setHp(e.target.value.replace(/\D/g, ""))}
         disabled={memuat}
         depan="+62"
-        hint="Nomor ini hanya untuk dihubungi petugas jika ada kendala meter fisik. Tidak ada OTP SMS."
+        hint="Dipakai petugas untuk menghubungi Anda bila ada kendala pada meter. Tidak ada OTP SMS."
       />
+
+      {/*
+        Centang ini muncul hanya setelah nomornya diisi.
+        Sebelumnya label medan di atas berbunyi "Nomor Ponsel (WhatsApp /
+        Telepon)", tetapi nomornya disimpan ke kolom `hp` yang tidak pernah
+        dibaca pengirim WhatsApp. Warga memberikan nomor, membaca kata
+        "WhatsApp", lalu tidak menerima apa pun — dan harus mengetik nomor
+        yang sama lagi di halaman Akun. Sekarang satu centang sudah cukup.
+      */}
+      {hp.trim() ? (
+        <div className="flex items-start gap-2">
+          <input
+            id="wa-setuju"
+            type="checkbox"
+            checked={waSetuju}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              setWaSetuju(e.target.checked)
+            }
+            disabled={memuat}
+            className="mt-0.5 size-4 rounded-[2px] border-line text-brand-600 focus:ring-brand-500"
+          />
+          <label
+            htmlFor="wa-setuju"
+            className="text-xs leading-relaxed text-muted"
+          >
+            Kirimi saya kabar lewat <b className="text-ink">WhatsApp</b> di
+            nomor ini: pengaduan yang mulai ditangani, saldo menipis, dan
+            struk pembelian token. Bisa dimatikan kapan saja di halaman Akun.
+          </label>
+        </div>
+      ) : null}
 
       <FieldSandi
         kataSandi={kataSandi}

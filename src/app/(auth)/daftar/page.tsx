@@ -34,6 +34,8 @@ export default function HalamanDaftar() {
         kataSandi={daftar.kataSandi}
         setKataSandi={daftar.setKataSandi}
         setujuSyarat={daftar.setujuSyarat}
+        waSetuju={daftar.waSetuju}
+        setWaSetuju={daftar.setWaSetuju}
         setSetujuSyarat={daftar.setSetujuSyarat}
         lihatSandi={daftar.lihatSandi}
         setLihatSandi={daftar.setLihatSandi}

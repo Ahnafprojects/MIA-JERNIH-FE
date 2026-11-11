@@ -13,6 +13,14 @@ export function useDaftar() {
   const [hp, setHp] = useState("");
   const [kataSandi, setKataSandi] = useState("");
   const [setujuSyarat, setSetujuSyarat] = useState(false);
+  /*
+   * Persetujuan WhatsApp, terpisah dari persetujuan ketentuan layanan.
+   *
+   * Bawaannya `false` dan harus dicentang sendiri. Memberi nomor supaya
+   * bisa dihubungi petugas bukan izin untuk dikirimi pesan otomatis, jadi
+   * keduanya tidak boleh digabung menjadi satu centang.
+   */
+  const [waSetuju, setWaSetuju] = useState(false);
   const [lihatSandi, setLihatSandi] = useState(false);
 
   const [memuat, setMemuat] = useState(false);
@@ -43,6 +51,9 @@ export function useDaftar() {
           email: emailBersih,
           hp: hp.trim() ? (hp.startsWith("+") ? hp : `+62${hp.replace(/^0+/, "")}`) : undefined,
           kataSandi,
+          /* Tidak dikirim bila nomornya kosong: persetujuan tanpa nomor
+             tidak berarti apa-apa, dan server akan mengabaikannya. */
+          waSetuju: hp.trim() ? waSetuju : undefined,
         }),
       });
 
@@ -73,6 +84,8 @@ export function useDaftar() {
     setKataSandi,
     setujuSyarat,
     setSetujuSyarat,
+    waSetuju,
+    setWaSetuju,
     lihatSandi,
     setLihatSandi,
     memuat,
