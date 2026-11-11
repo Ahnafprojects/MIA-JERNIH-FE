@@ -2,6 +2,12 @@
 
 Antarmuka platform transparansi layanan air PDAM. Warga memantau pemakaian, saldo, dan pengaduannya secara langsung, sementara data layanan dan kinerja instansi terbuka untuk publik tanpa perlu akun.
 
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/alur-gelap.svg">
+  <img alt="Tiga ruang antarmuka: ruang publik tanpa akun, portal warga setelah masuk, dan konsol petugas menurut peran. Ketiganya membaca satu sumber angka yang sama." src="docs/alur-terang.svg" width="100%">
+</picture>
+
 Dibuat untuk **Web In Action — Multimedia In Action (MIA) 2026**.
 
 Tiga sub-tema yang dipilih, beserta halaman yang mewujudkannya:
