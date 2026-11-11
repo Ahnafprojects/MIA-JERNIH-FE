@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 300" width="1000" height="300" role="img" aria-label="Tiga ruang antarmuka Jernih: ruang publik tanpa akun, portal warga, dan konsol petugas, ketiganya membaca satu sumber angka yang sama.">
+<style>
+  text { font-family: ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; fill: #dceaee; }
+  .judul { font-size: 13px; font-weight: 700; letter-spacing: .01em; }
+  .ket   { font-size: 11px; fill: #9ab3bb; }
+  .kecil { font-size: 10px; fill: #9ab3bb; letter-spacing: .04em; }
+  .kotak { fill: #0d2630; stroke: #2d4e59; stroke-width: 1.25; }
+  .isi   { fill: #13303b; stroke: #2d4e59; stroke-width: 1.25; }
+  .utama { fill: #5fcfe6; stroke: #8fe0f0; stroke-width: 1.25; }
+  .judul-balik { font-size: 13px; font-weight: 700; fill: #0d2630; }
+  .ket-balik   { font-size: 11px; fill: #0d2630; opacity: .82; }
+  .jalur { fill: none; stroke: #2d4e59; stroke-width: 1.5; }
+  .nadi  { fill: none; stroke: #00d1d1; stroke-width: 2.25;
+            stroke-linecap: round; stroke-dasharray: 26 1000;
+            animation: alir 4.4s linear infinite; }
+  .titik { fill: #00d1d1; }
+
+  @keyframes alir { from { stroke-dashoffset: 26; }
+                     to   { stroke-dashoffset: -1000; } }
+  @keyframes pulse {
+    0%, 8.8%, 100% { stroke: #2d4e59; stroke-width: 1.25; }
+    3.8% { stroke: #00d1d1; stroke-width: 2.25; }
+  }
+
+  .t0 { animation: pulse 4.4s 0.00s infinite; }
+  .t1 { animation: pulse 4.4s 1.10s infinite; }
+  .t2 { animation: pulse 4.4s 2.20s infinite; }
+  .t3 { animation: pulse 4.4s 3.30s infinite; }
+
+  /* Seluruh keterangan tetap terbaca tanpa gerakan. */
+  @media (prefers-reduced-motion: reduce) {
+    .nadi, .t0, .t1, .t2, .t3, .t4, .t5, .t6 { animation: none; }
+    .nadi { stroke-dasharray: none; opacity: .45; }
+  }
+</style>
+<text x="28" y="30" class="kecil">TIGA RUANG, SATU SUMBER ANGKA</text>
+<path d="M160 108 V152 H840 V108" class="nadi"/>
+<rect x="28" y="52" width="264" height="56" rx="9" class="isi t0"/><text x="160.0" y="77.0" text-anchor="middle" class="judul">Ruang publik</text><text x="160.0" y="93.0" text-anchor="middle" class="ket">tanpa akun</text><path d="M160.0 108 V152" class="jalur"/><rect x="368" y="52" width="264" height="56" rx="9" class="isi t1"/><text x="500.0" y="77.0" text-anchor="middle" class="judul">Portal warga</text><text x="500.0" y="93.0" text-anchor="middle" class="ket">setelah masuk</text><path d="M500.0 108 V152" class="jalur"/><rect x="708" y="52" width="264" height="56" rx="9" class="isi t2"/><text x="840.0" y="77.0" text-anchor="middle" class="judul">Konsol petugas</text><text x="840.0" y="93.0" text-anchor="middle" class="ket">menurut peran</text><path d="M840.0 108 V152" class="jalur"/><path d="M160 152 H840" class="jalur"/><rect x="338" y="168" width="324" height="54" rx="9" class="utama t3"/><text x="500.0" y="192.0" text-anchor="middle" class="judul-balik">Satu sumber angka</text><text x="500.0" y="208.0" text-anchor="middle" class="ket-balik">API Express, PostgreSQL</text><path d="M500 152 V168" class="jalur"/>
+<text x="28" y="258" class="ket">Angka yang dibaca petugas adalah angka yang dibaca warga. Tidak ada salinan, tidak ada nilai yang ditulis tetap di kode,</text>
+<text x="28" y="276" class="ket">sehingga mustahil ada dua versi kebenaran pada dua layar yang berbeda.</text>
+</svg>
